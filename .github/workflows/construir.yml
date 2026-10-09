@@ -34,7 +34,7 @@ jobs:
           yes | "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
           "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager "platforms;android-37" || true
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Versión automática
         id: version
@@ -143,7 +143,7 @@ jobs:
       - run: |
           yes | "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
           "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager "platforms;android-37" || true
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Pruebas de red de VER (búsqueda, URLs de reproducción, canal)
         run: |
           set +e
