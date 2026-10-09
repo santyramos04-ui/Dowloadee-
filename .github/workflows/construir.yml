@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: construir-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   construir:
@@ -99,7 +99,7 @@ jobs:
           retention-days: 14
 
       - name: Publicar en GitHub Releases
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
