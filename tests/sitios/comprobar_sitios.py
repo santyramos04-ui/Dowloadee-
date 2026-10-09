@@ -15,7 +15,9 @@ MOTIVOS = [
     ("login required", "pide iniciar sesión"),
     ("rate-limit reached or login required", "pide iniciar sesión / límite de peticiones"),
     ("Private video", "video privado"),
-    ("age", "contenido +18"),
+    ("confirm your age", "contenido +18 (pide confirmar la edad)"),
+    ("age-restricted", "contenido +18 (restringido por edad)"),
+    ("nsfw", "contenido sensible/+18 (pide iniciar sesión)"),
     ("Video unavailable", "video no disponible"),
     ("unavailable", "video no disponible"),
     ("HTTP Error 404", "enlace muerto (404)"),
@@ -27,12 +29,14 @@ MOTIVOS = [
 
 
 def motivo(err: str) -> str:
+    """Motivo en español + la última línea real del error (para no esconder lo que pasó)."""
+    ultima = [l for l in err.strip().splitlines() if l.strip()]
+    cruda = (ultima[-1] if ultima else "error desconocido")[:200]
     bajo = err.lower()
     for clave, texto in MOTIVOS:
         if clave.lower() in bajo:
-            return texto
-    ultima = [l for l in err.strip().splitlines() if l.strip()]
-    return (ultima[-1] if ultima else "error desconocido")[:160]
+            return f"{texto} [{cruda}]"
+    return cruda
 
 
 def probar(url: str):
