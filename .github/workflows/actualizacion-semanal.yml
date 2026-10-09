@@ -1,0 +1,78 @@
+name: Actualización semanal
+
+# Cada lunes: busca versiones nuevas de NewPipeExtractor y youtubedl-android, descarga el yt-dlp más
+# reciente, compila, pasa las pruebas y, si todo sale bien, publica una versión nueva sola.
+# Si algo falla NO se publica nada y se abre un aviso (Issue) en GitHub.
+on:
+  schedule:
+    - cron: '23 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 0 }
+
+      - name: Buscar versiones nuevas de las librerías
+        id: buscar
+        run: python3 scripts/actualizar-versiones.py
+
+      - name: ¿Hay yt-dlp nuevo?
+        id: ytdlp
+        run: |
+          ./scripts/descargar-ytdlp.sh nightly
+          NUEVO=$(cat app/src/main/assets/ytdlp/version.txt)
+          ANTERIOR=$(cat scripts/ytdlp-embebido.txt 2>/dev/null || echo "")
+          echo "nuevo=$NUEVO" >> "$GITHUB_OUTPUT"
+          if [ "$NUEVO" != "$ANTERIOR" ]; then echo "cambio=true" >> "$GITHUB_OUTPUT"; else echo "cambio=false" >> "$GITHUB_OUTPUT"; fi
+          echo -n "$NUEVO" > scripts/ytdlp-embebido.txt
+
+      - name: Nada que hacer
+        if: steps.buscar.outputs.cambios == 'false' && steps.ytdlp.outputs.cambio == 'false'
+        run: |
+          echo "Todo está al día, no hace falta publicar una versión nueva." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Probar los cambios en una rama aparte
+        id: rama
+        if: steps.buscar.outputs.cambios == 'true' || steps.ytdlp.outputs.cambio == 'true'
+        run: |
+          RAMA="auto/semanal-$(date +%Y%m%d-%H%M)"
+          git config user.name "mirador-bot"
+          git config user.email "mirador-bot@users.noreply.github.com"
+          git checkout -b "$RAMA"
+          git add gradle/libs.versions.toml scripts/ytdlp-embebido.txt
+          git commit -m "chore: actualización semanal (${{ steps.buscar.outputs.resumen }}; yt-dlp ${{ steps.ytdlp.outputs.nuevo }})"
+          git push origin "$RAMA"
+          echo "rama=$RAMA" >> "$GITHUB_OUTPUT"
+          # Compila y prueba esa rama (no publica porque no es main)
+          gh workflow run construir.yml --ref "$RAMA"
+          sleep 25
+          ID=$(gh run list --workflow construir.yml --branch "$RAMA" --limit 1 --json databaseId -q '.[0].databaseId')
+          echo "run=$ID" >> "$GITHUB_OUTPUT"
+          if gh run watch "$ID" --exit-status; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Todo bien → pasar a main y publicar
+        if: steps.rama.outputs.ok == 'true'
+        run: |
+          git push origin "${{ steps.rama.outputs.rama }}:main"
+          # Un push hecho con el token del workflow no dispara otros workflows: se pide el de publicar a mano.
+          gh workflow run construir.yml --ref main
+          git push origin --delete "${{ steps.rama.outputs.rama }}" || true
+          echo "✅ Versión nueva en camino (${{ steps.buscar.outputs.resumen }}; yt-dlp ${{ steps.ytdlp.outputs.nuevo }})" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Algo falló → avisar y NO publicar
+        if: steps.rama.outputs.ok == 'false'
+        run: |
+          gh issue create --title "La actualización semanal falló (no se publicó nada)" \
+            --body "La rama \`${{ steps.rama.outputs.rama }}\` no pasó la compilación o las pruebas. Cambios intentados: ${{ steps.buscar.outputs.resumen }}; yt-dlp ${{ steps.ytdlp.outputs.nuevo }}. Revisa el registro: https://github.com/${{ github.repository }}/actions/runs/${{ steps.rama.outputs.run }}"
+          exit 1

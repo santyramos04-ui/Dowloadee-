@@ -1,0 +1,171 @@
+name: Construir y publicar
+
+# - En cada push a main: compila el APK firmado (arm64-v8a), corre las pruebas y lo publica en
+#   GitHub Releases con versión automática (1.0.<número de commits>).
+# - En las ramas de trabajo (ccr-*): solo compila y prueba (nunca publica).
+on:
+  push:
+    branches: [main, 'ccr-**']
+    paths-ignore: ['**.md', 'tests/sitios/**', '.github/workflows/probe.yml', '.github/workflows/sitios.yml']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: construir-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+
+      - name: SDK de Android (la imagen de GitHub ya trae uno; solo aceptamos licencias)
+        run: |
+          yes | "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager "platforms;android-37" || true
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Versión automática
+        id: version
+        run: |
+          MAJOR=$(grep '^major=' version.properties | cut -d= -f2)
+          MINOR=$(grep '^minor=' version.properties | cut -d= -f2)
+          COUNT=$(git rev-list --count HEAD)
+          echo "version=$MAJOR.$MINOR.$COUNT" >> "$GITHUB_OUTPUT"
+          echo "code=$((1000 + COUNT))" >> "$GITHUB_OUTPUT"
+
+      - name: yt-dlp más reciente dentro del APK
+        env: { GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+        run: ./scripts/descargar-ytdlp.sh nightly
+
+      - name: Clave de firma (desde GitHub Secrets; nunca está en el repositorio)
+        id: clave
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/mirador.jks"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/mirador.jks" >> "$GITHUB_ENV"
+            echo "firmado=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "firmado=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::No hay clave de firma en los Secrets: el APK se firma con la clave de PRUEBA y no se publicará."
+          fi
+
+      - name: Compilar y probar
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set +e
+          ./gradlew --no-daemon --console=plain \
+            -PversionName=${{ steps.version.outputs.version }} -PversionCode=${{ steps.version.outputs.code }} \
+            :app:testDebugUnitTest :app:assembleRelease > gradle.log 2>&1
+          CODIGO=$?
+          if [ $CODIGO -ne 0 ]; then
+            echo "=============== ERRORES DE COMPILACIÓN / PRUEBAS (resumen) ==============="
+            grep -E "^e: |^w: .*error|error:|FAILED|What went wrong|Execution failed|Caused by|AssertionError|expected:" -A3 gradle.log | grep -v "^\s*at " | head -150
+            echo "=============== FIN DEL RESUMEN ==============="
+          else
+            tail -5 gradle.log
+          fi
+          exit $CODIGO
+
+      - name: Comprobar la firma y mostrar la huella SHA-256
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "$APK" | tee firma.txt
+          {
+            echo "### APK: $(basename "$APK") ($(du -h "$APK" | cut -f1))"
+            echo "Firmado con la clave de producción: **${{ steps.clave.outputs.firmado }}**"
+            echo '```'
+            grep -E 'certificate (DN|SHA-256)' firma.txt | head -4 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p salida
+          cp "$APK" "salida/Mirador-${{ steps.version.outputs.version }}.apk"
+          unzip -l "$APK" | grep -E 'lib/' | awk '{print $4}' | cut -d/ -f2 | sort -u | sed 's/^/ABI en el APK: /'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mirador-${{ steps.version.outputs.version }}
+          path: salida/*.apk
+          retention-days: 14
+
+      - name: Publicar en GitHub Releases
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ steps.clave.outputs.firmado }}" != "si" ]; then
+            echo "::error::No se publica: faltan los Secrets de firma (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD). Mira el LEEME, paso «Crear la clave de firma»."
+            exit 1
+          fi
+          VER=${{ steps.version.outputs.version }}
+          YTDLP=$(cat app/src/main/assets/ytdlp/version.txt)
+          cat > notas.md <<NOTAS
+          Mirador $VER
+
+          - yt-dlp incluido: $YTDLP (la app lo actualiza sola cada día)
+          - NewPipeExtractor: $(grep '^newpipeExtractor' gradle/libs.versions.toml | cut -d'"' -f2)
+          - Commit: ${GITHUB_SHA::7}
+
+          Se instala encima de la versión anterior (misma clave de firma).
+          NOTAS
+          gh release create "v$VER" "salida/Mirador-$VER.apk" --title "Mirador $VER" --notes-file notas.md --latest
+
+  # Pruebas que hablan con YouTube de verdad (parte VER). No bloquean la publicación porque
+  # YouTube puede bloquear las IP de los servidores de GitHub aunque la app funcione bien.
+  pruebas-ver:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - run: |
+          yes | "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
+          "$ANDROID_HOME"/cmdline-tools/latest/bin/sdkmanager "platforms;android-37" || true
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Pruebas de red de VER (búsqueda, URLs de reproducción, canal)
+        run: |
+          set +e
+          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest --tests 'com.santyramos.mirador.RedTest' -PredTests=1 > ver.log 2>&1
+          CODIGO=$?
+          {
+            echo "## Pruebas de red — VER (NewPipeExtractor)"
+            echo '```'
+            grep -E 'PRUEBA_VER|RedTest > .* (PASSED|FAILED|SKIPPED)|Exception|AssertionError|Caused by' ver.log | grep -v '^\s*at ' | head -60
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          exit $CODIGO
+
+  # Extracción con yt-dlp de enlaces públicos de cada sitio (parte DESCARGAR).
+  pruebas-descargar:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install -U "yt-dlp[default]"
+      - run: python3 tests/sitios/comprobar_sitios.py tests/sitios/sitios.json resultado.md
+      - if: always()
+        run: cat resultado.md >> "$GITHUB_STEP_SUMMARY"

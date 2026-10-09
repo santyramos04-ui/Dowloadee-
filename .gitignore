@@ -1,0 +1,16 @@
+*.iml
+.gradle/
+build/
+local.properties
+.idea/
+.DS_Store
+*.jks
+*.keystore
+*.p12
+keystore*.b64
+captures/
+.externalNativeBuild/
+.cxx/
+secrets/
+# yt-dlp embebido: lo descarga el CI al compilar (scripts/descargar-ytdlp.sh); no se sube al repositorio
+app/src/main/assets/ytdlp/

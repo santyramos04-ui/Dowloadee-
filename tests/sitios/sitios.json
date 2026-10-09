@@ -1,0 +1,23 @@
+{
+  "_comentario": "Enlaces públicos de prueba. Para cada sitio basta que UNO funcione. Si un enlace muere, agrega otro aquí; no hace falta tocar código.",
+  "sitios": {
+    "YouTube (video)": {
+      "urls": ["https://www.youtube.com/watch?v=jNQXAC9IVRw", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://youtu.be/aqz-KE-bpKQ"]
+    },
+    "YouTube (Short)": {
+      "urls": ["https://www.youtube.com/shorts/sSM9J5YH_60", "https://www.youtube.com/shorts/BGQWPY4IigY"]
+    },
+    "X (video)": {
+      "urls": ["https://x.com/NASA/status/1400547400690286594", "https://twitter.com/freethenipple/status/643211948184596480", "https://twitter.com/starwars/status/665052190608723968", "https://twitter.com/captainamerica/status/719944021058060289"]
+    },
+    "Instagram (reel/post)": {
+      "urls": ["https://www.instagram.com/reel/Chunk8-jurw/", "https://www.instagram.com/p/BQ0eAlwhDrw/", "https://www.instagram.com/p/aye83DjauH/", "https://www.instagram.com/reel/CDUMkliABpa/"]
+    },
+    "TikTok": {
+      "urls": ["https://www.tiktok.com/@leenabhushan/video/6748451240264420610", "https://www.tiktok.com/@patroxofficial/video/6742501081818877190", "https://www.tiktok.com/@pokemonlife22/video/7059698374567611694"]
+    },
+    "Facebook": {
+      "urls": ["https://www.facebook.com/radiokicksfm/videos/3676516585958356/", "https://www.facebook.com/cnn/videos/10155529876156509/", "https://www.facebook.com/video.php?v=637842556329505"]
+    }
+  }
+}
