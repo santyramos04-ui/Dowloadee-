@@ -39,7 +39,8 @@ jobs:
 
       - name: Nada que hacer
         if: steps.buscar.outputs.cambios == 'false' && steps.ytdlp.outputs.cambio == 'false'
-        run: echo "Todo está al día: no hace falta publicar una versión nueva." >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Todo está al día, no hace falta publicar una versión nueva." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Probar los cambios en una rama aparte
         id: rama
