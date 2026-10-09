@@ -1,0 +1,23 @@
+# Dependabot abre solo los cambios de versión (librerías de Android y acciones del CI) una vez a la semana.
+# NewPipeExtractor, youtubedl-android y yt-dlp los actualiza el workflow «Actualización semanal».
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "com.github.TeamNewPipe:NewPipeExtractor"
+      - dependency-name: "io.github.junkfood02.youtubedl-android:*"
+    groups:
+      androidx:
+        patterns: ["androidx.*"]
+      kotlin:
+        patterns: ["org.jetbrains.kotlin*", "com.google.devtools.ksp*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday

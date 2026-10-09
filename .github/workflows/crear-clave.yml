@@ -1,0 +1,49 @@
+name: Crear clave de firma (se hace UNA sola vez)
+
+# Genera la clave con la que se firman TODAS las versiones de Mirador. Úsala solo una vez.
+# Antes de ejecutarlo debes crear 3 Secrets en GitHub (Settings → Secrets and variables → Actions):
+#   KEYSTORE_PASSWORD  una contraseña larga (mínimo 20 caracteres, generada por tu administrador de contraseñas)
+#   KEY_PASSWORD       exactamente la misma contraseña
+#   KEY_ALIAS          por ejemplo: mirador
+# El resultado (KEYSTORE_BASE64) queda en el registro del workflow: cópialo y guárdalo como Secret.
+# El archivo de la clave está protegido por tu contraseña, por eso es seguro que se vea en el registro.
+on:
+  workflow_dispatch:
+
+jobs:
+  crear:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comprobar que no existe ya una clave
+        env:
+          EXISTE: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$EXISTE" ]; then
+            echo "::error::Ya existe el Secret KEYSTORE_BASE64. NO se crea otra clave: cambiarla haría que las actualizaciones no se instalen encima de la versión anterior."
+            exit 1
+          fi
+      - name: Generar la clave
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ "$KEYSTORE_PASSWORD" != "$KEY_PASSWORD" ]; then
+            echo "::error::Crea primero los Secrets KEYSTORE_PASSWORD, KEY_PASSWORD (la misma contraseña) y KEY_ALIAS."; exit 1
+          fi
+          if [ ${#KEYSTORE_PASSWORD} -lt 20 ]; then
+            echo "::error::La contraseña es muy corta (mínimo 20 caracteres). Como el archivo de la clave será visible, una contraseña débil la haría vulnerable."; exit 1
+          fi
+          keytool -genkeypair -v -storetype PKCS12 -keystore mirador.jks -alias "$KEY_ALIAS" \
+            -keyalg RSA -keysize 4096 -validity 10950 \
+            -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD" \
+            -dname "CN=Mirador, O=Uso personal, C=CO" > /dev/null
+          echo "Huella SHA-256 de tu clave (la pide Google al registrar el paquete):"
+          keytool -list -v -keystore mirador.jks -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" | grep -E 'SHA256|SHA-256'
+          echo
+          echo "=============== COPIA TODO LO QUE HAY ENTRE LAS LÍNEAS ==============="
+          echo "Guárdalo como Secret con el nombre KEYSTORE_BASE64 (una sola línea larga)"
+          echo "----------------------------------------------------------------------"
+          base64 -w0 mirador.jks
+          echo
+          echo "----------------------------------------------------------------------"
