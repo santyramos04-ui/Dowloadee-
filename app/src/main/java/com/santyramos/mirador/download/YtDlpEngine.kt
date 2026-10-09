@@ -38,6 +38,7 @@ object YtDlpEngine {
         if (estado is Estado.Listo || iniciando) return
         iniciando = true
         try {
+            sembrarYtdlpEmbebido(context.applicationContext)
             YoutubeDL.init(context.applicationContext)
             FFmpeg.init(context.applicationContext)
             estado = Estado.Listo
@@ -52,6 +53,39 @@ object YtDlpEngine {
     }
 
     suspend fun esperarListo() = listo.await()
+
+    /** "2026.10.09.123456" -> [2026,10,9,123456] */
+    internal fun partesVersion(v: String): List<Int> = v.trim().split('.', '-', '_').mapNotNull { it.toIntOrNull() }
+
+    internal fun esMasNueva(a: String, b: String): Boolean {
+        val x = partesVersion(a); val y = partesVersion(b)
+        for (i in 0 until maxOf(x.size, y.size)) {
+            val p = x.getOrElse(i) { 0 }; val q = y.getOrElse(i) { 0 }
+            if (p != q) return p > q
+        }
+        return false
+    }
+
+    /**
+     * El CI deja en el APK el yt-dlp más reciente de ese momento (assets/ytdlp). Si es más nuevo que
+     * el que hay instalado, se usa; así una instalación nueva no arranca con un motor viejo.
+     */
+    private fun sembrarYtdlpEmbebido(ctx: Context) {
+        runCatching {
+            val etiqueta = ctx.assets.open("ytdlp/version.txt").bufferedReader().use { it.readText().trim() }
+            if (etiqueta.isEmpty()) return
+            val prefs = ctx.getSharedPreferences("youtubedl-android", Context.MODE_PRIVATE)
+            val instalada = prefs.getString("dlpVersion", null)
+            val destino = File(ctx.noBackupFilesDir, "youtubedl-android/yt-dlp/yt-dlp")
+            if (destino.exists() && instalada != null && !esMasNueva(etiqueta, instalada)) return
+            destino.parentFile?.mkdirs()
+            val tmp = File(destino.parentFile, "yt-dlp.nuevo")
+            ctx.assets.open("ytdlp/yt-dlp").use { i -> tmp.outputStream().use { o -> i.copyTo(o) } }
+            if (destino.exists()) destino.delete()
+            if (!tmp.renameTo(destino)) throw java.io.IOException("No se pudo colocar yt-dlp")
+            prefs.edit().putString("dlpVersion", etiqueta).putString("dlpVersionName", etiqueta).apply()
+        }.onFailure { Log.w(TAG, "No se usó el yt-dlp embebido", it) }
+    }
 
     // ---------- Información (vista previa) ----------
 
