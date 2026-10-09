@@ -40,6 +40,7 @@ import com.santyramos.mirador.download.MediaInfo
 import com.santyramos.mirador.download.Preset
 import com.santyramos.mirador.download.PreviewLoader
 import com.santyramos.mirador.download.SizeEstimator
+import com.santyramos.mirador.download.UrlTools
 import com.santyramos.mirador.download.Cookies
 import com.santyramos.mirador.util.Format
 import kotlinx.coroutines.launch
@@ -66,12 +67,50 @@ private sealed interface Estado {
     data class Listo(val info: MediaInfo) : Estado
 }
 
+private enum class Modo { PREGUNTA, VIDEO, LISTA }
+
 /**
- * Hoja de descarga: vista previa (miniatura, título, duración, peso estimado de cada opción) y
- * botón para encolar. La usan «Compartir → Mirador», el campo de pegar y el botón «Descargar» del reproductor.
+ * Hoja de descarga de UN enlace. Si el enlace es de una lista de YouTube, primero pregunta
+ * «¿Solo este video o la lista completa?».
  */
 @Composable
 fun DownloadSheetContent(
+    url: String,
+    soloEste: Boolean = true,
+    onCerrar: () -> Unit,
+    onEncolada: () -> Unit,
+) {
+    var modo by remember(url) {
+        mutableStateOf(
+            when {
+                UrlTools.esListaYoutube(url) -> Modo.LISTA
+                soloEste && UrlTools.videoDentroDeLista(url) -> Modo.PREGUNTA
+                else -> Modo.VIDEO
+            },
+        )
+    }
+    when (modo) {
+        Modo.PREGUNTA -> Column(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("Este video viene de una lista", style = MaterialTheme.typography.titleMedium)
+            Text("¿Qué quieres descargar?", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Button(onClick = { modo = Modo.VIDEO }, modifier = Modifier.fillMaxWidth()) { Text("Solo este video") }
+            OutlinedButton(onClick = { modo = Modo.LISTA }, modifier = Modifier.fillMaxWidth()) { Text("La lista completa") }
+            OutlinedButton(onClick = onCerrar, modifier = Modifier.fillMaxWidth()) { Text("Cancelar") }
+        }
+        Modo.LISTA -> ListaSheetContent(UrlTools.urlDeLista(url), onCerrar, onEncolada)
+        Modo.VIDEO -> VideoSheetContent(url, true, onCerrar, onEncolada)
+    }
+}
+
+/**
+ * Hoja de descarga de un video: vista previa (miniatura, título, duración, peso estimado de cada
+ * opción) y botón para encolar.
+ */
+@Composable
+internal fun VideoSheetContent(
     url: String,
     soloEste: Boolean = true,
     onCerrar: () -> Unit,

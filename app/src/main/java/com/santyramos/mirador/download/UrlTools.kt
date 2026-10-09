@@ -10,6 +10,10 @@ object UrlTools {
     fun primerEnlace(texto: String?): String? =
         URL_REGEX.find(texto.orEmpty())?.value?.trimEnd('.', ',', ')', ';', '!', '?', ']')
 
+    /** Todos los enlaces distintos de un texto (varios pegados, uno por línea o separados por espacios). */
+    fun todosEnlaces(texto: String?): List<String> =
+        URL_REGEX.findAll(texto.orEmpty()).map { it.value.trimEnd('.', ',', ')', ';', '!', '?', ']') }.distinct().toList()
+
     private fun host(url: String): String? =
         runCatching { URI(url).host?.lowercase()?.removePrefix("www.")?.removePrefix("m.") }.getOrNull()
 
@@ -40,6 +44,18 @@ object UrlTools {
         val lista = p["list"]
         // Las listas "RD..." son mezclas automáticas; igualmente se pregunta.
         return !lista.isNullOrBlank() && (p.containsKey("v") || host(url) == "youtu.be")
+    }
+
+    private fun ruta(url: String): String = runCatching { URI(url).path.orEmpty() }.getOrDefault("")
+
+    /** ¿Es la página de una lista de YouTube (/playlist?list=...)? */
+    fun esListaYoutube(url: String): Boolean = esYoutube(url) && ruta(url).startsWith("/playlist") && !parametros(url)["list"].isNullOrBlank()
+
+    /** Enlace a la lista completa a partir de un video que viene dentro de ella. */
+    fun urlDeLista(url: String): String {
+        val id = parametros(url)["list"] ?: return url
+        // Las "mezclas" automáticas (RD...) solo existen dentro de un video: se conserva el enlace original.
+        return if (id.startsWith("RD")) url else "https://www.youtube.com/playlist?list=$id"
     }
 
     /** ID de la tarjeta de un tuit: https://x.com/usuario/status/123456 */

@@ -71,31 +71,43 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
     val descargas by DownloadCenter.observarTodas().collectAsState(initial = emptyList())
     var texto by rememberSaveable { mutableStateOf("") }
     var urlParaDescargar by remember { mutableStateOf<String?>(null) }
+    var urlsLote by remember { mutableStateOf<List<String>?>(null) }
+    val enlaces = remember(texto) { UrlTools.todosEnlaces(texto) }
     var avisoEnlace by remember { mutableStateOf<String?>(null) }
 
     fun pegar() {
         val cb = contexto.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val t = cb.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(contexto)?.toString()
-        UrlTools.primerEnlace(t)?.let { texto = it; avisoEnlace = null } ?: run { avisoEnlace = "El portapapeles no tiene ningún enlace." }
+        val nuevos = UrlTools.todosEnlaces(t)
+        if (nuevos.isEmpty()) avisoEnlace = "El portapapeles no tiene ningún enlace."
+        else {
+            // Se agregan a lo que ya hay (así puedes pegar varios, uno tras otro).
+            texto = (UrlTools.todosEnlaces(texto) + nuevos).distinct().joinToString("\n")
+            avisoEnlace = null
+        }
     }
     fun continuar() {
-        val u = UrlTools.primerEnlace(texto)
-        if (u == null) avisoEnlace = "Escribe o pega un enlace que empiece con http…" else { avisoEnlace = null; urlParaDescargar = u }
+        when {
+            enlaces.isEmpty() -> avisoEnlace = "Escribe o pega un enlace que empiece con http…"
+            enlaces.size == 1 -> { avisoEnlace = null; urlParaDescargar = enlaces.first() }
+            else -> { avisoEnlace = null; urlsLote = enlaces }
+        }
     }
 
     Column(modifier.fillMaxSize().statusBarsPadding()) {
         Text("Descargas", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp))
         Text(
-            "Pega el enlace de un video, audio o foto de YouTube, X, Instagram, TikTok, Facebook y más. También puedes usar «Compartir → Mirador» desde esas apps.",
+            "Pega uno o varios enlaces (uno por línea) de videos, audios, fotos o listas de reproducción de YouTube, X, Instagram, TikTok, Facebook y más. También puedes usar «Compartir → Mirador» desde esas apps.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         )
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
-                value = texto, onValueChange = { texto = it }, modifier = Modifier.weight(1f), singleLine = true,
+                value = texto, onValueChange = { texto = it }, modifier = Modifier.weight(1f), minLines = 1, maxLines = 5,
                 placeholder = { Text("https://…") },
+                supportingText = { if (enlaces.size > 1) Text("${enlaces.size} enlaces detectados") },
                 trailingIcon = { IconButton(onClick = { pegar() }) { Icon(Icons.Filled.ContentPaste, "Pegar") } },
             )
-            Button(onClick = { continuar() }) { Text("Buscar") }
+            Button(onClick = { continuar() }) { Text(if (enlaces.size > 1) "Descargar ${enlaces.size}" else "Buscar") }
         }
         avisoEnlace?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 16.dp)) }
 
@@ -112,6 +124,12 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
             LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(descargas, key = { it.id }) { d -> TarjetaDescarga(d) }
             }
+        }
+    }
+
+    urlsLote?.let { lote ->
+        ModalBottomSheet(onDismissRequest = { urlsLote = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            com.santyramos.mirador.ui.LoteSheetContent(urls = lote, onCerrar = { urlsLote = null }, onEncolada = { urlsLote = null; texto = "" })
         }
     }
 

@@ -70,6 +70,64 @@ object DownloadCenter {
         return id
     }
 
+    /** Una descarga por cada video de la lista (cada uno con su progreso, pausa y reintento). */
+    suspend fun encolarLista(lista: ListaInfo, preset: Preset): Int {
+        val grupo = System.currentTimeMillis()
+        val carpeta = UrlTools.nombreSeguro(lista.titulo, 60)
+        val ancho = maxOf(2, lista.entradas.size.toString().length)
+        dao.insertarVarias(
+            lista.entradas.mapIndexed { i, e ->
+                DownloadEntity(
+                    url = e.url, titulo = e.titulo, miniatura = e.miniatura, autor = lista.autor,
+                    preset = preset.name, sinLista = true, carpeta = carpeta,
+                    prefijo = (i + 1).toString().padStart(ancho, '0') + " - ", grupo = grupo, grupoNombre = lista.titulo,
+                )
+            },
+        )
+        arrancarServicio()
+        return lista.entradas.size
+    }
+
+    class ResultadoLote(val enlaces: Int, val archivos: Int, val listasLeidas: Int, val listasConError: List<String>)
+
+    /**
+     * Varios enlaces pegados a la vez. Cada uno se descarga con el formato elegido; de cada enlace se
+     * averiguan título y miniatura justo antes de bajarlo. Las listas de YouTube se abren en sus videos.
+     */
+    suspend fun encolarLote(urls: List<String>, preset: Preset, listasCompletas: Boolean): ResultadoLote {
+        val grupo = System.currentTimeMillis()
+        val nombreGrupo = "Lote de ${urls.size} enlaces"
+        val filas = mutableListOf<DownloadEntity>()
+        var leidas = 0
+        val errores = mutableListOf<String>()
+        for (u in urls) {
+            val esLista = UrlTools.esYoutube(u) && (UrlTools.esListaYoutube(u) || (listasCompletas && UrlTools.videoDentroDeLista(u)))
+            if (esLista) {
+                try {
+                    val lista = YtDlpEngine.lista(UrlTools.urlDeLista(u), Cookies.archivo(app))
+                    val carpeta = UrlTools.nombreSeguro(lista.titulo, 60)
+                    val ancho = maxOf(2, lista.entradas.size.toString().length)
+                    lista.entradas.forEachIndexed { i, e ->
+                        filas += DownloadEntity(
+                            url = e.url, titulo = e.titulo, miniatura = e.miniatura, autor = lista.autor, preset = preset.name,
+                            carpeta = carpeta, prefijo = (i + 1).toString().padStart(ancho, '0') + " - ", grupo = grupo, grupoNombre = nombreGrupo,
+                        )
+                    }
+                    leidas++
+                    continue
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    errores += "${ErrorMapper.mensaje(e)} ($u)"
+                    // Se intenta igual como un solo video.
+                }
+            }
+            filas += DownloadEntity(url = u, titulo = u, preset = preset.name, sinLista = true, grupo = grupo, grupoNombre = nombreGrupo)
+        }
+        if (filas.isNotEmpty()) { dao.insertarVarias(filas); arrancarServicio() }
+        return ResultadoLote(urls.size, filas.size, leidas, errores)
+    }
+
     suspend fun pausar(id: Long) {
         dao.cambiarEstado(id, DownloadStatus.PAUSED.name)
         detener(id)
@@ -132,7 +190,33 @@ object DownloadCenter {
 
     // ---------- Ejecución ----------
 
-    private suspend fun ejecutar(d: DownloadEntity) {
+    private val gruposAvisados = mutableSetOf<Long>()
+
+    /** Cuando termina la última descarga de una lista o lote, avisa una sola vez (en vez de una notificación por video). */
+    private suspend fun avisarSiTerminoElGrupo(d: DownloadEntity) {
+        val g = d.grupo ?: return
+        if (dao.pendientesDelGrupo(g) > 0) return
+        synchronized(gruposAvisados) { if (!gruposAvisados.add(g)) return }
+        val ok = dao.contarDelGrupo(g, DownloadStatus.DONE.name)
+        val err = dao.contarDelGrupo(g, DownloadStatus.ERROR.name)
+        if (ok + err > 0) Notifications.resumenGrupo(app, g, d.grupoNombre ?: "Descargas", ok, err)
+    }
+
+    private suspend fun ejecutar(inicial: DownloadEntity) {
+        var d = inicial
+        // Descargas de un lote pegado: todavía no sabemos el título ni si son fotos; se averigua ahora.
+        if (d.extraJson == null && d.titulo == d.url) {
+            val info = runCatching { PreviewLoader.cargar(d.url, Cookies.archivo(app), true) }.getOrNull()
+            if (info != null) {
+                val directo = info.directos.isNotEmpty()
+                d = d.copy(
+                    titulo = info.titulo, miniatura = info.miniatura, autor = info.autor,
+                    extraJson = if (directo) json.encodeToString(info.directos) else null,
+                    preset = if (directo) Preset.IMAGENES.name else d.preset,
+                )
+                dao.actualizar(d)
+            }
+        }
         val dir = File(app.cacheDir, "dl/${d.id}")
         var ultimoGuardado = 0L
         var actual = d
@@ -160,7 +244,7 @@ object DownloadCenter {
             if (archivos.isEmpty()) throw IllegalStateException("No hay video en este enlace")
             var primero: MediaStoreSaver.Guardado? = null
             for (f in archivos) {
-                val g = MediaStoreSaver.guardar(app, f)
+                val g = MediaStoreSaver.guardar(app, f, nombre = (d.prefijo ?: "") + f.name, subcarpeta = d.carpeta)
                 if (primero == null) primero = g
             }
             val fin = (dao.buscar(d.id) ?: d).copy(
@@ -168,7 +252,7 @@ object DownloadCenter {
                 archivoUri = primero!!.uri.toString(), archivoMime = primero.mime, terminadaEn = System.currentTimeMillis(),
             )
             dao.actualizar(fin)
-            Notifications.lista(app, fin, primero.uri, primero.mime)
+            if (d.grupo == null) Notifications.lista(app, fin, primero.uri, primero.mime)
         } catch (e: Throwable) {
             val estadoActual = dao.buscar(d.id)?.status
             if (e is YtDlpEngine.Cancelada || e is CancellationException || estadoActual == DownloadStatus.PAUSED || estadoActual == DownloadStatus.CANCELED) {
@@ -179,12 +263,13 @@ object DownloadCenter {
                 val motivo = ErrorMapper.mensaje(e)
                 val falla = (dao.buscar(d.id) ?: d).copy(estado = DownloadStatus.ERROR.name, error = motivo, velocidadBps = 0, etaSeg = 0)
                 dao.actualizar(falla)
-                Notifications.error(app, falla, motivo)
+                if (d.grupo == null) Notifications.error(app, falla, motivo)
             }
         } finally {
             val terminada = dao.buscar(d.id)?.status
             if (terminada == DownloadStatus.DONE || terminada == DownloadStatus.ERROR) dir.deleteRecursively()
             trabajos.remove(d.id)
+            runCatching { avisarSiTerminoElGrupo(d) }
             bombear()
         }
     }

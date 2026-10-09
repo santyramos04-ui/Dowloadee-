@@ -43,13 +43,22 @@ object MediaStoreSaver {
         else -> Carpeta.VIDEOS
     }
 
-    fun guardar(context: Context, archivo: File, nombre: String = archivo.name, mime: String = mimeDe(archivo.name)): Guardado {
+    fun guardar(
+        context: Context,
+        archivo: File,
+        nombre: String = archivo.name,
+        mime: String = mimeDe(archivo.name),
+        subcarpeta: String? = null,
+    ): Guardado {
         val resolver = context.contentResolver
         val carpeta = carpetaPara(mime)
         val valores = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, nombre)
             put(MediaStore.MediaColumns.MIME_TYPE, mime)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/" + carpeta.ruta)
+            put(
+                MediaStore.MediaColumns.RELATIVE_PATH,
+                Environment.DIRECTORY_DOWNLOADS + "/" + carpeta.ruta + (subcarpeta?.let { "/" + UrlTools.nombreSeguro(it, 60) } ?: ""),
+            )
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, valores)

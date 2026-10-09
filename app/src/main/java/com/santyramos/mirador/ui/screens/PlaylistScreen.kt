@@ -48,6 +48,7 @@ fun PlaylistScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> U
     var siguiente by remember(url) { mutableStateOf<Page?>(null) }
     var cargandoMas by remember(url) { mutableStateOf(false) }
     val lista = rememberLazyListState()
+    var descargarLista by remember(url) { mutableStateOf(false) }
 
     LaunchedEffect(url, intento) {
         error = null
@@ -79,12 +80,27 @@ fun PlaylistScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> U
                 }
                 !cargado -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 else -> LazyColumn(state = lista, contentPadding = PaddingValues(bottom = 16.dp)) {
+                    item {
+                        androidx.compose.material3.Button(
+                            onClick = { descargarLista = true },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        ) { Text("⬇ Descargar toda la lista") }
+                    }
                     items(videos.filterIsInstance<Elemento.Video>(), key = { it.url }) { v ->
                         FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) })
                     }
                     if (cargandoMas) item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
                 }
             }
+        }
+    }
+
+    if (descargarLista) {
+        androidx.compose.material3.ModalBottomSheet(
+            onDismissRequest = { descargarLista = false },
+            sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            com.santyramos.mirador.ui.ListaSheetContent(url = url, onCerrar = { descargarLista = false }, onEncolada = { descargarLista = false })
         }
     }
 }

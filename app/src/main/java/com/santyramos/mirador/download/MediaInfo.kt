@@ -55,6 +55,11 @@ data class MediaInfo(
     val tieneVideo get() = formatos.any { it.tieneVideo } || directos.any { it.esVideo }
 }
 
+data class EntradaLista(val url: String, val titulo: String, val miniatura: String?, val duracionSeg: Long?)
+
+/** Una lista de reproducción: solo títulos y enlaces (no se consulta cada video hasta que le toca descargarse). */
+data class ListaInfo(val titulo: String, val autor: String?, val entradas: List<EntradaLista>)
+
 object MediaInfoParser {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
@@ -68,6 +73,24 @@ object MediaInfoParser {
         require(inicio >= 0) { "yt-dlp no devolvió datos" }
         val raiz: JsonElement = json.parseToJsonElement(texto.substring(inicio))
         return desdeObjeto(raiz.jsonObject, urlOriginal)
+    }
+
+    fun parsearLista(texto: String): ListaInfo {
+        val inicio = texto.indexOf('{')
+        require(inicio >= 0) { "yt-dlp no devolvió datos" }
+        val o = json.parseToJsonElement(texto.substring(inicio)).jsonObject
+        val entradas = (o["entries"] as? JsonArray).orEmpty().mapNotNull { e ->
+            val eo = e as? JsonObject ?: return@mapNotNull null
+            val id = eo.str("id")
+            var url = eo.str("url") ?: eo.str("webpage_url")
+            if (url == null || !url.startsWith("http")) url = if (id != null) "https://www.youtube.com/watch?v=$id" else return@mapNotNull null
+            val titulo = eo.str("title") ?: "Video"
+            // Videos borrados o privados aparecen con estos nombres y no se pueden bajar.
+            if (titulo == "[Private video]" || titulo == "[Deleted video]" || titulo == "[Unavailable video]") return@mapNotNull null
+            val mini = eo.str("thumbnail") ?: (eo["thumbnails"] as? JsonArray)?.lastOrNull()?.let { (it as? JsonObject)?.str("url") }
+            EntradaLista(url, titulo, mini, eo.lng("duration"))
+        }
+        return ListaInfo(o.str("title") ?: "Lista", o.str("uploader") ?: o.str("channel"), entradas)
     }
 
     internal fun desdeObjeto(o: JsonObject, urlOriginal: String): MediaInfo {

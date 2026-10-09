@@ -67,6 +67,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     val pila = remember { mutableStateListOf<Destino>() }
     var reproductorAbierto by rememberSaveable { mutableStateOf(false) }
     var urlDescarga by remember { mutableStateOf<String?>(null) }
+    var urlsLote by remember { mutableStateOf<List<String>?>(null) }
     val video by VideoController.video.collectAsState()
     val actualizacion by AppUpdater.estado.collectAsState()
 
@@ -154,12 +155,24 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
         }
     }
 
+    urlsLote?.let { lote ->
+        ModalBottomSheet(onDismissRequest = { urlsLote = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            LoteSheetContent(urls = lote, onCerrar = { urlsLote = null }, onEncolada = { urlsLote = null })
+        }
+    }
+
     Entrada.enlacePortapapeles?.let { u ->
+        val varios = u.lines().filter { it.isNotBlank() }
         AlertDialog(
             onDismissRequest = { onPortapapelesVisto(u); Entrada.enlacePortapapeles = null },
-            title = { Text("¿Descargar este enlace?") },
-            text = { Text(u, maxLines = 3, style = MaterialTheme.typography.bodySmall) },
-            confirmButton = { TextButton(onClick = { onPortapapelesVisto(u); Entrada.enlacePortapapeles = null; urlDescarga = u }) { Text("Descargar") } },
+            title = { Text(if (varios.size > 1) "¿Descargar estos ${varios.size} enlaces?" else "¿Descargar este enlace?") },
+            text = { Text(varios.take(3).joinToString("\n") + if (varios.size > 3) "\n…" else "", maxLines = 5, style = MaterialTheme.typography.bodySmall) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onPortapapelesVisto(u); Entrada.enlacePortapapeles = null
+                    if (varios.size > 1) urlsLote = varios else urlDescarga = varios.firstOrNull()
+                }) { Text("Descargar") }
+            },
             dismissButton = { TextButton(onClick = { onPortapapelesVisto(u); Entrada.enlacePortapapeles = null }) { Text("No") } },
         )
     }

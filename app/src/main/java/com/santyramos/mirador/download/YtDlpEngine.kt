@@ -103,6 +103,19 @@ object YtDlpEngine {
             MediaInfoParser.parsear(resp.out, url)
         }
 
+    /** Lee una lista de reproducción (sin consultar cada video: es rápido incluso con cientos). */
+    suspend fun lista(url: String, cookies: File? = null): ListaInfo = withContext(Dispatchers.IO) {
+        esperarListo()
+        val r = YoutubeDLRequest(url)
+        r.addOption("-J")
+        r.addOption("--flat-playlist")
+        r.addOption("--yes-playlist")
+        r.addOption("--no-warnings")
+        r.addOption("--socket-timeout", 25)
+        cookies?.let { r.addOption("--cookies", it.absolutePath) }
+        MediaInfoParser.parsearLista(YoutubeDL.execute(r, null, null).out)
+    }
+
     // ---------- Descarga ----------
 
     fun construirPedido(job: DownloadEntity, dir: File, cookies: File?): YoutubeDLRequest {

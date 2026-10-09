@@ -30,21 +30,22 @@ class ShareReceiverActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val texto = if (intent?.action == Intent.ACTION_SEND) intent.getStringExtra(Intent.EXTRA_TEXT) else intent?.dataString
-        val url = UrlTools.primerEnlace(texto) ?: UrlTools.primerEnlace(intent?.getStringExtra(Intent.EXTRA_SUBJECT))
+        val enlaces = UrlTools.todosEnlaces(texto).ifEmpty { UrlTools.todosEnlaces(intent?.getStringExtra(Intent.EXTRA_SUBJECT)) }
+        val url = enlaces.firstOrNull()
         setContent {
             MiradorTheme {
                 if (url == null) {
                     Toast.makeText(this, "No encontré un enlace en lo que compartiste", Toast.LENGTH_LONG).show()
                     finish()
                 } else {
-                    HojaCompartir(url)
+                    HojaCompartir(enlaces)
                 }
             }
         }
     }
 
     @Composable
-    private fun HojaCompartir(url: String) {
+    private fun HojaCompartir(enlaces: List<String>) {
         val permiso = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
         LaunchedEffect(Unit) {
             if (Build.VERSION.SDK_INT >= 33) permiso.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -53,14 +54,18 @@ class ShareReceiverActivity : ComponentActivity() {
         ModalBottomSheet(onDismissRequest = { finish() }, sheetState = estado) {
             Column(Modifier.padding(top = 0.dp)) {
                 Text("Descargar con Mirador", modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp), style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
-                DownloadSheetContent(
-                    url = url,
-                    onCerrar = { finish() },
-                    onEncolada = {
-                        Toast.makeText(this@ShareReceiverActivity, "Descarga iniciada ⬇", Toast.LENGTH_SHORT).show()
-                        finish()
-                    },
-                )
+                if (enlaces.size > 1) {
+                    com.santyramos.mirador.ui.LoteSheetContent(urls = enlaces, onCerrar = { finish() }, onEncolada = { finish() })
+                } else {
+                    DownloadSheetContent(
+                        url = enlaces.first(),
+                        onCerrar = { finish() },
+                        onEncolada = {
+                            Toast.makeText(this@ShareReceiverActivity, "Descarga iniciada ⬇", Toast.LENGTH_SHORT).show()
+                            finish()
+                        },
+                    )
+                }
             }
         }
     }

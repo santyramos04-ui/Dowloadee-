@@ -120,6 +120,20 @@ object Notifications {
         NotificationManagerCompat.from(context).notify(BASE_RESULTADO + d.id.toInt(), n)
     }
 
+    fun resumenGrupo(context: Context, grupo: Long, nombre: String, ok: Int, errores: Int) {
+        if (!puedeNotificar(context)) return
+        val texto = if (errores == 0) "Se descargaron $ok archivos" else "Se descargaron $ok; $errores con error (míralos en Descargas)"
+        val n = NotificationCompat.Builder(context, CANAL_RESULTADO)
+            .setSmallIcon(R.drawable.ic_stat_mirador)
+            .setContentTitle(if (errores == 0) "✅ Lista: $nombre" else "⚠ Terminó: $nombre")
+            .setContentText(texto)
+            .setStyle(NotificationCompat.BigTextStyle().bigText("$texto\nGuardados en Descargas/Mirador"))
+            .setContentIntent(abrirApp(context))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(context).notify(BASE_RESULTADO + 5000 + (grupo % 4000).toInt(), n)
+    }
+
     fun cancelarResultado(context: Context, id: Long) {
         NotificationManagerCompat.from(context).cancel(BASE_RESULTADO + id.toInt())
     }

@@ -30,6 +30,13 @@ data class DownloadEntity(
     val sinLista: Boolean = true,
     /** Para descargas de archivos sueltos (imágenes/videos directos): JSON con la lista. */
     val extraJson: String? = null,
+    /** Subcarpeta dentro de Descargas/Mirador/... (por ejemplo, el nombre de una lista de reproducción). */
+    val carpeta: String? = null,
+    /** Prefijo del nombre del archivo para conservar el orden de una lista ("01 - "). */
+    val prefijo: String? = null,
+    /** Las descargas de una misma lista o lote comparten este número; se avisa una sola vez al terminar todas. */
+    val grupo: Long? = null,
+    val grupoNombre: String? = null,
 ) {
     val status: DownloadStatus get() = runCatching { DownloadStatus.valueOf(estado) }.getOrDefault(DownloadStatus.ERROR)
 }

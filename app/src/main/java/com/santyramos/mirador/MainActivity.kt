@@ -115,7 +115,9 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             val cb = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             val texto = runCatching { cb.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this@MainActivity)?.toString() }.getOrNull()
-            val enlace = UrlTools.primerEnlace(texto) ?: return@launch
+            val enlaces = UrlTools.todosEnlaces(texto)
+            if (enlaces.isEmpty()) return@launch
+            val enlace = enlaces.joinToString("\n")
             if (enlace != Settings(this@MainActivity).portapapelesVisto() && Entrada.enlacePortapapeles == null) Entrada.enlacePortapapeles = enlace
         }
     }

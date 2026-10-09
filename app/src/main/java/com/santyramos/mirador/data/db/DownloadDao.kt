@@ -17,7 +17,7 @@ interface DownloadDao {
     @Query("SELECT * FROM descargas WHERE estado IN ('QUEUED','RUNNING') ORDER BY creadaEn ASC")
     suspend fun pendientes(): List<DownloadEntity>
 
-    @Query("SELECT * FROM descargas WHERE estado = 'QUEUED' ORDER BY creadaEn ASC LIMIT 1")
+    @Query("SELECT * FROM descargas WHERE estado = 'QUEUED' ORDER BY id ASC LIMIT 1")
     suspend fun siguienteEnCola(): DownloadEntity?
 
     @Query("SELECT COUNT(*) FROM descargas WHERE estado IN ('QUEUED','RUNNING')")
@@ -25,6 +25,15 @@ interface DownloadDao {
 
     @Insert
     suspend fun insertar(d: DownloadEntity): Long
+
+    @Insert
+    suspend fun insertarVarias(lista: List<DownloadEntity>)
+
+    @Query("SELECT COUNT(*) FROM descargas WHERE grupo = :grupo AND estado IN ('QUEUED','RUNNING')")
+    suspend fun pendientesDelGrupo(grupo: Long): Int
+
+    @Query("SELECT COUNT(*) FROM descargas WHERE grupo = :grupo AND estado = :estado")
+    suspend fun contarDelGrupo(grupo: Long, estado: String): Int
 
     @Update
     suspend fun actualizar(d: DownloadEntity)
