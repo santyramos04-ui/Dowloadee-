@@ -35,7 +35,14 @@ class RedTest {
     @Test fun obtieneUrlsDeReproduccionDeUnVideoPublico() = runBlocking {
         requiere()
         Youtube.iniciar()
-        val info = Youtube.video("https://www.youtube.com/watch?v=jNQXAC9IVRw")
+        val info = try {
+            Youtube.video("https://www.youtube.com/watch?v=jNQXAC9IVRw")
+        } catch (e: org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException) {
+            // YouTube bloquea las IP de los servidores de GitHub: no es un fallo de la app, pero tampoco una prueba superada.
+            println("PRUEBA_VER video: NO CONCLUYENTE — YouTube bloqueó la IP del servidor («no eres un robot»). Probar en el celular.")
+            assumeTrue("YouTube bloqueó la IP del servidor", false)
+            return@runBlocking
+        }
         println("PRUEBA_VER video: «${info.name}» ${info.videoStreams.size} mezclados, ${info.videoOnlyStreams.size} solo video, ${info.audioStreams.size} audio")
         assertTrue("No hay streams de video", info.videoStreams.isNotEmpty() || info.videoOnlyStreams.isNotEmpty())
         val sel = StreamSelector.seleccionar(info.videoStreams, info.videoOnlyStreams, info.audioStreams, PlayerQuality.P720, true)!!

@@ -95,7 +95,7 @@ jobs:
             echo "### APK: $(basename "$APK") ($(du -h "$APK" | cut -f1))"
             echo "Firmado con la clave de producción: **${{ steps.clave.outputs.firmado }}**"
             echo '```'
-            grep -E 'Signer #1 certificate (SHA-256|DN)' firma.txt
+            grep -E 'certificate (DN|SHA-256)' firma.txt | head -4 || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           mkdir -p salida
