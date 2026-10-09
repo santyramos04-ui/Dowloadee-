@@ -12,15 +12,27 @@ import org.schabi.newpipe.extractor.stream.DeliveryMethod
 import org.schabi.newpipe.extractor.stream.VideoStream
 
 class StreamSelectorTest {
+    // En la app real el alto, el códec y el bitrate vienen de la respuesta de YouTube; aquí los ponemos a mano.
+    private fun itag(id: Int): ItagItem {
+        val item = ItagItem(ItagItem.getItag(id))
+        val alto = item.resolutionString?.filter { it.isDigit() }?.toIntOrNull()
+        if (alto != null) {
+            item.height = alto
+            item.bitrate = alto * 3000
+            item.codec = if (id == 248) "vp09.00.40.08" else "avc1.640028"
+        }
+        return item
+    }
+
     private fun video(itag: Int, soloVideo: Boolean): VideoStream {
-        val item = ItagItem.getItag(itag)
+        val item = itag(itag)
         return VideoStream.Builder().setId(itag.toString()).setContent("https://v/$itag", true)
             .setMediaFormat(item.mediaFormat).setDeliveryMethod(DeliveryMethod.PROGRESSIVE_HTTP)
             .setIsVideoOnly(soloVideo).setResolution(item.resolutionString ?: "").setItagItem(item).build()
     }
 
     private fun audio(itag: Int): AudioStream {
-        val item = ItagItem.getItag(itag)
+        val item = itag(itag)
         return AudioStream.Builder().setId(itag.toString()).setContent("https://a/$itag", true)
             .setMediaFormat(item.mediaFormat).setDeliveryMethod(DeliveryMethod.PROGRESSIVE_HTTP)
             .setAverageBitrate(item.averageBitrate).setItagItem(item).build()

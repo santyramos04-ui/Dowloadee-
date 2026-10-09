@@ -147,14 +147,14 @@ jobs:
       - name: Pruebas de red de VER (búsqueda, URLs de reproducción, canal)
         run: |
           set +e
-          ./gradlew --no-daemon :app:testDebugUnitTest --tests 'com.santyramos.mirador.RedTest' -PredTests=1 -i 2>&1 | tee ver.log
-          CODIGO=${PIPESTATUS[0]}
+          ./gradlew --no-daemon --console=plain :app:testDebugUnitTest --tests 'com.santyramos.mirador.RedTest' -PredTests=1 > ver.log 2>&1
+          CODIGO=$?
           {
             echo "## Pruebas de red — VER (NewPipeExtractor)"
             echo '```'
-            grep -E 'PRUEBA_VER|RedTest > .* (PASSED|FAILED|SKIPPED)' ver.log
+            grep -E 'PRUEBA_VER|RedTest > .* (PASSED|FAILED|SKIPPED)|Exception|AssertionError|Caused by' ver.log | grep -v '^\s*at ' | head -60
             echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
           exit $CODIGO
 
   # Extracción con yt-dlp de enlaces públicos de cada sitio (parte DESCARGAR).
