@@ -1,0 +1,39 @@
+name: Sonda de versiones y red
+on:
+  push:
+    branches: ['ccr-**']
+    paths: ['.github/workflows/probe.yml']
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Últimas versiones publicadas
+        run: |
+          G=https://dl.google.com/dl/android/maven2
+          C=https://repo.maven.apache.org/maven2
+          P=https://plugins.gradle.org/m2
+          latest() { curl -fsS --max-time 30 "$1/maven-metadata.xml" | grep -E '<release>' | sed -E 's/ *<\/?release>//g'; }
+          stable() { curl -fsS --max-time 30 "$1/maven-metadata.xml" | grep '<version>' | sed -E 's/ *<\/?version>//g' | grep -E '^[0-9]+(\.[0-9]+)*$' | sort -V | tail -1; }
+          for a in com/android/tools/build/gradle androidx/compose/compose-bom androidx/compose/material3/material3 androidx/media3/media3-exoplayer androidx/media3/media3-session androidx/media3/media3-ui androidx/media3/media3-datasource-okhttp androidx/room/room-runtime androidx/navigation/navigation-compose androidx/activity/activity-compose androidx/work/work-runtime-ktx androidx/core/core-ktx androidx/lifecycle/lifecycle-runtime-compose androidx/datastore/datastore-preferences androidx/browser/browser androidx/webkit/webkit androidx/documentfile/documentfile androidx/lifecycle/lifecycle-viewmodel-compose; do
+            echo "GOOGLE $a => estable: $(stable $G/$a)"
+          done
+          echo "MAVEN okhttp => $(stable $C/com/squareup/okhttp3/okhttp)"
+          echo "MAVEN youtubedl-android => $(stable $C/io/github/junkfood02/youtubedl-android/library)"
+          echo "MAVEN desugar_jdk_libs => $(stable $C/com/android/tools/desugar_jdk_libs/desugar_jdk_libs)"
+          echo "MAVEN kotlinx-coroutines => $(stable $C/org/jetbrains/kotlinx/kotlinx-coroutines-android)"
+          echo "MAVEN kotlinx-serialization-json => $(stable $C/org/jetbrains/kotlinx/kotlinx-serialization-json)"
+          echo "MAVEN coil => $(stable $C/io/coil-kt/coil3/coil-compose)"
+          echo "MAVEN junit => $(stable $C/junit/junit)"
+          echo "PLUGIN kotlin => $(stable $P/org/jetbrains/kotlin/kotlin-gradle-plugin)"
+          echo "PLUGIN ksp => $(stable $P/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin)"
+          echo "PLUGIN compose compiler => $(stable $P/org/jetbrains/kotlin/plugin/compose/org.jetbrains.kotlin.plugin.compose.gradle.plugin)"
+          echo "PLUGIN serialization => $(stable $P/org/jetbrains/kotlin/plugin/serialization/org.jetbrains.kotlin.plugin.serialization.gradle.plugin)"
+          echo "JITPACK nanojson/extractor:"
+          curl -sS --max-time 60 -o /dev/null -w "extractor v0.26.5 pom: %{http_code}\n" https://jitpack.io/com/github/TeamNewPipe/NewPipeExtractor/v0.26.5/NewPipeExtractor-v0.26.5.pom
+          echo "Gradle más reciente: $(curl -fsS https://services.gradle.org/versions/current | grep -E '"version"')"
+      - name: Acceso de red a los sitios (sin yt-dlp)
+        run: |
+          for u in https://www.youtube.com https://www.youtube.com/youtubei/v1/player https://x.com https://www.instagram.com https://www.tiktok.com https://www.facebook.com; do
+            printf "%s -> " "$u"; curl -sS -o /dev/null --max-time 30 -w "%{http_code}\n" -A "Mozilla/5.0" "$u" || true
+          done
