@@ -71,10 +71,20 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: >
-          ./gradlew --no-daemon --stacktrace
-          -PversionName=${{ steps.version.outputs.version }} -PversionCode=${{ steps.version.outputs.code }}
-          :app:testDebugUnitTest :app:assembleRelease
+        run: |
+          set +e
+          ./gradlew --no-daemon --console=plain \
+            -PversionName=${{ steps.version.outputs.version }} -PversionCode=${{ steps.version.outputs.code }} \
+            :app:testDebugUnitTest :app:assembleRelease > gradle.log 2>&1
+          CODIGO=$?
+          if [ $CODIGO -ne 0 ]; then
+            echo "=============== ERRORES DE COMPILACIÓN / PRUEBAS (resumen) ==============="
+            grep -E "^e: |^w: .*error|error:|FAILED|What went wrong|Execution failed|Caused by|AssertionError|expected:" -A3 gradle.log | grep -v "^\s*at " | head -150
+            echo "=============== FIN DEL RESUMEN ==============="
+          else
+            tail -5 gradle.log
+          fi
+          exit $CODIGO
 
       - name: Comprobar la firma y mostrar la huella SHA-256
         run: |
