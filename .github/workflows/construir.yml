@@ -102,7 +102,7 @@ jobs:
           cp "$APK" "salida/Mirador-${{ steps.version.outputs.version }}.apk"
           unzip -l "$APK" | grep -E 'lib/' | awk '{print $4}' | cut -d/ -f2 | sort -u | sed 's/^/ABI en el APK: /'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: Mirador-${{ steps.version.outputs.version }}
           path: salida/*.apk
