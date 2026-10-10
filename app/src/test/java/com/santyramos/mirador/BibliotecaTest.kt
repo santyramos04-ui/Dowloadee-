@@ -85,3 +85,9 @@ class BibliotecaTest {
         assertEquals("https://i.ytimg.com/vi/zzzzzzzzzzz/hqdefault.jpg", n[1].miniatura)
     }
 }
+
+class ComentariosTest {
+    @Test fun limpiaHtml() {
+        assertEquals("We're so honored & proud\nlinea 2", com.santyramos.mirador.extractor.Youtube.limpiarHtml("We&apos;re so honored &amp; proud<br>linea 2"))
+    }
+}

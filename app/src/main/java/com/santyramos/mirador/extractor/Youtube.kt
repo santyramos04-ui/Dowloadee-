@@ -149,8 +149,13 @@ object Youtube {
 
     class PaginaComentarios(val info: org.schabi.newpipe.extractor.comments.CommentsInfo, val comentarios: List<Comentario>, val siguiente: Page?)
 
+    /** Los comentarios llegan con entidades HTML (&apos;, &amp;…) y <br>; se dejan como texto normal. */
+    internal fun limpiarHtml(t: String): String = t
+        .replace(Regex("(?i)<br\\s*/?>"), "\n").replace(Regex("<[^>]+>"), "")
+        .replace("&apos;", "'").replace("&#39;", "'").replace("&quot;", "\"").replace("&lt;", "<").replace("&gt;", ">").replace("&nbsp;", " ").replace("&amp;", "&")
+
     private fun aComentario(c: org.schabi.newpipe.extractor.comments.CommentsInfoItem) = Comentario(
-        autor = c.uploaderName.orEmpty(), texto = c.commentText?.content.orEmpty(), avatar = c.uploaderAvatars.bestUrl(),
+        autor = c.uploaderName.orEmpty(), texto = limpiarHtml(c.commentText?.content.orEmpty()), avatar = c.uploaderAvatars.bestUrl(),
         megusta = c.likeCount, fecha = c.textualUploadDate, fijado = c.isPinned, respuestas = c.replyCount,
     )
 

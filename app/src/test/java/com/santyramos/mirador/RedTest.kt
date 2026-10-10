@@ -70,8 +70,9 @@ class RedTest {
 
     @Test fun feedRssDeUnCanalReal() = runBlocking {
         requiere()
-        // Canal de NASA
-        val id = "UCLA_DiR1FfKNvjuUpBHmylQ"
+        Youtube.iniciar()
+        val id = Youtube.canal("https://www.youtube.com/@NASA").info.id
+        println("PRUEBA_VER rss: canal NASA = $id")
         val xml = Http.client.newCall(Request.Builder().url(com.santyramos.mirador.data.lib.FeedRss.url(id)).header("User-Agent", "Mozilla/5.0").build()).execute().use { r ->
             println("PRUEBA_VER rss: HTTP ${r.code}")
             assertTrue("El feed respondió ${r.code}", r.isSuccessful)
