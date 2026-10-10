@@ -30,6 +30,8 @@ sealed interface Elemento {
         override val titulo: String, override val url: String, override val miniatura: String?,
         val autor: String?, val urlAutor: String?, val duracionSeg: Long, val vistas: Long,
         val fecha: String?, val esShort: Boolean, val esDirecto: Boolean,
+        /** Momento de publicación (aproximado cuando YouTube solo da «hace 3 días»); 0 si se desconoce. */
+        val fechaMs: Long = 0,
     ) : Elemento
 
     data class Canal(
@@ -41,6 +43,27 @@ sealed interface Elemento {
         override val titulo: String, override val url: String, override val miniatura: String?,
         val autor: String?, val cantidad: Long,
     ) : Elemento
+}
+
+/** Convierte «hace 3 días», «2 weeks ago»… en un instante aproximado para ordenar las novedades. */
+object FechaRelativa {
+    private val re = Regex("(\\d+)\\s*(segundo|minuto|hora|d[ií]a|semana|mes|a[ñn]o|second|minute|hour|day|week|month|year)", RegexOption.IGNORE_CASE)
+
+    fun aMs(texto: String?, ahora: Long): Long {
+        val m = re.find(texto.orEmpty()) ?: return 0
+        val n = m.groupValues[1].toLongOrNull() ?: return 0
+        val unidad = m.groupValues[2].lowercase()
+        val ms = when {
+            unidad.startsWith("seg") || unidad.startsWith("sec") -> 1_000L
+            unidad.startsWith("min") -> 60_000L
+            unidad.startsWith("hor") || unidad.startsWith("hou") -> 3_600_000L
+            unidad.startsWith("d") -> 86_400_000L
+            unidad.startsWith("sem") || unidad.startsWith("wee") -> 7 * 86_400_000L
+            unidad.startsWith("mes") || unidad.startsWith("mon") -> 30 * 86_400_000L
+            else -> 365 * 86_400_000L
+        }
+        return ahora - n * ms
+    }
 }
 
 data class Pagina<T>(val elementos: List<T>, val siguiente: Page?)
@@ -71,6 +94,8 @@ object Youtube {
             autor = item.uploaderName, urlAutor = item.uploaderUrl, duracionSeg = item.duration,
             vistas = item.viewCount, fecha = item.textualUploadDate, esShort = item.isShortFormContent,
             esDirecto = item.streamType.name.contains("LIVE"),
+            fechaMs = runCatching { item.uploadDate?.offsetDateTime()?.toInstant()?.toEpochMilli() }.getOrNull()
+                ?: FechaRelativa.aMs(item.textualUploadDate, System.currentTimeMillis()),
         )
         is ChannelInfoItem -> Elemento.Canal(item.name.orEmpty(), item.url, item.thumbnails.bestUrl(), item.subscriberCount, item.description)
         is PlaylistInfoItem -> Elemento.Lista(item.name.orEmpty(), item.url, item.thumbnails.bestUrl(), item.uploaderName, item.streamCount)

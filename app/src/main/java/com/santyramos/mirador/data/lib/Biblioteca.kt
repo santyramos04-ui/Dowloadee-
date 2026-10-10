@@ -71,22 +71,43 @@ object Biblioteca {
         }.getOrNull()
     }
 
+    /** El feed RSS de YouTube es lo más ligero, pero a veces responde 404; si falla se usa el extractor, que siempre funciona. */
+    @Volatile private var rssCaido = false
+
+    private suspend fun novedadesPorRss(s: Suscripcion): List<Novedad> {
+        val xml = withContext(Dispatchers.IO) {
+            Http.client.newCall(Request.Builder().url(FeedRss.url(s.canalId)).header("User-Agent", "Mozilla/5.0").build()).execute().use { r ->
+                if (!r.isSuccessful) error("HTTP ${r.code}")
+                r.body.string()
+            }
+        }
+        return FeedRss.parsear(xml, s.canalId)
+    }
+
     private suspend fun refrescarCanal(s: Suscripcion): Boolean {
         return try {
-            val xml = withContext(Dispatchers.IO) {
-                Http.client.newCall(Request.Builder().url(FeedRss.url(s.canalId)).header("User-Agent", "Mozilla/5.0").build()).execute().use { r ->
-                    if (!r.isSuccessful) error("HTTP ${r.code}")
-                    r.body.string()
-                }
+            var avatarListo = s.avatar != null
+            var nuevas: List<Novedad> = emptyList()
+            if (!rssCaido) {
+                try { nuevas = novedadesPorRss(s) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { rssCaido = true }
             }
-            val nuevas = FeedRss.parsear(xml, s.canalId)
+            if (nuevas.isEmpty()) {
+                val d = Youtube.canal(s.urlCanal)
+                val ahora = System.currentTimeMillis()
+                val nombre = d.info.name.orEmpty().ifBlank { s.nombre }
+                nuevas = d.videos.elementos.filterIsInstance<Elemento.Video>().take(15).mapIndexed { i, v ->
+                    // Sin fecha exacta se ordena por posición dentro del canal (el más nuevo primero).
+                    Novedad(v.url, s.canalId, nombre, v.titulo, v.miniatura, if (v.fechaMs > 0) v.fechaMs else ahora - (i + 1) * 3_600_000L, v.vistas)
+                }
+                dao.actualizarCanal(s.canalId, nombre, d.info.avatars.bestUrl())
+                avatarListo = true
+            }
             if (nuevas.isNotEmpty()) {
                 dao.guardarNovedades(nuevas)
-                // El nombre del canal viene en el feed; el avatar solo se pide una vez.
                 val nombre = nuevas.first().canalNombre.ifBlank { s.nombre }
-                if (nombre != s.nombre) dao.actualizarCanal(s.canalId, nombre, s.avatar)
+                if (nombre != s.nombre && avatarListo.not()) dao.actualizarCanal(s.canalId, nombre, s.avatar)
             }
-            if (s.avatar == null) completarAvatar(s)
+            if (!avatarListo) completarAvatar(s)
             true
         } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { false }
     }

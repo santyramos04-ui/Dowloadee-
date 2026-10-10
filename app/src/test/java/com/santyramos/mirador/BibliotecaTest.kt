@@ -91,3 +91,13 @@ class ComentariosTest {
         assertEquals("We're so honored & proud\nlinea 2", com.santyramos.mirador.extractor.Youtube.limpiarHtml("We&apos;re so honored &amp; proud<br>linea 2"))
     }
 }
+
+class FechaRelativaTest {
+    private val ahora = 1_800_000_000_000L
+    @Test fun entiendeTextoRelativo() {
+        assertEquals(ahora - 3 * 86_400_000L, com.santyramos.mirador.extractor.FechaRelativa.aMs("hace 3 días", ahora))
+        assertEquals(ahora - 2 * 7 * 86_400_000L, com.santyramos.mirador.extractor.FechaRelativa.aMs("Streamed 2 weeks ago", ahora))
+        assertEquals(ahora - 5 * 3_600_000L, com.santyramos.mirador.extractor.FechaRelativa.aMs("hace 5 horas", ahora))
+        assertEquals(0L, com.santyramos.mirador.extractor.FechaRelativa.aMs(null, ahora))
+    }
+}
