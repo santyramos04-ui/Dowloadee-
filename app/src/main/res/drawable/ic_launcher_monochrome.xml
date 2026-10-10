@@ -1,20 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- «Play que descarga»: un triángulo de play que apunta hacia abajo sobre una barra. Se lee como reproducir y como descargar. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <group
-        android:pivotX="54"
-        android:pivotY="59.25"
-        android:scaleX="0.88"
-        android:scaleY="0.88"
-        android:translateY="-5.25">
-        <path
-            android:pathData="M31,76 L31,54 A11.5,11.5 0 0 1 54,54 A11.5,11.5 0 0 1 77,54 L77,76"
-            android:strokeColor="#FFFFFFFF"
-            android:strokeWidth="9"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
+        android:scaleX="0.62"
+        android:scaleY="0.62"
+        android:translateX="23"
+        android:translateY="19.9">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M24,22 H76 Q82,22 79,27.5 L54,70 Q50,76 46,70 L21,27.5 Q18,22 24,22 Z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M28,80 H72 A4,4 0 0 1 72,88 H28 A4,4 0 0 1 28,80 Z" />
     </group>
 </vector>

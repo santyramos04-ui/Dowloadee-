@@ -297,7 +297,7 @@ private fun FilaDescarga(d: DownloadEntity, onQuitar: () -> Unit) {
                 }
             }
         }
-        androidx.compose.material3.HorizontalDivider(color = Color(0xFF1A1A1E), modifier = Modifier.padding(start = 20.dp))
+        androidx.compose.material3.HorizontalDivider(color = Paleta.Linea, modifier = Modifier.padding(start = 20.dp))
     }
 }
 

@@ -156,9 +156,9 @@ fun SeleccionListaContent(l: ListaInfo, onCerrar: () -> Unit, onEncolada: () -> 
                 ) {
                     Box(
                         Modifier.size(24.dp).clip(CircleShape)
-                            .then(if (marcado) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier.border(2.dp, Paleta.Texto3, CircleShape)),
+                            .then(if (marcado) Modifier.background(Paleta.Relleno) else Modifier.border(2.dp, Paleta.Texto3, CircleShape)),
                         contentAlignment = Alignment.Center,
-                    ) { if (marcado) Icon(Icons.Filled.Check, null, Modifier.size(16.dp), tint = Paleta.SobreAcento) }
+                    ) { if (marcado) Icon(Icons.Filled.Check, null, Modifier.size(16.dp), tint = Paleta.SobreRelleno) }
                     Box(Modifier.size(width = 84.dp, height = 48.dp).clip(RoundedCornerShape(10.dp)).background(Paleta.S3)) {
                         AsyncImage(model = e.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                     }

@@ -91,9 +91,9 @@ private fun FilaGuardar(icono: androidx.compose.ui.graphics.vector.ImageVector, 
             }
             Box(
                 Modifier.size(24.dp).clip(CircleShape)
-                    .then(if (marcada) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier.border(2.dp, Paleta.Texto3, CircleShape)),
+                    .then(if (marcada) Modifier.background(Paleta.Relleno) else Modifier.border(2.dp, Paleta.Texto3, CircleShape)),
                 contentAlignment = Alignment.Center,
-            ) { if (marcada) Icon(Icons.Filled.Check, null, Modifier.size(16.dp), tint = Paleta.SobreAcento) }
+            ) { if (marcada) Icon(Icons.Filled.Check, null, Modifier.size(16.dp), tint = Paleta.SobreRelleno) }
         }
     }
 }

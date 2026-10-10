@@ -63,7 +63,7 @@ private fun Seccion(titulo: String, contenido: @Composable () -> Unit) = com.san
 
 @Composable
 private fun colorInterruptor() = SwitchDefaults.colors(
-    checkedThumbColor = Paleta.SobreAcento, checkedTrackColor = MaterialTheme.colorScheme.primary, checkedBorderColor = MaterialTheme.colorScheme.primary,
+    checkedThumbColor = Paleta.SobreRelleno, checkedTrackColor = Paleta.Relleno, checkedBorderColor = Paleta.Relleno,
     uncheckedThumbColor = Paleta.Texto2, uncheckedTrackColor = Paleta.S3, uncheckedBorderColor = Paleta.Linea,
 )
 
