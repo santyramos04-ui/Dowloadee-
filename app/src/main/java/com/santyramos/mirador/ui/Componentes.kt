@@ -30,7 +30,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -84,7 +87,7 @@ fun BotonIcono(icono: ImageVector, descripcion: String, onClick: () -> Unit, mod
 @Composable
 fun Filtro(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
     Surface(
-        onClick = onClick, shape = RoundedCornerShape(12.dp), modifier = Modifier.height(40.dp),
+        selected = seleccionado, onClick = onClick, shape = RoundedCornerShape(12.dp), modifier = Modifier.height(40.dp),
         color = if (seleccionado) Paleta.AcentoSuave else Paleta.S2,
         border = BorderStroke(1.dp, if (seleccionado) Paleta.AcentoBorde else Paleta.Linea),
     ) {
@@ -166,7 +169,8 @@ fun OpcionTarjeta(
     onClick: () -> Unit,
 ) {
     Surface(
-        onClick = onClick, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth(),
+        selected = seleccionada, onClick = onClick, shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth().semantics { role = androidx.compose.ui.semantics.Role.RadioButton },
         color = if (seleccionada) Paleta.AcentoSuave else Paleta.S2,
         border = BorderStroke(if (seleccionada) 1.5.dp else 1.dp, if (seleccionada) MaterialTheme.colorScheme.primary else Paleta.Linea),
     ) {
@@ -209,9 +213,17 @@ val LocalGuardar = androidx.compose.runtime.staticCompositionLocalOf<(com.santyr
 fun BotonSuscribir(canalId: String?, crear: () -> com.santyramos.mirador.data.lib.Suscripcion, modifier: Modifier = Modifier) {
     if (canalId.isNullOrBlank()) return
     val suscrito by com.santyramos.mirador.data.lib.Biblioteca.dao.estaSuscrito(canalId).collectAsState(initial = 0)
+    var confirmar by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    if (confirmar) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { confirmar = false },
+        title = { Text("¿Dejar de seguir este canal?") },
+        text = { Text("Sus videos ya no aparecerán en Suscripciones. Puedes volver a seguirlo cuando quieras.") },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = { com.santyramos.mirador.data.lib.Biblioteca.anularSuscripcion(canalId); confirmar = false }) { Text("Dejar de seguir") } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmar = false }) { Text("Cancelar") } },
+    )
     if (suscrito > 0) {
         Surface(
-            onClick = { com.santyramos.mirador.data.lib.Biblioteca.anularSuscripcion(canalId) }, shape = RoundedCornerShape(12.dp),
+            onClick = { confirmar = true }, shape = RoundedCornerShape(12.dp),
             color = Paleta.S2, border = BorderStroke(1.dp, Paleta.Linea), modifier = modifier.height(36.dp),
         ) { Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text("Suscrito", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
     } else {
@@ -219,5 +231,29 @@ fun BotonSuscribir(canalId: String?, crear: () -> com.santyramos.mirador.data.li
             onClick = { com.santyramos.mirador.data.lib.Biblioteca.suscribir(crear()) }, shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.primary, modifier = modifier.height(36.dp),
         ) { Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text("Suscribirme", style = MaterialTheme.typography.labelMedium, color = Paleta.SobreAcento) } }
+    }
+}
+
+
+/** Fila con texto e interruptor: toda la fila (no solo el interruptor) cambia el valor, y TalkBack la lee como un interruptor. */
+@Composable
+fun FilaInterruptor(titulo: String, valor: Boolean, onCambio: (Boolean) -> Unit, detalle: String? = null) {
+    Row(
+        Modifier.fillMaxWidth()
+            .toggleable(value = valor, role = androidx.compose.ui.semantics.Role.Switch, onValueChange = onCambio)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(titulo, style = MaterialTheme.typography.bodyMedium)
+            if (detalle != null) Text(detalle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        androidx.compose.material3.Switch(
+            checked = valor, onCheckedChange = null,
+            colors = androidx.compose.material3.SwitchDefaults.colors(
+                checkedThumbColor = Paleta.SobreAcento, checkedTrackColor = MaterialTheme.colorScheme.primary, checkedBorderColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = Paleta.Texto2, uncheckedTrackColor = Paleta.S3, uncheckedBorderColor = Paleta.Linea,
+            ),
+        )
     }
 }

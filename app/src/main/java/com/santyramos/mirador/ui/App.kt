@@ -203,7 +203,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                 (actualizacion as? AppUpdater.Estado.Disponible)?.let { d ->
                     if (destino != Destino.Ajustes) Surface(
                         color = com.santyramos.mirador.ui.theme.Paleta.AcentoSuave,
-                        modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter).fillMaxWidth().padding(12.dp).clickable { pila.add(Destino.Ajustes) },
+                        modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter).fillMaxWidth().padding(12.dp).clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = "Ver la versión nueva") { pila.add(Destino.Ajustes) },
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, com.santyramos.mirador.ui.theme.Paleta.AcentoBorde),
                     ) {

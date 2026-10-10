@@ -59,6 +59,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -126,9 +128,23 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
     }
 
     val enCurso = descargas.count { it.coincide(FiltroDescargas.EN_CURSO) }
-    val visibles = descargas.filter { it.coincide(filtro) }
+    // Quitar de la lista no es inmediato: se esconde, sale «Deshacer» unos segundos y luego se borra.
+    val ocultas = remember { androidx.compose.runtime.mutableStateListOf<Long>() }
+    val aviso = remember { androidx.compose.material3.SnackbarHostState() }
+    fun quitar(ids: List<Long>, mensaje: String) {
+        if (ids.isEmpty()) return
+        ocultas.addAll(ids)
+        scope.launch {
+            aviso.currentSnackbarData?.dismiss()
+            val r = aviso.showSnackbar(mensaje, actionLabel = "Deshacer", duration = androidx.compose.material3.SnackbarDuration.Short)
+            if (r != androidx.compose.material3.SnackbarResult.ActionPerformed) ids.forEach { DownloadCenter.borrar(it) }
+            ocultas.removeAll(ids)
+        }
+    }
+    val visibles = descargas.filter { it.coincide(filtro) && it.id !in ocultas }
 
-    Column(modifier.fillMaxSize().statusBarsPadding()) {
+    Box(modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().statusBarsPadding()) {
         Encabezado(
             "Descargas",
             if (descargas.isEmpty()) "Pega un enlace para empezar"
@@ -139,9 +155,9 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
         Panel(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 androidx.compose.material3.OutlinedTextField(
-                    value = texto, onValueChange = { texto = it }, modifier = Modifier.fillMaxWidth(),
+                    value = texto, onValueChange = { texto = it }, modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Enlaces para descargar" },
                     minLines = 1, maxLines = 5, shape = RoundedCornerShape(14.dp),
-                    placeholder = { Text("Pega aquí uno o varios enlaces", color = Paleta.Texto3) },
+                    placeholder = { Text("Pega aquí uno o varios enlaces…", color = Paleta.Texto3) },
                     trailingIcon = { IconButton(onClick = { pegar() }) { Icon(Icons.Outlined.ContentPaste, "Pegar del portapapeles", tint = MaterialTheme.colorScheme.onSurfaceVariant) } },
                     supportingText = {
                         if (enlaces.size > 1) Text("${enlaces.size} enlaces detectados")
@@ -169,7 +185,10 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
             }
             if (descargas.any { it.status in setOf(DownloadStatus.DONE, DownloadStatus.ERROR, DownloadStatus.CANCELED) }) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { scope.launch { DownloadCenter.limpiarTerminadas() } }) { Text("Limpiar terminadas", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    TextButton(onClick = {
+                        val terminadas = descargas.filter { it.status in setOf(DownloadStatus.DONE, DownloadStatus.ERROR, DownloadStatus.CANCELED) }.map { it.id }
+                        quitar(terminadas, "Se quitaron ${terminadas.size} de la lista")
+                    }) { Text("Limpiar terminadas", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
         }
@@ -182,9 +201,11 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No hay nada en esta categoría.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         } else {
             LazyColumn(contentPadding = PaddingValues(top = 6.dp, bottom = 16.dp)) {
-                items(visibles, key = { it.id }) { d -> Box(Modifier.animateItem()) { FilaDescarga(d) } }
+                items(visibles, key = { it.id }) { d -> Box(Modifier.animateItem()) { FilaDescarga(d) { quitar(listOf(d.id), "Se quitó «${d.titulo.take(40)}»") } } }
             }
         }
+    }
+    androidx.compose.material3.SnackbarHost(aviso, Modifier.align(Alignment.BottomCenter).padding(12.dp))
     }
 
     urlsLote?.let { lote ->
@@ -213,7 +234,7 @@ private fun etiquetaPreset(d: DownloadEntity): String = when (Preset.from(d.pres
 }
 
 @Composable
-private fun FilaDescarga(d: DownloadEntity) {
+private fun FilaDescarga(d: DownloadEntity, onQuitar: () -> Unit) {
     val contexto = LocalContext.current
     val scope = rememberCoroutineScope()
     val estado = d.status
@@ -267,11 +288,11 @@ private fun FilaDescarga(d: DownloadEntity) {
                     }
                     DownloadStatus.ERROR, DownloadStatus.CANCELED -> {
                         BotonIcono(Icons.Outlined.Refresh, "Reintentar", { scope.launch { DownloadCenter.reintentar(d.id) } }, destacado = true)
-                        BotonIcono(Icons.Outlined.Delete, "Quitar de la lista", { scope.launch { DownloadCenter.borrar(d.id) } })
+                        BotonIcono(Icons.Outlined.Delete, "Quitar de la lista", onQuitar)
                     }
                     DownloadStatus.DONE -> {
                         if (d.archivoUri != null) BotonIcono(Icons.Outlined.OpenInNew, "Abrir", { abrir(contexto, d) }, destacado = true)
-                        BotonIcono(Icons.Outlined.Delete, "Quitar de la lista", { scope.launch { DownloadCenter.borrar(d.id) } })
+                        BotonIcono(Icons.Outlined.Delete, "Quitar de la lista", onQuitar)
                     }
                 }
             }

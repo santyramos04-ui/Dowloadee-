@@ -53,7 +53,7 @@ private fun Elemento.Video.datos(): String =
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
     val guardar = LocalGuardar.current
-    Column(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = { guardar(v) }).padding(horizontal = 20.dp, vertical = 8.dp)) {
+    Column(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClickLabel = "Guardar", onLongClick = { guardar(v) }).padding(horizontal = 20.dp, vertical = 8.dp)) {
         Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
             AsyncImage(model = v.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
             val etiqueta = when {
@@ -83,10 +83,10 @@ fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit
 fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
     val guardar = LocalGuardar.current
     Row(
-        Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = { guardar(v) }).padding(horizontal = 20.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
+        Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClickLabel = "Guardar", onLongClick = { guardar(v) }).padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.width(120.dp).height(68.dp).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
+        Box(Modifier.width(112.dp).height(63.dp).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
             AsyncImage(model = v.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
             val etiqueta = if (v.esDirecto) "EN VIVO" else if (v.duracionSeg > 0) Format.duracion(v.duracionSeg) else null
             if (etiqueta != null) Etiqueta(etiqueta, Modifier.align(Alignment.BottomEnd).padding(6.dp))
@@ -97,6 +97,7 @@ fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
             val d = v.datos()
             if (d.isNotEmpty()) Text(d, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
+        BotonIcono(Icons.Outlined.BookmarkBorder, "Guardar", { guardar(v) })
         BotonIcono(Icons.Outlined.FileDownload, "Descargar", onDescargar, destacado = true)
     }
 }
@@ -104,7 +105,7 @@ fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
 @Composable
 fun FilaCanal(c: Elemento.Canal, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp),
+        Modifier.fillMaxWidth().clickable(onClickLabel = "Abrir canal", onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
         AsyncImage(model = c.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(58.dp).clip(CircleShape).background(Paleta.S2))
@@ -119,7 +120,7 @@ fun FilaCanal(c: Elemento.Canal, onClick: () -> Unit) {
 @Composable
 fun FilaLista(l: Elemento.Lista, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().clickable(onClickLabel = "Abrir lista", onClick = onClick).padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(120.dp).height(68.dp).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {

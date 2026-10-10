@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -150,7 +151,7 @@ fun SeleccionListaContent(l: ListaInfo, onCerrar: () -> Unit, onEncolada: () -> 
             itemsIndexed(l.entradas) { i, e ->
                 val marcado = i in seleccion
                 Row(
-                    Modifier.fillMaxWidth().clickable { seleccion = if (marcado) seleccion - i else seleccion + i }.padding(vertical = 8.dp),
+                    Modifier.fillMaxWidth().toggleable(value = marcado, role = androidx.compose.ui.semantics.Role.Checkbox) { seleccion = if (marcado) seleccion - i else seleccion + i }.padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Box(
