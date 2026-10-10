@@ -189,6 +189,7 @@ Navegación inferior: **Inicio · Suscripciones · Descargas · Biblioteca**.
 * Al salir del reproductor el **audio sigue sonando** (barra pequeña abajo, notificación y pantalla de bloqueo). Si estás viendo un video y sales de la app, entra en **imagen en imagen**.
 * Cada video tiene el botón **Descargar**. En el reproductor también hay **Guardar**, **Compartir** y **Ver comentarios**.
 * **Reproducción automática**: al terminar un video sigue con el siguiente (el de la lista que estés viendo, o un relacionado). Se apaga con el interruptor del reproductor; el botón ⏭ pasa al siguiente a mano.
+* **Tema**: *Ajustes → Apariencia* (Automático, Claro u Oscuro). «Automático» sigue el modo de tu celular.
 * **SponsorBlock**: Mirador salta solo los tramos de patrocinio, autopromoción y «dale like y suscríbete» (la base de datos es de la comunidad). Se activa y se elige qué saltar en *Ajustes → Reproductor*.
 * **Guardar**: toca el marcador de un video (o mantén pulsado cualquier video) para ponerlo en **Ver más tarde** o en tus **listas**.
 * **Suscripciones** (sin cuenta de Google): en la página de un canal toca **Suscribirme**. Para traer las que ya tienes en YouTube: pestaña *Suscripciones → Importar mis suscripciones* y elige el ZIP de **Google Takeout** (la app te explica cómo obtenerlo). También sirve el respaldo de NewPipe.
@@ -264,6 +265,7 @@ Las pruebas automáticas corren en GitHub Actions en cada cambio (pestaña **Act
 * [ ] SponsorBlock: abrir un video con patrocinio conocido y ver que salta con el aviso «Se saltó: Patrocinio».
 * [ ] Ajustes → Sesiones: iniciar sesión en Instagram y descargar algo que requiera cuenta.
 * [ ] Ajustes → Respaldo: guardar un respaldo y restaurarlo.
+* [ ] Tema claro: recorrer todas las pantallas y avisar si algo no se lee bien (texto, íconos, bordes).
 
 ---
 
