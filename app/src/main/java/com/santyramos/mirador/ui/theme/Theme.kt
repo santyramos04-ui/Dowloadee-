@@ -9,46 +9,66 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.santyramos.mirador.R
 
-/** Verde de Mirador (#3DDC97). */
+/** Verde de Mirador (#3DDC97): el único color de acento de toda la app. */
 val Acento = Color(0xFF3DDC97)
 
-/** Colores extra que Material 3 no trae. */
+/**
+ * Sistema de diseño de Mirador: negro OLED + neutros grafito + un solo acento.
+ * Rejilla de 4 dp. Sin sombras: la profundidad se logra con tonos de superficie y líneas finas.
+ */
 object Paleta {
-    val Aviso = Color(0xFFFFC857)
-    val Error = Color(0xFFFF8A80)
-    val ExitoSuave = Color(0xFF1E3B2F)
-    val Fondo = Color(0xFF000000)
+    val Negro = Color(0xFF000000)
+    val S1 = Color(0xFF0D0D0F)        // paneles
+    val S2 = Color(0xFF151518)        // campos y botones secundarios
+    val S3 = Color(0xFF1D1D21)        // pistas, etiquetas
+    val Linea = Color(0xFF27272C)     // bordes de 1 dp
+    val Texto1 = Color(0xFFF5F5F7)
+    val Texto2 = Color(0xFFA3A3AD)    // contraste 7:1 sobre negro
+    val Texto3 = Color(0xFF6E6E78)
+    val AcentoSuave = Color(0xFF0F2B20)   // fondo de elementos seleccionados
+    val AcentoBorde = Color(0xFF1D5A40)
+    val SobreAcento = Color(0xFF04281A)
+    val Aviso = Color(0xFFF5C451)
+    val Error = Color(0xFFFF6B6B)
+    val ErrorSuave = Color(0xFF2A1313)
 }
 
 private val Oscuro = darkColorScheme(
     primary = Acento,
-    onPrimary = Color(0xFF00382A),
-    primaryContainer = Color(0xFF17463A),
-    onPrimaryContainer = Color(0xFFB8F5D8),
-    secondary = Color(0xFF9FD3BC),
-    onSecondary = Color(0xFF053828),
-    secondaryContainer = Color(0xFF22443A),
-    onSecondaryContainer = Color(0xFFCDEFE0),
+    onPrimary = Paleta.SobreAcento,
+    primaryContainer = Paleta.AcentoSuave,
+    onPrimaryContainer = Acento,
+    secondary = Paleta.Texto2,
+    onSecondary = Paleta.Negro,
+    secondaryContainer = Paleta.AcentoSuave,
+    onSecondaryContainer = Acento,
     tertiary = Paleta.Aviso,
-    background = Paleta.Fondo,
-    onBackground = Color(0xFFE3EBE6),
-    surface = Paleta.Fondo,
-    onSurface = Color(0xFFE3EBE6),
-    surfaceVariant = Color(0xFF18201B),
-    onSurfaceVariant = Color(0xFFA7B6AE),
-    surfaceContainerLowest = Color(0xFF000000),
-    surfaceContainerLow = Color(0xFF0C110E),
-    surfaceContainer = Color(0xFF111713),
-    surfaceContainerHigh = Color(0xFF18201B),
-    surfaceContainerHighest = Color(0xFF212B25),
+    background = Paleta.Negro,
+    onBackground = Paleta.Texto1,
+    surface = Paleta.Negro,
+    onSurface = Paleta.Texto1,
+    surfaceVariant = Paleta.S2,
+    onSurfaceVariant = Paleta.Texto2,
+    surfaceContainerLowest = Paleta.Negro,
+    surfaceContainerLow = Paleta.S1,
+    surfaceContainer = Paleta.S1,
+    surfaceContainerHigh = Paleta.S2,
+    surfaceContainerHighest = Paleta.S3,
     error = Paleta.Error,
-    outline = Color(0xFF5C6E64),
-    outlineVariant = Color(0xFF2B3932),
+    onError = Paleta.Negro,
+    errorContainer = Paleta.ErrorSuave,
+    onErrorContainer = Paleta.Error,
+    outline = Color(0xFF3A3A41),
+    outlineVariant = Paleta.Linea,
+    scrim = Color(0xCC000000),
 )
 
 private val Claro = lightColorScheme(
@@ -59,29 +79,49 @@ private val Claro = lightColorScheme(
 )
 
 private val Formas = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
+    extraSmall = RoundedCornerShape(6.dp),
     small = RoundedCornerShape(12.dp),
     medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(22.dp),
-    extraLarge = RoundedCornerShape(28.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(30.dp),
 )
 
-private val base = FontFamily.Default
+// Tipografías incluidas en la app (licencia OFL): Outfit para títulos y marca, Inter para el texto.
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private fun variable(res: Int, peso: Int) = Font(
+    resId = res,
+    weight = FontWeight(peso),
+    variationSettings = FontVariation.Settings(FontVariation.weight(peso)),
+)
+
+val Outfit = FontFamily(
+    variable(R.font.outfit_variable, 500),
+    variable(R.font.outfit_variable, 600),
+    variable(R.font.outfit_variable, 700),
+)
+val Inter = FontFamily(
+    variable(R.font.inter_variable, 400),
+    variable(R.font.inter_variable, 500),
+    variable(R.font.inter_variable, 600),
+    variable(R.font.inter_variable, 700),
+)
+
 private val Tipografia = Typography(
-    headlineMedium = TextStyle(fontFamily = base, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 34.sp, letterSpacing = (-0.3).sp),
-    headlineSmall = TextStyle(fontFamily = base, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 30.sp, letterSpacing = (-0.2).sp),
-    titleLarge = TextStyle(fontFamily = base, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 26.sp),
-    titleMedium = TextStyle(fontFamily = base, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp, letterSpacing = 0.1.sp),
-    titleSmall = TextStyle(fontFamily = base, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.1.sp),
-    bodyLarge = TextStyle(fontFamily = base, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 23.sp),
-    bodyMedium = TextStyle(fontFamily = base, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 20.sp),
-    bodySmall = TextStyle(fontFamily = base, fontWeight = FontWeight.Normal, fontSize = 12.5.sp, lineHeight = 17.sp),
-    labelLarge = TextStyle(fontFamily = base, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.1.sp),
-    labelMedium = TextStyle(fontFamily = base, fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.2.sp),
-    labelSmall = TextStyle(fontFamily = base, fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 14.sp, letterSpacing = 0.2.sp),
+    displaySmall = TextStyle(fontFamily = Outfit, fontWeight = FontWeight.SemiBold, fontSize = 34.sp, lineHeight = 37.sp, letterSpacing = (-0.5).sp),
+    headlineMedium = TextStyle(fontFamily = Outfit, fontWeight = FontWeight.SemiBold, fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = (-0.4).sp),
+    headlineSmall = TextStyle(fontFamily = Outfit, fontWeight = FontWeight.SemiBold, fontSize = 26.sp, lineHeight = 30.sp, letterSpacing = (-0.3).sp),
+    titleLarge = TextStyle(fontFamily = Outfit, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 27.sp, letterSpacing = (-0.2).sp),
+    titleMedium = TextStyle(fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
+    titleSmall = TextStyle(fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp),
+    bodyLarge = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
+    bodyMedium = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Normal, fontSize = 15.sp, lineHeight = 22.sp),
+    bodySmall = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Normal, fontSize = 13.sp, lineHeight = 18.sp),
+    labelLarge = TextStyle(fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp),
+    labelMedium = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp),
+    labelSmall = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, lineHeight = 15.sp, letterSpacing = 0.2.sp),
 )
 
-/** Tema oscuro por defecto, acento verde #3DDC97. */
+/** Tema oscuro (OLED) por defecto. */
 @Composable
 fun MiradorTheme(oscuro: Boolean = true, content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = if (oscuro) Oscuro else Claro, typography = Tipografia, shapes = Formas, content = content)

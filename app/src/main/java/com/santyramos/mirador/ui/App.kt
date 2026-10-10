@@ -98,11 +98,12 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                         enter = slideInVertically { it } + fadeIn(),
                         exit = slideOutVertically { it } + fadeOut(),
                     ) { MiniReproductor(onAbrir = { reproductorAbierto = true }) }
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 0.dp) {
+                    androidx.compose.material3.HorizontalDivider(color = com.santyramos.mirador.ui.theme.Paleta.Linea)
+                    NavigationBar(containerColor = androidx.compose.ui.graphics.Color.Black, tonalElevation = 0.dp) {
                         val items = listOf(
                             Triple("Inicio", Icons.Filled.Home to Icons.Outlined.Home, 0),
                             Triple("Suscripciones", Icons.Filled.Subscriptions to Icons.Outlined.Subscriptions, 1),
-                            Triple("Descargas", Icons.Filled.Download to Icons.Outlined.Download, 2),
+                            Triple("Descargas", Icons.Outlined.Download to Icons.Outlined.Download, 2),
                             Triple("Biblioteca", Icons.Filled.VideoLibrary to Icons.Outlined.VideoLibrary, 3),
                         )
                         items.forEach { (nombre, iconos, i) ->
@@ -112,6 +113,13 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                                 onClick = { pestana = i; pila.clear() },
                                 icon = { Icon(if (activo) iconos.first else iconos.second, nombre) },
                                 label = { Text(nombre, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
+                                colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                                    selectedIconColor = com.santyramos.mirador.ui.theme.Acento,
+                                    selectedTextColor = com.santyramos.mirador.ui.theme.Acento,
+                                    indicatorColor = com.santyramos.mirador.ui.theme.Paleta.AcentoSuave,
+                                    unselectedIconColor = com.santyramos.mirador.ui.theme.Paleta.Texto3,
+                                    unselectedTextColor = com.santyramos.mirador.ui.theme.Paleta.Texto3,
+                                ),
                             )
                         }
                     }
@@ -140,12 +148,13 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                 // Aviso de versión nueva
                 (actualizacion as? AppUpdater.Estado.Disponible)?.let { d ->
                     if (destino != Destino.Ajustes) Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter).fillMaxWidth().padding(8.dp).clickable { pila.add(Destino.Ajustes) },
-                        shape = MaterialTheme.shapes.medium,
+                        color = com.santyramos.mirador.ui.theme.Paleta.AcentoSuave,
+                        modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter).fillMaxWidth().padding(12.dp).clickable { pila.add(Destino.Ajustes) },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, com.santyramos.mirador.ui.theme.Paleta.AcentoBorde),
                     ) {
                         Row(Modifier.padding(12.dp)) {
-                            Text("Hay una versión nueva de Mirador (${d.nueva.version}). Toca para instalarla.", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text("Hay una versión nueva de Mirador (${d.nueva.version}). Toca para instalarla.", color = com.santyramos.mirador.ui.theme.Acento, style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
@@ -168,13 +177,13 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     }
 
     urlDescarga?.let { u ->
-        ModalBottomSheet(onDismissRequest = { urlDescarga = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        com.santyramos.mirador.ui.HojaMirador(onCerrar = { urlDescarga = null }) {
             DownloadSheetContent(url = u, onCerrar = { urlDescarga = null }, onEncolada = { urlDescarga = null })
         }
     }
 
     urlsLote?.let { lote ->
-        ModalBottomSheet(onDismissRequest = { urlsLote = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        com.santyramos.mirador.ui.HojaMirador(onCerrar = { urlsLote = null }) {
             LoteSheetContent(urls = lote, onCerrar = { urlsLote = null }, onEncolada = { urlsLote = null })
         }
     }

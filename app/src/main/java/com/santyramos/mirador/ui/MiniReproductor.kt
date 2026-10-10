@@ -1,6 +1,7 @@
 package com.santyramos.mirador.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,15 +41,16 @@ fun MiniReproductor(onAbrir: () -> Unit, modifier: Modifier = Modifier) {
     val v = video ?: return
     Column(
         modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest).clickable(onClick = onAbrir),
+            .clip(RoundedCornerShape(18.dp)).background(com.santyramos.mirador.ui.theme.Paleta.S2)
+            .border(1.dp, com.santyramos.mirador.ui.theme.Paleta.Linea, RoundedCornerShape(18.dp)).clickable(onClick = onAbrir),
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = v.info?.thumbnails?.bestUrl(), contentDescription = null, contentScale = ContentScale.Crop,
-                modifier = Modifier.width(64.dp).height(36.dp).clip(RoundedCornerShape(6.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier.width(64.dp).height(36.dp).clip(RoundedCornerShape(8.dp)).background(com.santyramos.mirador.ui.theme.Paleta.S3),
             )
             Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
-                Text(v.info?.name ?: if (v.error != null) "No se pudo cargar" else "Cargando…", style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(v.info?.name ?: if (v.error != null) "No se pudo cargar" else "Cargando…", style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(v.info?.uploaderName.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             IconButton(onClick = { VideoController.alternar() }, modifier = Modifier.size(48.dp)) {
@@ -57,6 +59,6 @@ fun MiniReproductor(onAbrir: () -> Unit, modifier: Modifier = Modifier) {
             IconButton(onClick = { VideoController.cerrar() }, modifier = Modifier.size(48.dp)) { Icon(Icons.Filled.Close, "Cerrar") }
         }
         val dur = estado.duracionMs
-        if (dur > 0) LinearProgressIndicator(progress = { (estado.posicionMs.toFloat() / dur).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(2.dp))
+        if (dur > 0) LinearProgressIndicator(progress = { (estado.posicionMs.toFloat() / dur).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(2.dp), color = com.santyramos.mirador.ui.theme.Acento, trackColor = com.santyramos.mirador.ui.theme.Paleta.S3)
     }
 }

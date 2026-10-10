@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,88 +29,76 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.santyramos.mirador.extractor.Elemento
+import com.santyramos.mirador.ui.BotonIcono
+import com.santyramos.mirador.ui.theme.Paleta
 import com.santyramos.mirador.util.Format
 
 @Composable
-fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(Modifier.width(150.dp).height(84.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
+private fun Etiqueta(texto: String, modifier: Modifier = Modifier, fondo: Color = Color(0xCC000000)) {
+    Text(
+        texto, color = Color.White, style = MaterialTheme.typography.labelMedium,
+        modifier = modifier.clip(RoundedCornerShape(8.dp)).background(fondo).padding(horizontal = 8.dp, vertical = 3.dp),
+    )
+}
+
+private fun Elemento.Video.datos(): String =
+    listOfNotNull(autor, if (vistas >= 0) "${Format.contar(vistas)} vistas" else null, fecha).joinToString(" · ")
+
+/** Tarjeta grande de video para el feed: miniatura 16:9, título, datos y botón de descarga. */
+@Composable
+fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 8.dp)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(18.dp)).background(Paleta.S2)) {
             AsyncImage(model = v.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
             val etiqueta = when {
                 v.esDirecto -> "EN VIVO"
                 v.duracionSeg > 0 -> Format.duracion(v.duracionSeg)
                 else -> null
             }
-            if (etiqueta != null) Text(
-                etiqueta, color = Color.White, style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xCC000000)).padding(horizontal = 4.dp, vertical = 1.dp),
-            )
+            if (etiqueta != null) Etiqueta(etiqueta, Modifier.align(Alignment.BottomEnd).padding(10.dp), if (v.esDirecto) Color(0xE6D32F2F) else Color(0xCC000000))
+            if (v.esShort) Etiqueta("Short", Modifier.align(Alignment.TopStart).padding(10.dp))
         }
-        Column(Modifier.weight(1f)) {
-            Text(v.titulo, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(2.dp))
-            Text(
-                listOfNotNull(v.autor, if (v.vistas >= 0) "${Format.contar(v.vistas)} vistas" else null, v.fecha).joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
-            )
-        }
-        IconButton(onClick = onDescargar, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Filled.Download, "Descargar", tint = MaterialTheme.colorScheme.primary)
+        Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                Text(v.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(v.datos(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+            }
+            BotonIcono(Icons.Outlined.FileDownload, "Descargar", onDescargar, Modifier.padding(start = 12.dp), destacado = true)
         }
     }
 }
 
-/** Tarjeta grande de video (como el inicio de las apps de video): miniatura 16:9, título y datos. */
+/** Fila compacta (videos de un canal, de una lista o relacionados). */
 @Composable
-fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 8.dp)) {
-        Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.width(120.dp).height(68.dp).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
             AsyncImage(model = v.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-            val etiqueta = when {
-                v.esDirecto -> "EN VIVO"
-                v.duracionSeg > 0 -> Format.duracion(v.duracionSeg)
-                else -> null
-            }
-            if (etiqueta != null) Text(
-                etiqueta, color = Color.White, style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).clip(RoundedCornerShape(6.dp))
-                    .background(if (v.esDirecto) Color(0xE6D32F2F) else Color(0xCC000000)).padding(horizontal = 6.dp, vertical = 2.dp),
-            )
-            if (v.esShort) Text(
-                "Short", color = Color.White, style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xCC000000)).padding(horizontal = 6.dp, vertical = 2.dp),
-            )
+            val etiqueta = if (v.esDirecto) "EN VIVO" else if (v.duracionSeg > 0) Format.duracion(v.duracionSeg) else null
+            if (etiqueta != null) Etiqueta(etiqueta, Modifier.align(Alignment.BottomEnd).padding(6.dp))
         }
-        Row(Modifier.padding(top = 10.dp, start = 4.dp), verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f)) {
-                Text(v.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    listOfNotNull(v.autor, if (v.vistas >= 0) "${Format.contar(v.vistas)} vistas" else null, v.fecha).joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                )
-            }
-            androidx.compose.material3.FilledTonalIconButton(onClick = onDescargar, modifier = Modifier.padding(start = 8.dp).size(48.dp)) {
-                Icon(Icons.Filled.Download, "Descargar", Modifier.size(20.dp))
-            }
+        Column(Modifier.weight(1f)) {
+            Text(v.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(v.datos(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
         }
+        BotonIcono(Icons.Outlined.FileDownload, "Descargar", onDescargar, destacado = true)
     }
 }
 
 @Composable
 fun FilaCanal(c: Elemento.Canal, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
-        AsyncImage(model = c.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+        AsyncImage(model = c.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(58.dp).clip(CircleShape).background(Paleta.S2))
         Column {
             Text(c.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (c.suscriptores >= 0) Text("${Format.contar(c.suscriptores)} suscriptores", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (!c.descripcion.isNullOrBlank()) Text(c.descripcion, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (c.suscriptores >= 0) Text("${Format.contar(c.suscriptores)} suscriptores", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+            if (!c.descripcion.isNullOrBlank()) Text(c.descripcion, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Paleta.Texto3)
         }
     }
 }
@@ -120,18 +106,16 @@ fun FilaCanal(c: Elemento.Canal, onClick: () -> Unit) {
 @Composable
 fun FilaLista(l: Elemento.Lista, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.width(150.dp).height(84.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
+        Box(Modifier.width(120.dp).height(68.dp).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
             AsyncImage(model = l.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-            Text(
-                "${l.cantidad} videos", color = Color.White, style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xCC000000)).padding(horizontal = 4.dp, vertical = 1.dp),
-            )
+            Etiqueta("${l.cantidad} videos", Modifier.align(Alignment.BottomEnd).padding(6.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(l.titulo, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(l.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(3.dp))
             Text(l.autor.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

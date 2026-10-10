@@ -50,8 +50,7 @@ class ShareReceiverActivity : ComponentActivity() {
         LaunchedEffect(Unit) {
             if (Build.VERSION.SDK_INT >= 33) permiso.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        val estado = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(onDismissRequest = { finish() }, sheetState = estado) {
+        com.santyramos.mirador.ui.HojaMirador(onCerrar = { finish() }) {
             Column(Modifier.padding(top = 0.dp)) {
                 Text("Descargar con Mirador", modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp), style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
                 if (enlaces.size > 1) {
