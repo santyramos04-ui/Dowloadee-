@@ -189,6 +189,8 @@ Navegación inferior: **Inicio · Suscripciones · Descargas · Biblioteca**.
 * Al salir del reproductor el **audio sigue sonando** (barra pequeña abajo, notificación y pantalla de bloqueo). Si estás viendo un video y sales de la app, entra en **imagen en imagen**.
 * Cada video tiene el botón **Descargar**. En el reproductor también hay **Guardar**, **Compartir** y **Ver comentarios**.
 * **Reproducción automática**: al terminar un video sigue con el siguiente (el de la lista que estés viendo, o un relacionado). Se apaga con el interruptor del reproductor; el botón ⏭ pasa al siguiente a mano.
+* **Tema**: *Ajustes → Apariencia* (Automático, Claro u Oscuro). «Automático» sigue el modo de tu celular.
+* **SponsorBlock**: Mirador salta solo los tramos de patrocinio, autopromoción y «dale like y suscríbete» (la base de datos es de la comunidad). Se activa y se elige qué saltar en *Ajustes → Reproductor*.
 * **Guardar**: toca el marcador de un video (o mantén pulsado cualquier video) para ponerlo en **Ver más tarde** o en tus **listas**.
 * **Suscripciones** (sin cuenta de Google): en la página de un canal toca **Suscribirme**. Para traer las que ya tienes en YouTube: pestaña *Suscripciones → Importar mis suscripciones* y elige el ZIP de **Google Takeout** (la app te explica cómo obtenerlo). También sirve el respaldo de NewPipe.
 * **Historial**: la app recuerda por dónde ibas en cada video y lo retoma al abrirlo. Está en *Biblioteca → Historial*.
@@ -232,7 +234,8 @@ Los sitios cambian a menudo. Prueba **en este orden**:
 3. **Quieres forzar la actualización ya** → en GitHub: **Actions → Actualización semanal → Run workflow**. En unos 15 minutos sale la versión nueva (y la app te avisa).
 4. **La actualización semanal falló** → verás un aviso (Issue) en GitHub. Significa que la librería nueva rompió algo; no se publicó nada y tu versión instalada sigue igual. Avísame y lo corrijo.
 5. **YouTube dice «comprueba que no eres un robot»**: espera unos minutos, cambia de Wi‑Fi a datos (o al revés) y reintenta.
-6. **Contenido privado o +18** (por ejemplo, Instagram privado o X con contenido sensible): requiere iniciar sesión en el sitio. Esa función opcional llega en la Fase 3.
+6. **Contenido privado o +18** (por ejemplo, Instagram privado o X con contenido sensible): *Ajustes → Sesiones en los sitios* → inicia sesión en el sitio dentro de Mirador y activa «Usar mi sesión al descargar». (YouTube/Google no permite iniciar sesión dentro de otras apps.)
+7. **Cambiar de celular o reinstalar**: *Ajustes → Respaldo → Guardar respaldo* crea un archivo con tus suscripciones, historial, listas y ajustes. En el celular nuevo, *Restaurar desde un archivo*.
 
 ---
 
@@ -259,6 +262,10 @@ Las pruebas automáticas corren en GitHub Actions en cada cambio (pestaña **Act
 * [ ] Descargar una lista de YouTube eligiendo solo algunos videos.
 * [ ] Inicio: tocar cada acceso directo y comprobar que abre el sitio.
 * [ ] Navegador interno: abrir un video de X o TikTok y tocar Descargar.
+* [ ] SponsorBlock: abrir un video con patrocinio conocido y ver que salta con el aviso «Se saltó: Patrocinio».
+* [ ] Ajustes → Sesiones: iniciar sesión en Instagram y descargar algo que requiera cuenta.
+* [ ] Ajustes → Respaldo: guardar un respaldo y restaurarlo.
+* [ ] Tema claro: recorrer todas las pantallas y avisar si algo no se lee bien (texto, íconos, bordes).
 
 ---
 

@@ -121,3 +121,47 @@ class RecomendadorTest {
         assertEquals("hace 3 días", com.santyramos.mirador.extractor.fechaLegible("hace 3 días"))
     }
 }
+
+class Fase3Test {
+    @Test fun sponsorBlockParsea() {
+        val json = """[{"videoID":"otro","segments":[{"segment":[1,2],"category":"sponsor","actionType":"skip"}]},
+            {"videoID":"abcdefghijk","segments":[
+              {"segment":[10.5,40],"category":"sponsor","actionType":"skip"},
+              {"segment":[100,100],"category":"intro","actionType":"skip"},
+              {"segment":[5,8],"category":"selfpromo","actionType":"mute"},
+              {"segment":[0,3.2],"category":"intro","actionType":"skip"}]}]"""
+        val s = com.santyramos.mirador.player.SponsorBlock.parsear(json, "abcdefghijk")
+        assertEquals(2, s.size)
+        assertEquals(0L, s[0].inicioMs); assertEquals(3200L, s[0].finMs)
+        assertEquals(10500L, s[1].inicioMs); assertEquals("sponsor", s[1].categoria)
+    }
+
+    @Test fun sponsorBlockIdYHash() {
+        assertEquals("abcdefghijk", com.santyramos.mirador.player.SponsorBlock.idDeUrl("https://www.youtube.com/watch?v=abcdefghijk&t=3"))
+        assertEquals("abcdefghijk", com.santyramos.mirador.player.SponsorBlock.idDeUrl("https://youtu.be/abcdefghijk"))
+        // sha256("dQw4w9WgXcQ") empieza por 1b1d... se comprueba solo el largo y que sea hexadecimal
+        val h = com.santyramos.mirador.player.SponsorBlock.prefijoHash("dQw4w9WgXcQ")
+        assertTrue(h.length == 4 && h.all { it in "0123456789abcdef" })
+    }
+
+    @Test fun cookiesNetscape() {
+        val l = com.santyramos.mirador.download.Cookies.lineasNetscape("instagram.com", "sessionid=abc%3A1; csrftoken=xyz; vacio; =sinnombre", 1900000000)
+        assertEquals(2, l.size)
+        assertEquals(".instagram.com\tTRUE\t/\tTRUE\t1900000000\tsessionid\tabc%3A1", l[0])
+    }
+
+    @Test fun respaldoIdaYVuelta() {
+        val r = com.santyramos.mirador.data.lib.RespaldoDto(
+            creadoEn = 5,
+            suscripciones = listOf(com.santyramos.mirador.data.lib.SuscDto("UCX6OQ3DkcsbYNE6H8uQQuVA", "Canal ñandú", "https://www.youtube.com/channel/UCX6OQ3DkcsbYNE6H8uQQuVA")),
+            historial = listOf(com.santyramos.mirador.data.lib.VideoDto("https://youtu.be/a", "Título \"con comillas\"", posicionMs = 12345)),
+            listas = listOf(com.santyramos.mirador.data.lib.ListaDto("Mi lista", 1, listOf(com.santyramos.mirador.data.lib.VideoDto("https://youtu.be/b", "B")))),
+            ajustes = mapOf("calidad" to "P720"),
+        )
+        val t = com.santyramos.mirador.data.lib.Respaldo.aTexto(r)
+        assertEquals(r, com.santyramos.mirador.data.lib.Respaldo.deTexto(t))
+        // Un respaldo de una versión futura con campos nuevos también se lee
+        val futuro = t.replaceFirst("{", "{\"campoNuevo\": 1,")
+        assertEquals(r, com.santyramos.mirador.data.lib.Respaldo.deTexto(futuro))
+    }
+}

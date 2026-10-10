@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -23,6 +24,12 @@ enum class PlayerQuality(val etiqueta: String, val alturaMax: Int) {
     }
 }
 
+/** Apariencia: sigue al celular o se fuerza. */
+enum class Tema(val etiqueta: String) {
+    AUTO("Automático"), CLARO("Claro"), OSCURO("Oscuro");
+    companion object { fun from(name: String?) = entries.firstOrNull { it.name == name } ?: AUTO }
+}
+
 /** Canal de actualización de yt-dlp. */
 enum class YtdlpChannel(val etiqueta: String) {
     NIGHTLY("Nightly (se arregla antes cuando un sitio cambia)"),
@@ -33,6 +40,9 @@ enum class YtdlpChannel(val etiqueta: String) {
     }
 }
 
+/** Categorías de SponsorBlock activas la primera vez: lo que casi nadie quiere ver. */
+val SB_CATEGORIAS_INICIALES = setOf("sponsor", "selfpromo", "interaction")
+
 class Settings(private val context: Context) {
     private val ds get() = context.dataStore
 
@@ -41,6 +51,7 @@ class Settings(private val context: Context) {
         val calidad = stringPreferencesKey("calidad_reproductor")
         val velocidad = stringPreferencesKey("velocidad_reproduccion")
         val sponsorBlock = booleanPreferencesKey("sponsorblock")
+        val sbCategorias = stringSetPreferencesKey("sponsorblock_categorias")
         val ytdlpAuto = booleanPreferencesKey("ytdlp_auto")
         val ytdlpCanal = stringPreferencesKey("ytdlp_canal")
         val ytdlpUltimoIntento = longPreferencesKey("ytdlp_ultimo_intento")
@@ -49,26 +60,31 @@ class Settings(private val context: Context) {
         val portapapelesVisto = stringPreferencesKey("portapapeles_visto")
         val usarCookies = booleanPreferencesKey("usar_cookies")
         val autoSiguiente = booleanPreferencesKey("reproduccion_automatica")
+        val tema = stringPreferencesKey("tema")
     }
 
     val simultaneas: Flow<Int> = ds.data.map { it[K.simultaneas] ?: 2 }
     val calidad: Flow<PlayerQuality> = ds.data.map { PlayerQuality.from(it[K.calidad]) }
     val velocidad: Flow<Float> = ds.data.map { it[K.velocidad]?.toFloatOrNull() ?: 1f }
-    val sponsorBlock: Flow<Boolean> = ds.data.map { it[K.sponsorBlock] ?: false }
+    val sponsorBlock: Flow<Boolean> = ds.data.map { it[K.sponsorBlock] ?: true }
+    val sbCategorias: Flow<Set<String>> = ds.data.map { it[K.sbCategorias] ?: SB_CATEGORIAS_INICIALES }
     val ytdlpAuto: Flow<Boolean> = ds.data.map { it[K.ytdlpAuto] ?: true }
     val ytdlpCanal: Flow<YtdlpChannel> = ds.data.map { YtdlpChannel.from(it[K.ytdlpCanal]) }
     val ytdlpVersion: Flow<String?> = ds.data.map { it[K.ytdlpVersion] }
     val autoSiguiente: Flow<Boolean> = ds.data.map { it[K.autoSiguiente] ?: true }
+    val tema: Flow<Tema> = ds.data.map { Tema.from(it[K.tema]) }
     val usarCookies: Flow<Boolean> = ds.data.map { it[K.usarCookies] ?: false }
 
     suspend fun setSimultaneas(n: Int) = ds.edit { it[K.simultaneas] = n.coerceIn(1, 5) }
     suspend fun setCalidad(q: PlayerQuality) = ds.edit { it[K.calidad] = q.name }
     suspend fun setVelocidad(v: Float) = ds.edit { it[K.velocidad] = v.toString() }
     suspend fun setSponsorBlock(v: Boolean) = ds.edit { it[K.sponsorBlock] = v }
+    suspend fun setSbCategorias(v: Set<String>) = ds.edit { it[K.sbCategorias] = v }
     suspend fun setYtdlpAuto(v: Boolean) = ds.edit { it[K.ytdlpAuto] = v }
     suspend fun setYtdlpCanal(c: YtdlpChannel) = ds.edit { it[K.ytdlpCanal] = c.name }
     suspend fun setYtdlpVersion(v: String?) = ds.edit { if (v == null) it.remove(K.ytdlpVersion) else it[K.ytdlpVersion] = v }
     suspend fun setAutoSiguiente(v: Boolean) = ds.edit { it[K.autoSiguiente] = v }
+    suspend fun setTema(t: Tema) = ds.edit { it[K.tema] = t.name }
     suspend fun setUsarCookies(v: Boolean) = ds.edit { it[K.usarCookies] = v }
 
     suspend fun ytdlpUltimoIntento(): Long = ds.data.first()[K.ytdlpUltimoIntento] ?: 0L
@@ -77,6 +93,34 @@ class Settings(private val context: Context) {
     suspend fun marcarRevisionApp(ahora: Long) = ds.edit { it[K.appUltimaRevision] = ahora }
     suspend fun portapapelesVisto(): String? = ds.data.first()[K.portapapelesVisto]
     suspend fun marcarPortapapelesVisto(url: String) = ds.edit { it[K.portapapelesVisto] = url }
+
+    /** Ajustes que se guardan en el respaldo (todo como texto). */
+    suspend fun exportar(): Map<String, String> {
+        val p = ds.data.first()
+        return buildMap {
+            p[K.simultaneas]?.let { put("simultaneas", it.toString()) }
+            p[K.calidad]?.let { put("calidad", it) }
+            p[K.velocidad]?.let { put("velocidad", it) }
+            p[K.sponsorBlock]?.let { put("sponsorblock", it.toString()) }
+            p[K.sbCategorias]?.let { put("sbCategorias", it.joinToString(",")) }
+            p[K.autoSiguiente]?.let { put("autoSiguiente", it.toString()) }
+            p[K.ytdlpAuto]?.let { put("ytdlpAuto", it.toString()) }
+            p[K.ytdlpCanal]?.let { put("ytdlpCanal", it) }
+            p[K.tema]?.let { put("tema", it) }
+        }
+    }
+
+    suspend fun importar(m: Map<String, String>) = ds.edit { p ->
+        m["simultaneas"]?.toIntOrNull()?.let { p[K.simultaneas] = it.coerceIn(1, 5) }
+        m["calidad"]?.let { p[K.calidad] = PlayerQuality.from(it).name }
+        m["velocidad"]?.takeIf { it.toFloatOrNull() != null }?.let { p[K.velocidad] = it }
+        m["sponsorblock"]?.let { p[K.sponsorBlock] = it == "true" }
+        m["sbCategorias"]?.let { c -> p[K.sbCategorias] = c.split(",").filter { it.isNotBlank() }.toSet() }
+        m["autoSiguiente"]?.let { p[K.autoSiguiente] = it == "true" }
+        m["ytdlpAuto"]?.let { p[K.ytdlpAuto] = it == "true" }
+        m["ytdlpCanal"]?.let { p[K.ytdlpCanal] = YtdlpChannel.from(it).name }
+        m["tema"]?.let { p[K.tema] = Tema.from(it).name }
+    }
 
     @Suppress("unused")
     suspend fun todo(): Preferences = ds.data.first()

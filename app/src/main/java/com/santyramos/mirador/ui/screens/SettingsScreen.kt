@@ -32,6 +32,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.santyramos.mirador.data.lib.Respaldo
+import com.santyramos.mirador.download.Cookies
+import com.santyramos.mirador.player.SponsorBlock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.santyramos.mirador.BuildConfig
 import com.santyramos.mirador.data.PlayerQuality
 import com.santyramos.mirador.data.Settings
@@ -50,7 +61,13 @@ import kotlinx.coroutines.launch
 private fun Seccion(titulo: String, contenido: @Composable () -> Unit) = com.santyramos.mirador.ui.TarjetaSeccion(titulo) { contenido() }
 
 @Composable
-fun SettingsScreen(onAtras: () -> Unit) {
+private fun colorInterruptor() = SwitchDefaults.colors(
+    checkedThumbColor = Paleta.SobreAcento, checkedTrackColor = MaterialTheme.colorScheme.primary, checkedBorderColor = MaterialTheme.colorScheme.primary,
+    uncheckedThumbColor = Paleta.Texto2, uncheckedTrackColor = Paleta.S3, uncheckedBorderColor = Paleta.Linea,
+)
+
+@Composable
+fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {}) {
     BackHandler(onBack = onAtras)
     val contexto = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -62,6 +79,37 @@ fun SettingsScreen(onAtras: () -> Unit) {
     val estadoYt by YtdlpUpdater.estado.collectAsState()
     val versionYt by YtdlpUpdater.version.collectAsState()
     val estadoApp by AppUpdater.estado.collectAsState()
+    val tema by ajustes.tema.collectAsState(initial = com.santyramos.mirador.data.Tema.AUTO)
+    val sb by ajustes.sponsorBlock.collectAsState(initial = true)
+    val sbCats by ajustes.sbCategorias.collectAsState(initial = com.santyramos.mirador.data.SB_CATEGORIAS_INICIALES)
+    var sesionActiva by remember { mutableStateOf(Cookies.activadas(contexto)) }
+    var conSesion by remember { mutableStateOf(emptyList<String>()) }
+    LaunchedEffect(sesionActiva) { conSesion = Cookies.sitiosConSesion().map { it.nombre } }
+    val crearRespaldo = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val ok = runCatching {
+                val texto = Respaldo.aTexto(Respaldo.crear(contexto))
+                withContext(Dispatchers.IO) { contexto.contentResolver.openOutputStream(uri)!!.use { it.write(texto.toByteArray()) } }
+            }.isSuccess
+            Toast.makeText(contexto, if (ok) "Respaldo guardado." else "No pude guardar el respaldo.", Toast.LENGTH_LONG).show()
+        }
+    }
+    val abrirRespaldo = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val r = runCatching {
+                val texto = withContext(Dispatchers.IO) { contexto.contentResolver.openInputStream(uri)!!.use { it.readBytes().toString(Charsets.UTF_8) } }
+                Respaldo.restaurar(contexto, Respaldo.deTexto(texto))
+            }
+            Toast.makeText(
+                contexto,
+                r.getOrNull()?.let { "Restaurado: ${it.suscripciones} canales, ${it.historial} del historial, ${it.guardados} guardados y ${it.listas} listas." }
+                    ?: "Ese archivo no es un respaldo de Mirador.",
+                Toast.LENGTH_LONG,
+            ).show()
+        }
+    }
     LaunchedEffect(Unit) { YtdlpUpdater.refrescarVersion(contexto) }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -70,6 +118,13 @@ fun SettingsScreen(onAtras: () -> Unit) {
             Text("Ajustes", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(start = 8.dp))
         }
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
+            Seccion("Apariencia") {
+                Text("Tema", style = MaterialTheme.typography.bodyMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    com.santyramos.mirador.data.Tema.entries.forEach { t -> Filtro(t.etiqueta, tema == t) { scope.launch { ajustes.setTema(t) } } }
+                }
+                Text("«Automático» sigue el modo claro u oscuro de tu celular.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             Seccion("Descargas") {
                 Text("Descargas simultáneas: $simultaneas", style = MaterialTheme.typography.bodyMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -82,6 +137,24 @@ fun SettingsScreen(onAtras: () -> Unit) {
                     PlayerQuality.entries.forEach { q -> Filtro(q.etiqueta, calidad == q) { scope.launch { ajustes.setCalidad(q) } } }
                 }
                 Text("«Auto» usa hasta 1080p con Wi‑Fi y 720p con datos móviles.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Saltar patrocinios (SponsorBlock)", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Usa la base de datos de la comunidad (sponsor.ajay.app). Se consulta con un código parcial del video, nunca con tus datos.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = sb, onCheckedChange = { v -> scope.launch { ajustes.setSponsorBlock(v) } }, colors = colorInterruptor())
+                }
+                if (sb) {
+                    Text("Qué saltar", style = MaterialTheme.typography.bodyMedium)
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SponsorBlock.CATEGORIAS.forEach { (clave, nombre) ->
+                            Filtro(nombre, clave in sbCats) { scope.launch { ajustes.setSbCategorias(if (clave in sbCats) sbCats - clave else sbCats + clave) } }
+                        }
+                    }
+                }
             }
             Seccion("Motor de descargas (yt-dlp)") {
                 Text("Versión instalada: ${versionYt ?: "…"}", style = MaterialTheme.typography.bodyMedium)
@@ -137,6 +210,34 @@ fun SettingsScreen(onAtras: () -> Unit) {
                     is AppUpdater.Estado.ListaParaInstalar -> BotonPrimario("Instalar ${e.nueva.version}", { AppUpdater.instalar(contexto, e.archivo) }, Modifier.fillMaxWidth())
                 }
                 BotonSecundario("Buscar actualización", { scope.launch { AppUpdater.buscar(contexto) } }, Modifier.fillMaxWidth())
+            }
+            Seccion("Sesiones en los sitios (opcional)") {
+                Text(
+                    "Para bajar contenido privado, +18 o de cuentas que sigues (Instagram, X, TikTok, Facebook, Reddit), inicia sesión aquí. " +
+                        "La sesión se guarda solo en este celular y únicamente se usa al descargar.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Usar mi sesión al descargar", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    Switch(checked = sesionActiva, onCheckedChange = { Cookies.activar(contexto, it); sesionActiva = it }, colors = colorInterruptor())
+                }
+                Cookies.SITIOS.forEach { sitio ->
+                    val dentro = sitio.nombre in conSesion
+                    BotonSecundario(
+                        if (dentro) "${sitio.nombre} · sesión iniciada" else "Iniciar sesión en ${sitio.nombre}",
+                        { onAbrirNavegador(sitio.urlInicio) }, Modifier.fillMaxWidth(),
+                    )
+                }
+                Text("YouTube no está en la lista porque Google bloquea el inicio de sesión dentro de otras apps.", style = MaterialTheme.typography.bodySmall, color = Paleta.Texto3)
+                if (conSesion.isNotEmpty()) BotonSecundario("Cerrar todas las sesiones", { Cookies.cerrarSesiones(contexto); conSesion = emptyList() }, Modifier.fillMaxWidth())
+            }
+            Seccion("Respaldo") {
+                Text(
+                    "Guarda en un archivo tus suscripciones, historial, «Ver más tarde», listas y ajustes. Al restaurar se suma a lo que ya tienes; no se borra nada.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                BotonPrimario("Guardar respaldo", { crearRespaldo.launch("mirador-respaldo-${java.time.LocalDate.now()}.json") }, Modifier.fillMaxWidth())
+                BotonSecundario("Restaurar desde un archivo", { abrirRespaldo.launch(arrayOf("application/json", "*/*")) }, Modifier.fillMaxWidth())
             }
             Seccion("Batería (importante en Xiaomi / HyperOS)") {
                 Text(
