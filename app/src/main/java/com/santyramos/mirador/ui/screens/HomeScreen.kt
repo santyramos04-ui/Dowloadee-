@@ -161,9 +161,31 @@ fun HomeScreen(
         }
     }
 
+    // La cabecera (marca, buscador y filtros) se esconde al bajar y reaparece al subir, para dar espacio a los videos.
+    var mostrarCabecera by remember { mutableStateOf(true) }
+    LaunchedEffect(lista) {
+        var ultimoIndice = 0
+        var ultimoDesfase = 0
+        androidx.compose.runtime.snapshotFlow { lista.firstVisibleItemIndex to lista.firstVisibleItemScrollOffset }.collect { (i, o) ->
+            val baja = i > ultimoIndice || (i == ultimoIndice && o > ultimoDesfase + 24)
+            val sube = i < ultimoIndice || (i == ultimoIndice && o < ultimoDesfase - 24)
+            if (i == 0 && o < 24) mostrarCabecera = true
+            else if (baja) mostrarCabecera = false
+            else if (sube) mostrarCabecera = true
+            if (baja || sube) { ultimoIndice = i; ultimoDesfase = o }
+        }
+    }
+    LaunchedEffect(buscado) { mostrarCabecera = true }
+
     Column(modifier.fillMaxSize().statusBarsPadding()) {
+      androidx.compose.animation.AnimatedVisibility(
+        visible = mostrarCabecera,
+        enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.tween(240)) + androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200)),
+        exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.tween(220)) + androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(140)),
+      ) {
+       Column {
         // ---- Marca + atajo para pegar ----
-        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.ic_mark), contentDescription = null, modifier = Modifier.size(30.dp))
             Text("mirador", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 10.dp).weight(1f))
             BotonIcono(Icons.Outlined.Public, "Navegador de Mirador", { onAbrirNavegador(null) }, bordeado = true)
@@ -172,7 +194,7 @@ fun HomeScreen(
         // ---- Buscador ----
         OutlinedTextField(
             value = consulta, onValueChange = { consulta = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp).focusRequester(pedirFoco),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp).focusRequester(pedirFoco),
             placeholder = { Text("Buscar videos, canales o listas", color = Paleta.Texto3) },
             leadingIcon = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             trailingIcon = { if (consulta.isNotEmpty()) IconButton(onClick = { consulta = "" }) { Icon(Icons.Filled.Clear, "Borrar") } },
@@ -193,6 +215,8 @@ fun HomeScreen(
                 items(FiltroDuracion.entries) { d -> Filtro(d.etiqueta, duracion == d) { duracion = d } }
             }
         }
+       }
+      }
         Box(Modifier.fillMaxSize()) {
             val visibles = resultados.filter { duracion.acepta(it) }
             when {
@@ -200,7 +224,7 @@ fun HomeScreen(
                     Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                     BotonSecundario("Reintentar", { buscar() })
                 }
-                buscado == null && !cargando -> Portada(onAbrirNavegador, { pedirFoco.requestFocus() }, onAbrirVideo, onDescargar)
+                buscado == null && !cargando -> Portada(lista, onAbrirNavegador, { pedirFoco.requestFocus() }, onAbrirVideo, onDescargar)
                 visibles.isEmpty() && !cargando -> Text("No encontré resultados.", Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else -> LazyColumn(state = lista, contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp)) {
                     items(visibles, key = { it.url }) { e ->
@@ -244,7 +268,7 @@ private val Plataformas = listOf(
 /** Inicio sin búsqueda: banda de plataformas, tendencias (si YouTube las ofrece) y recomendaciones según tu uso. */
 @Composable
 private fun Portada(
-    onAbrirNavegador: (String?) -> Unit, onBuscarYoutube: () -> Unit,
+    estado: androidx.compose.foundation.lazy.LazyListState, onAbrirNavegador: (String?) -> Unit, onBuscarYoutube: () -> Unit,
     onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Unit,
 ) {
     var tendencias by remember { mutableStateOf(TendenciasCache.datos) }
@@ -266,7 +290,7 @@ private fun Portada(
     }
     LaunchedEffect(Unit) { recomendar(false) }
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), state = estado, contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp)) {
         item {
             Text("Descargar desde", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 20.dp, top = 6.dp, bottom = 10.dp))
             LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -325,14 +349,16 @@ private fun Portada(
     }
 }
 
+/** Cada sitio es una «ventana» en arco, como las de un mirador: el único gesto decorativo de la pantalla. */
 @Composable
 private fun BotonPlataforma(p: Plataforma, onClick: () -> Unit) {
-    Column(Modifier.width(64.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    val arco = RoundedCornerShape(topStart = 29.dp, topEnd = 29.dp, bottomStart = 10.dp, bottomEnd = 10.dp)
+    Column(Modifier.width(60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         androidx.compose.material3.Surface(
-            onClick = onClick, shape = RoundedCornerShape(20.dp), color = Paleta.S1,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Paleta.Linea), modifier = Modifier.size(60.dp),
+            onClick = onClick, shape = arco, color = Paleta.S2,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Paleta.Linea), modifier = Modifier.size(width = 58.dp, height = 72.dp),
         ) {
-            Box(contentAlignment = Alignment.Center) {
+            Box(Modifier.padding(top = 6.dp), contentAlignment = Alignment.Center) {
                 if (p.icono != null) Icon(painterResource(p.icono), p.nombre, tint = Acento, modifier = Modifier.size(26.dp))
                 else Icon(Icons.Outlined.Public, p.nombre, tint = Acento, modifier = Modifier.size(26.dp))
             }

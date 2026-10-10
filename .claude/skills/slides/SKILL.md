@@ -1,6 +1,8 @@
 ---
 name: slides
 description: Create strategic HTML presentations with Chart.js, design tokens, responsive layouts, copywriting formulas, and contextual slide strategies.
+effort: medium
+allowed-tools: Read Glob Grep
 argument-hint: "[topic] [slide-count]"
 metadata:
   author: claudekit

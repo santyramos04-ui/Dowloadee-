@@ -50,7 +50,8 @@ object AppUpdater {
             val x = a.getOrElse(i) { 0 }; val y = b.getOrElse(i) { 0 }
             if (x != y) return x > y
         }
-        return false
+        // Mismo número: la oficial reemplaza a la de prueba («1.0.30» es más nueva que «1.0.30-prueba»).
+        return local.contains("prueba") && !remota.contains("prueba")
     }
 
     internal fun interpretar(texto: String, versionLocal: String): VersionNueva? {

@@ -103,6 +103,18 @@ Guarda en tu administrador de contraseñas (o envíate un correo a ti mismo) est
 * **Dependabot** propone cada semana las demás actualizaciones (librerías de Android y acciones de GitHub). Para aplicarlas, abre el aviso en GitHub y toca **Merge** cuando la compilación esté en verde.
 * Si falta alguna de las claves de firma, el workflow **se niega a publicar** (y lo dice claramente en el registro).
 
+### 3.1 Probar una versión antes de publicarla
+
+Cada cambio que todavía no se ha publicado genera una **versión de prueba** (se reemplaza sola con cada cambio nuevo):
+
+1. En el celular abre este enlace (guárdalo en favoritos, siempre es el mismo):
+   **https://github.com/santyramos04-ui/Dowloadee-/releases/download/prueba/Mirador-prueba.apk**
+2. Se descarga `Mirador-prueba.apk`. Ábrelo e instálalo **encima** de la que tienes: no pierdes nada.
+3. En *Ajustes → Aplicación* verás la versión con «-prueba» al final (por ejemplo `1.0.30-prueba`).
+4. Si te gusta, di «publícala». Cuando salga la oficial, la app te avisará para pasarte a ella.
+
+La versión de prueba está marcada como «pre-release»: **tus amigos no la reciben**; la app solo les ofrece versiones oficiales.
+
 ---
 
 ## 4. Verificación de desarrolladores de Google

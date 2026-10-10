@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Subscriptions
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -90,6 +91,21 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     val video by VideoController.video.collectAsState()
     val actualizacion by AppUpdater.estado.collectAsState()
 
+    // Atrás en la pantalla principal: primero vuelve a Inicio y luego pide confirmar para salir.
+    val contexto = androidx.compose.ui.platform.LocalContext.current
+    var ultimoAtras by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    androidx.activity.compose.BackHandler(enabled = pila.isEmpty() && !reproductorAbierto) {
+        if (pestana != 0) pestana = 0
+        else {
+            val ahora = android.os.SystemClock.elapsedRealtime()
+            if (ahora - ultimoAtras < 2000) (contexto as? android.app.Activity)?.finish()
+            else {
+                ultimoAtras = ahora
+                android.widget.Toast.makeText(contexto, "Desliza otra vez para salir", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     fun abrirVideo(url: String) { VideoController.abrir(url); reproductorAbierto = true }
 
     // Entradas externas
@@ -101,6 +117,8 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     androidx.compose.runtime.CompositionLocalProvider(LocalGuardar provides { v -> videoAGuardar = v }) {
     Box(Modifier.fillMaxSize()) {
         Scaffold(
+            // Cada pantalla ya respeta la barra de estado; sin esto el espacio de arriba se sumaba dos veces.
+            contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
             bottomBar = {
                 Column {
                     AnimatedVisibility(
@@ -138,16 +156,28 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
         ) { relleno ->
             Box(Modifier.fillMaxSize().padding(relleno)) {
                 val destino = pila.lastOrNull()
-                when (destino) {
-                    is Destino.Canal -> ChannelScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
-                    is Destino.Lista -> PlaylistScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
+                androidx.compose.animation.AnimatedContent(
+                    targetState = destino to pila.size,
+                    transitionSpec = {
+                        val avanza = targetState.second > initialState.second
+                        val entra = androidx.compose.animation.slideInHorizontally(androidx.compose.animation.core.tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { if (avanza) it / 4 else -it / 6 } +
+                            androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(240))
+                        val sale = androidx.compose.animation.slideOutHorizontally(androidx.compose.animation.core.tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { if (avanza) -it / 6 else it / 4 } +
+                            androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(180))
+                        entra togetherWith sale
+                    },
+                    label = "pantallas",
+                ) { (d, _) ->
+                when (d) {
+                    is Destino.Canal -> ChannelScreen(d.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
+                    is Destino.Lista -> PlaylistScreen(d.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
                     Destino.Ajustes -> SettingsScreen(onAtras = { pila.removeLastOrNull() }, onAbrirNavegador = { pila.add(Destino.Navegador(it)) })
-                    is Destino.Navegador -> com.santyramos.mirador.ui.screens.NavegadorScreen(destino.url, { pila.removeLastOrNull() }, { urlDescarga = it })
+                    is Destino.Navegador -> com.santyramos.mirador.ui.screens.NavegadorScreen(d.url, { pila.removeLastOrNull() }, { urlDescarga = it })
                     Destino.Historial -> com.santyramos.mirador.ui.screens.HistorialScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Guardados -> com.santyramos.mirador.ui.screens.GuardadosScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Listas -> com.santyramos.mirador.ui.screens.ListasScreen({ pila.removeLastOrNull() }, { pila.add(Destino.ListaPropia(it)) })
                     is Destino.ListaPropia -> com.santyramos.mirador.ui.screens.ListaPropiaScreen(
-                        destino.id, { pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it }, { listaADescargar = it },
+                        d.id, { pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it }, { listaADescargar = it },
                     )
                     null -> Crossfade(targetState = pestana, label = "pestanas") { p ->
                         when (p) {
@@ -168,6 +198,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                         }
                     }
                 }
+                }
                 // Aviso de versión nueva
                 (actualizacion as? AppUpdater.Estado.Disponible)?.let { d ->
                     if (destino != Destino.Ajustes) Surface(
@@ -184,7 +215,11 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
             }
         }
 
-        if (reproductorAbierto && video != null) {
+        AnimatedVisibility(
+            visible = reproductorAbierto && video != null,
+            enter = androidx.compose.animation.slideInVertically(androidx.compose.animation.core.tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it / 3 } + androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(240)),
+            exit = androidx.compose.animation.slideOutVertically(androidx.compose.animation.core.tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it / 3 } + androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(200)),
+        ) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 PlayerScreen(
                     onMinimizar = { reproductorAbierto = false },
@@ -194,9 +229,8 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                     onEntrarPip = onEntrarPip,
                 )
             }
-        } else if (reproductorAbierto && video == null) {
-            reproductorAbierto = false
         }
+        if (reproductorAbierto && video == null) reproductorAbierto = false
     }
 
     videoAGuardar?.let { v ->

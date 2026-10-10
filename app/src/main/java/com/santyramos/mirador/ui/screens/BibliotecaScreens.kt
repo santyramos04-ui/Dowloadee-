@@ -120,7 +120,7 @@ fun HistorialScreen(onAtras: () -> Unit, onAbrirVideo: (String) -> Unit, onDesca
         } else LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
             items(lista, key = { it.url }) { v ->
                 val prog = if (v.duracionSeg > 0) v.posicionMs / (v.duracionSeg * 1000f) else null
-                FilaBiblioteca(v.aElemento(), prog, { onAbrirVideo(v.url) }, { onDescargar(v.url) }, "Quitar del historial") { Biblioteca.quitarDelHistorial(v.url) }
+                Box(Modifier.animateItem()) { FilaBiblioteca(v.aElemento(), prog, { onAbrirVideo(v.url) }, { onDescargar(v.url) }, "Quitar del historial") { Biblioteca.quitarDelHistorial(v.url) } }
             }
         }
     }
@@ -145,7 +145,7 @@ fun GuardadosScreen(onAtras: () -> Unit, onAbrirVideo: (String) -> Unit, onDesca
             }
         } else LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
             items(lista, key = { it.url }) { g ->
-                FilaBiblioteca(g.aElemento(), null, { com.santyramos.mirador.player.VideoController.definirCola(lista.map { it.url }); onAbrirVideo(g.url) }, { onDescargar(g.url) }, "Quitar de la lista") { Biblioteca.quitarGuardado(g.url) }
+                Box(Modifier.animateItem()) { FilaBiblioteca(g.aElemento(), null, { com.santyramos.mirador.player.VideoController.definirCola(lista.map { it.url }); onAbrirVideo(g.url) }, { onDescargar(g.url) }, "Quitar de la lista") { Biblioteca.quitarGuardado(g.url) } }
             }
         }
     }
@@ -222,7 +222,7 @@ fun ListaPropiaScreen(id: Long, onAtras: () -> Unit, onAbrirVideo: (String) -> U
                 )
             }
             items(items, key = { it.id }) { it ->
-                FilaBiblioteca(it.aElemento(), null, { com.santyramos.mirador.player.VideoController.definirCola(items.map { x -> x.url }); onAbrirVideo(it.url) }, { onDescargar(it.url) }, "Quitar de la lista") { Biblioteca.quitarDeLista(id, it.url) }
+                Box(Modifier.animateItem()) { FilaBiblioteca(it.aElemento(), null, { com.santyramos.mirador.player.VideoController.definirCola(items.map { x -> x.url }); onAbrirVideo(it.url) }, { onDescargar(it.url) }, "Quitar de la lista") { Biblioteca.quitarDeLista(id, it.url) } }
             }
         }
     }
