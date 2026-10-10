@@ -9,7 +9,7 @@ object Format {
         var v = n.toDouble()
         var i = 0
         while (v >= 1024 && i < unidades.lastIndex) { v /= 1024; i++ }
-        return if (i == 0) "${n} B" else String.format(Locale.US, "%.1f %s", v, unidades[i])
+        return if (i == 0) "${n} B" else String.format(Locale("es"), "%.1f %s", v, unidades[i])
     }
 
     fun velocidad(bps: Long): String = if (bps <= 0) "—" else bytes(bps) + "/s"

@@ -20,32 +20,37 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.santyramos.mirador.R
 
-/** Buganvilla (#E85A8C): el color de la marca, tomado de las flores de los balcones (miradores) colombianos. */
-val AcentoMarca = Color(0xFFE85A8C)
+/** Rojo de la marca (#C11720): el del logo y los botones principales. */
+val AcentoMarca = Color(0xFFC11720)
 
-/** Paleta completa de un tema. Rejilla de 4 dp, sin sombras: la profundidad sale de tonos de superficie y líneas finas. */
+/** Paleta completa de un tema. Rejilla de 4 dp, sin sombras: la profundidad sale de tonos de superficie y líneas finas.
+ *  `acento` es para texto e íconos destacados; `relleno` es el fondo de botones y casillas marcadas, con `sobreRelleno` encima. */
 @androidx.compose.runtime.Immutable
 data class Colores(
     val fondo: Color, val s1: Color, val s2: Color, val s3: Color, val linea: Color,
     val texto1: Color, val texto2: Color, val texto3: Color,
     val acento: Color, val acentoSuave: Color, val acentoBorde: Color, val sobreAcento: Color,
+    val relleno: Color, val sobreRelleno: Color,
     val aviso: Color, val error: Color, val errorSuave: Color,
 )
 
-/** Oscuro: azul de noche (como la vista desde un mirador al anochecer), blanco de cal y buganvilla. */
+/** Oscuro «Marino»: azul marino, crema y rojo. El rojo no se lee como texto sobre el marino (2.2:1),
+ *  así que solo rellena botones (blanco encima, 6.2:1); el texto destacado va en azul claro (7.9:1). */
 val ColoresOscuros = Colores(
-    fondo = Color(0xFF0F1420), s1 = Color(0xFF182031), s2 = Color(0xFF212A3D), s3 = Color(0xFF2A344A), linea = Color(0xFF2C374D),
-    texto1 = Color(0xFFF1EEE6), texto2 = Color(0xFFA5AEC2), texto3 = Color(0xFF8C96AB), // 8.4:1 y 5.9:1 sobre el fondo
-    acento = AcentoMarca, acentoSuave = Color(0xFF3A1B2B), acentoBorde = Color(0xFF7A2E4E), sobreAcento = Color(0xFF14090F),
-    aviso = Color(0xFFF2B544), error = Color(0xFFFF7A7A), errorSuave = Color(0xFF3A1A1E),
+    fondo = Color(0xFF08202F), s1 = Color(0xFF0C324A), s2 = Color(0xFF123E5A), s3 = Color(0xFF1A4A69), linea = Color(0xFF1D4C6B),
+    texto1 = Color(0xFFFEF1D5), texto2 = Color(0xFFA9C3D6), texto3 = Color(0xFF8DAFC6), // 14.9, 9.1 y 7.2:1 sobre el fondo
+    acento = Color(0xFF8DB8D3), acentoSuave = Color(0xFF17435F), acentoBorde = Color(0xFF3E6F90), sobreAcento = Color(0xFF08202F),
+    relleno = AcentoMarca, sobreRelleno = Color(0xFFFFFFFF),
+    aviso = Color(0xFFF2B544), error = Color(0xFFFF8A80), errorSuave = Color(0xFF3A1A22),
 )
 
-/** Claro: gris niebla frío y blanco; la buganvilla se oscurece para que texto e íconos tengan contraste (≥ 4.5:1). */
+/** Claro «Marino»: crema de fondo, texto azul marino y rojo para lo destacado (5.5:1 sobre la crema). */
 val ColoresClaros = Colores(
-    fondo = Color(0xFFF4F5F8), s1 = Color(0xFFFFFFFF), s2 = Color(0xFFEAECF1), s3 = Color(0xFFDFE2E9), linea = Color(0xFFD6DAE3),
-    texto1 = Color(0xFF161A24), texto2 = Color(0xFF4A5263), texto3 = Color(0xFF5F6778),
-    acento = Color(0xFFC22A63), acentoSuave = Color(0xFFF8DCE7), acentoBorde = Color(0xFFE4A3BC), sobreAcento = Color(0xFFFFFFFF),
-    aviso = Color(0xFF8A5A00), error = Color(0xFFC62828), errorSuave = Color(0xFFFBE4E4),
+    fondo = Color(0xFFFEF1D5), s1 = Color(0xFFFFF9EC), s2 = Color(0xFFF5E6C4), s3 = Color(0xFFEDDBB3), linea = Color(0xFFE6D2A8),
+    texto1 = Color(0xFF0C324A), texto2 = Color(0xFF2F5670), texto3 = Color(0xFF4A6B80),
+    acento = AcentoMarca, acentoSuave = Color(0xFFFADFD9), acentoBorde = Color(0xFFE3A39B), sobreAcento = Color(0xFFFFFFFF),
+    relleno = AcentoMarca, sobreRelleno = Color(0xFFFFFFFF),
+    aviso = Color(0xFF8A5A00), error = Color(0xFFB3261E), errorSuave = Color(0xFFFBE0DC),
 )
 
 val LocalColores = androidx.compose.runtime.staticCompositionLocalOf { ColoresOscuros }
@@ -63,12 +68,14 @@ object Paleta {
     val AcentoSuave: Color @Composable @ReadOnlyComposable get() = LocalColores.current.acentoSuave
     val AcentoBorde: Color @Composable @ReadOnlyComposable get() = LocalColores.current.acentoBorde
     val SobreAcento: Color @Composable @ReadOnlyComposable get() = LocalColores.current.sobreAcento
+    val Relleno: Color @Composable @ReadOnlyComposable get() = LocalColores.current.relleno
+    val SobreRelleno: Color @Composable @ReadOnlyComposable get() = LocalColores.current.sobreRelleno
     val Aviso: Color @Composable @ReadOnlyComposable get() = LocalColores.current.aviso
     val Error: Color @Composable @ReadOnlyComposable get() = LocalColores.current.error
     val ErrorSuave: Color @Composable @ReadOnlyComposable get() = LocalColores.current.errorSuave
 }
 
-/** Verde de acento del tema actual (el de la marca en oscuro; uno más profundo en claro). */
+/** Color de acento del tema actual para texto e íconos (azul claro en oscuro, rojo de la marca en claro). */
 val Acento: Color @Composable @ReadOnlyComposable get() = LocalColores.current.acento
 
 private fun esquema(c: Colores, oscuro: Boolean): androidx.compose.material3.ColorScheme {
@@ -82,7 +89,7 @@ private fun esquema(c: Colores, oscuro: Boolean): androidx.compose.material3.Col
         surfaceContainerLowest = c.fondo, surfaceContainerLow = c.s1, surfaceContainer = c.s1,
         surfaceContainerHigh = c.s2, surfaceContainerHighest = c.s3,
         error = c.error, onError = c.fondo, errorContainer = c.errorSuave, onErrorContainer = c.error,
-        outline = if (oscuro) Color(0xFF3D4A63) else Color(0xFFB3B9C6), outlineVariant = c.linea,
+        outline = if (oscuro) Color(0xFF3A6482) else Color(0xFFB9A57E), outlineVariant = c.linea,
         scrim = Color(0xCC000000),
     )
 }

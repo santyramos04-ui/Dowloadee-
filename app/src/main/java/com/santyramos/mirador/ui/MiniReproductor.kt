@@ -42,7 +42,7 @@ fun MiniReproductor(onAbrir: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp)
             .clip(RoundedCornerShape(18.dp)).background(com.santyramos.mirador.ui.theme.Paleta.S2)
-            .border(1.dp, com.santyramos.mirador.ui.theme.Paleta.Linea, RoundedCornerShape(18.dp)).clickable(onClick = onAbrir),
+            .border(1.dp, com.santyramos.mirador.ui.theme.Paleta.Linea, RoundedCornerShape(18.dp)).clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = "Abrir reproductor", onClick = onAbrir),
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(

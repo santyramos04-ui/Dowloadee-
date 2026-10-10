@@ -95,7 +95,7 @@ object AppUpdater {
         try {
             _estado.value = Estado.Descargando(nueva, 0f)
             val dir = File(context.cacheDir, "updates").apply { deleteRecursively(); mkdirs() }
-            val destino = File(dir, "Mirador-${nueva.version}.apk")
+            val destino = File(dir, "${com.santyramos.mirador.util.Marca.NOMBRE}-${nueva.version}.apk")
             Http.client.newCall(Request.Builder().url(nueva.urlApk).build()).execute().use { r ->
                 if (!r.isSuccessful) throw IllegalStateException("La descarga falló (${r.code})")
                 val total = r.body.contentLength().takeIf { it > 0 } ?: nueva.tamano

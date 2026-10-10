@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -134,7 +135,7 @@ fun SeleccionListaContent(l: ListaInfo, onCerrar: () -> Unit, onEncolada: () -> 
             item {
                 Text(l.titulo, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
-                    "$total videos" + (l.autor?.let { " · $it" } ?: "") + "\nSe guardan en Descargas/Mirador/…/${UrlTools.nombreSeguro(l.titulo, 60)}, numerados en orden.",
+                    "$total videos" + (l.autor?.let { " · $it" } ?: "") + "\nSe guardan en Descargas/${com.santyramos.mirador.util.Marca.NOMBRE}/…/${UrlTools.nombreSeguro(l.titulo, 60)}, numerados en orden.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp),
                 )
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 14.dp)) {
@@ -150,14 +151,14 @@ fun SeleccionListaContent(l: ListaInfo, onCerrar: () -> Unit, onEncolada: () -> 
             itemsIndexed(l.entradas) { i, e ->
                 val marcado = i in seleccion
                 Row(
-                    Modifier.fillMaxWidth().clickable { seleccion = if (marcado) seleccion - i else seleccion + i }.padding(vertical = 8.dp),
+                    Modifier.fillMaxWidth().toggleable(value = marcado, role = androidx.compose.ui.semantics.Role.Checkbox) { seleccion = if (marcado) seleccion - i else seleccion + i }.padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Box(
                         Modifier.size(24.dp).clip(CircleShape)
-                            .then(if (marcado) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier.border(2.dp, Paleta.Texto3, CircleShape)),
+                            .then(if (marcado) Modifier.background(Paleta.Relleno) else Modifier.border(2.dp, Paleta.Texto3, CircleShape)),
                         contentAlignment = Alignment.Center,
-                    ) { if (marcado) Icon(Icons.Filled.Check, null, Modifier.size(16.dp), tint = Paleta.SobreAcento) }
+                    ) { if (marcado) Icon(Icons.Filled.Check, null, Modifier.size(16.dp), tint = Paleta.SobreRelleno) }
                     Box(Modifier.size(width = 84.dp, height = 48.dp).clip(RoundedCornerShape(10.dp)).background(Paleta.S3)) {
                         AsyncImage(model = e.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                     }

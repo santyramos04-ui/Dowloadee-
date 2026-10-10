@@ -55,6 +55,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -187,15 +189,15 @@ fun HomeScreen(
         // ---- Marca + atajo para pegar ----
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.ic_mark), contentDescription = null, modifier = Modifier.size(30.dp))
-            Text("mirador", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 10.dp).weight(1f))
-            BotonIcono(Icons.Outlined.Public, "Navegador de Mirador", { onAbrirNavegador(null) }, bordeado = true)
+            Text(com.santyramos.mirador.util.Marca.NOMBRE.lowercase(), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 10.dp).weight(1f))
+            BotonIcono(Icons.Outlined.Public, "Navegador de ${com.santyramos.mirador.util.Marca.NOMBRE}", { onAbrirNavegador(null) }, bordeado = true)
             BotonIcono(Icons.Outlined.ContentPaste, "Pegar enlaces para descargar", onIrADescargas, Modifier.padding(start = 8.dp), bordeado = true)
         }
         // ---- Buscador ----
         OutlinedTextField(
             value = consulta, onValueChange = { consulta = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp).focusRequester(pedirFoco),
-            placeholder = { Text("Buscar videos, canales o listas", color = Paleta.Texto3) },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp).focusRequester(pedirFoco).semantics { contentDescription = "Buscar en YouTube" },
+            placeholder = { Text("Buscar videos, canales o listas…", color = Paleta.Texto3) },
             leadingIcon = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             trailingIcon = { if (consulta.isNotEmpty()) IconButton(onClick = { consulta = "" }) { Icon(Icons.Filled.Clear, "Borrar") } },
             singleLine = true, shape = RoundedCornerShape(18.dp),

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -62,7 +63,7 @@ private fun Seccion(titulo: String, contenido: @Composable () -> Unit) = com.san
 
 @Composable
 private fun colorInterruptor() = SwitchDefaults.colors(
-    checkedThumbColor = Paleta.SobreAcento, checkedTrackColor = MaterialTheme.colorScheme.primary, checkedBorderColor = MaterialTheme.colorScheme.primary,
+    checkedThumbColor = Paleta.SobreRelleno, checkedTrackColor = Paleta.Relleno, checkedBorderColor = Paleta.Relleno,
     uncheckedThumbColor = Paleta.Texto2, uncheckedTrackColor = Paleta.S3, uncheckedBorderColor = Paleta.Linea,
 )
 
@@ -84,6 +85,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
     val sbCats by ajustes.sbCategorias.collectAsState(initial = com.santyramos.mirador.data.SB_CATEGORIAS_INICIALES)
     var sesionActiva by remember { mutableStateOf(Cookies.activadas(contexto)) }
     var conSesion by remember { mutableStateOf(emptyList<String>()) }
+    var confirmarCierre by remember { mutableStateOf(false) }
     LaunchedEffect(sesionActiva) { conSesion = Cookies.sitiosConSesion().map { it.nombre } }
     val crearRespaldo = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
@@ -105,7 +107,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
             Toast.makeText(
                 contexto,
                 r.getOrNull()?.let { "Restaurado: ${it.suscripciones} canales, ${it.historial} del historial, ${it.guardados} guardados y ${it.listas} listas." }
-                    ?: "Ese archivo no es un respaldo de Mirador.",
+                    ?: "Ese archivo no es un respaldo de ${com.santyramos.mirador.util.Marca.NOMBRE}.",
                 Toast.LENGTH_LONG,
             ).show()
         }
@@ -137,16 +139,10 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                     PlayerQuality.entries.forEach { q -> Filtro(q.etiqueta, calidad == q) { scope.launch { ajustes.setCalidad(q) } } }
                 }
                 Text("«Auto» usa hasta 1080p con Wi‑Fi y 720p con datos móviles.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Saltar patrocinios (SponsorBlock)", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "Usa la base de datos de la comunidad (sponsor.ajay.app). Se consulta con un código parcial del video, nunca con tus datos.",
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(checked = sb, onCheckedChange = { v -> scope.launch { ajustes.setSponsorBlock(v) } }, colors = colorInterruptor())
-                }
+                com.santyramos.mirador.ui.FilaInterruptor(
+                    "Saltar patrocinios (SponsorBlock)", sb, { v -> scope.launch { ajustes.setSponsorBlock(v) } },
+                    "Usa la base de datos de la comunidad (sponsor.ajay.app). Se consulta con un código parcial del video, nunca con tus datos.",
+                )
                 if (sb) {
                     Text("Qué saltar", style = MaterialTheme.typography.bodyMedium)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -162,20 +158,14 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                     "YouTube y los demás sitios cambian seguido. El motor se actualiza solo, sin esperar una versión nueva de la app.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Actualizar automáticamente una vez al día", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                    Switch(
-                        checked = auto, onCheckedChange = { v -> scope.launch { ajustes.setYtdlpAuto(v) } },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Paleta.SobreAcento, checkedTrackColor = MaterialTheme.colorScheme.primary, checkedBorderColor = MaterialTheme.colorScheme.primary,
-                            uncheckedThumbColor = Paleta.Texto2, uncheckedTrackColor = Paleta.S3, uncheckedBorderColor = Paleta.Linea,
-                        ),
-                    )
-                }
+                com.santyramos.mirador.ui.FilaInterruptor("Actualizar automáticamente una vez al día", auto, { v -> scope.launch { ajustes.setYtdlpAuto(v) } })
                 YtdlpChannel.entries.forEach { c ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.fillMaxWidth().selectable(selected = canal == c, role = androidx.compose.ui.semantics.Role.RadioButton) { scope.launch { ajustes.setYtdlpCanal(c) } },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         androidx.compose.material3.RadioButton(
-                            selected = canal == c, onClick = { scope.launch { ajustes.setYtdlpCanal(c) } },
+                            selected = canal == c, onClick = null,
                             colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary, unselectedColor = Paleta.Texto3),
                         )
                         Text(c.etiqueta, style = MaterialTheme.typography.bodySmall)
@@ -192,7 +182,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                 }
             }
             Seccion("Aplicación") {
-                Text("Mirador ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyMedium)
+                Text("${com.santyramos.mirador.util.Marca.NOMBRE} ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyMedium)
                 when (val e = estadoApp) {
                     AppUpdater.Estado.Nada -> {}
                     AppUpdater.Estado.Buscando -> LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -217,10 +207,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                         "La sesión se guarda solo en este celular y únicamente se usa al descargar.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Usar mi sesión al descargar", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                    Switch(checked = sesionActiva, onCheckedChange = { Cookies.activar(contexto, it); sesionActiva = it }, colors = colorInterruptor())
-                }
+                com.santyramos.mirador.ui.FilaInterruptor("Usar mi sesión al descargar", sesionActiva, { Cookies.activar(contexto, it); sesionActiva = it })
                 Cookies.SITIOS.forEach { sitio ->
                     val dentro = sitio.nombre in conSesion
                     BotonSecundario(
@@ -229,7 +216,14 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                     )
                 }
                 Text("YouTube no está en la lista porque Google bloquea el inicio de sesión dentro de otras apps.", style = MaterialTheme.typography.bodySmall, color = Paleta.Texto3)
-                if (conSesion.isNotEmpty()) BotonSecundario("Cerrar todas las sesiones", { Cookies.cerrarSesiones(contexto); conSesion = emptyList() }, Modifier.fillMaxWidth())
+                if (conSesion.isNotEmpty()) BotonSecundario("Cerrar todas las sesiones", { confirmarCierre = true }, Modifier.fillMaxWidth())
+                if (confirmarCierre) androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { confirmarCierre = false },
+                    title = { Text("¿Cerrar todas las sesiones?") },
+                    text = { Text("Se cierra la sesión de ${conSesion.joinToString(", ")} dentro de ${com.santyramos.mirador.util.Marca.NOMBRE}. Para volver a bajar contenido privado tendrás que iniciar sesión otra vez.") },
+                    confirmButton = { androidx.compose.material3.TextButton(onClick = { Cookies.cerrarSesiones(contexto); conSesion = emptyList(); confirmarCierre = false }) { Text("Cerrar sesiones") } },
+                    dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmarCierre = false }) { Text("Cancelar") } },
+                )
             }
             Seccion("Respaldo") {
                 Text(
@@ -241,7 +235,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
             }
             Seccion("Batería (importante en Xiaomi / HyperOS)") {
                 Text(
-                    "Para que la música en segundo plano y las descargas no se corten con la pantalla apagada, pon Mirador en «Sin restricciones» (Ajustes del sistema → Aplicaciones → Mirador → Ahorro de batería) y activa «Inicio automático».",
+                    "Para que la música en segundo plano y las descargas no se corten con la pantalla apagada, pon ${com.santyramos.mirador.util.Marca.NOMBRE} en «Sin restricciones» (Ajustes del sistema → Aplicaciones → ${com.santyramos.mirador.util.Marca.NOMBRE} → Ahorro de batería) y activa «Inicio automático».",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 BotonSecundario("Quitar restricción de batería", {
@@ -258,7 +252,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                 }, Modifier.fillMaxWidth())
             }
             Seccion("Acerca de") {
-                Text("Mirador es software libre (GPLv3). Usa NewPipeExtractor para ver YouTube sin anuncios y yt-dlp para descargar. Todo queda en tu celular.", style = MaterialTheme.typography.bodySmall)
+                Text("${com.santyramos.mirador.util.Marca.NOMBRE} es software libre (GPLv3). Usa NewPipeExtractor para ver YouTube sin anuncios y yt-dlp para descargar. Todo queda en tu celular.", style = MaterialTheme.typography.bodySmall)
             }
         }
     }

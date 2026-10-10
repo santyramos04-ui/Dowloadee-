@@ -52,7 +52,7 @@ class ShareReceiverActivity : ComponentActivity() {
         }
         com.santyramos.mirador.ui.HojaMirador(onCerrar = { finish() }) {
             Column(Modifier.padding(top = 0.dp)) {
-                Text("Descargar con Mirador", modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp), style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+                Text("Descargar con ${com.santyramos.mirador.util.Marca.NOMBRE}", modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp), style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
                 if (enlaces.size > 1) {
                     com.santyramos.mirador.ui.LoteSheetContent(urls = enlaces, onCerrar = { finish() }, onEncolada = { finish() })
                 } else {

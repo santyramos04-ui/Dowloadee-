@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
@@ -277,6 +278,18 @@ fun PlayerScreen(
                                 }
                             }
                         }
+                        Box {
+                            var menuBrillo by remember { mutableStateOf(false) }
+                            IconButton(onClick = { menuBrillo = true }) { Icon(Icons.Filled.BrightnessMedium, "Brillo", tint = Color.White) }
+                            DropdownMenu(expanded = menuBrillo, onDismissRequest = { menuBrillo = false }) {
+                                listOf("Como el celular" to -1f, "25 %" to 0.25f, "50 %" to 0.5f, "75 %" to 0.75f, "100 %" to 1f).forEach { (nombre, valor) ->
+                                    DropdownMenuItem(text = { Text(nombre) }, onClick = {
+                                        menuBrillo = false
+                                        actividad?.window?.let { w -> val p = w.attributes; p.screenBrightness = valor; w.attributes = p }
+                                    })
+                                }
+                            }
+                        }
                         IconButton(onClick = onEntrarPip) { Icon(Icons.Filled.PictureInPictureAlt, "Imagen en imagen", tint = Color.White) }
                     }
                     // Aviso de SponsorBlock
@@ -386,26 +399,14 @@ fun PlayerScreen(
                                 }, Modifier.weight(1f), icono = Icons.Outlined.Share)
                             }
                             val auto by VideoController.autoSiguiente.collectAsState()
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text("Reproducción automática", style = MaterialTheme.typography.titleSmall)
-                                    Text("Al terminar, sigue con el siguiente video", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                androidx.compose.material3.Switch(
-                                    checked = auto, onCheckedChange = { VideoController.cambiarAutoSiguiente(it) },
-                                    colors = androidx.compose.material3.SwitchDefaults.colors(
-                                        checkedThumbColor = Paleta.SobreAcento, checkedTrackColor = MaterialTheme.colorScheme.primary, checkedBorderColor = MaterialTheme.colorScheme.primary,
-                                        uncheckedThumbColor = Paleta.Texto2, uncheckedTrackColor = Paleta.S3, uncheckedBorderColor = Paleta.Linea,
-                                    ),
-                                )
-                            }
+                            com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con el siguiente video")
                             BotonSecundario("Ver comentarios", { verComentarios = true }, Modifier.fillMaxWidth(), icono = Icons.Outlined.ChatBubbleOutline)
                             val desc = Youtube.limpiarHtml(info.description?.content.orEmpty())
                             if (desc.isNotBlank()) {
                                 Text(
                                     desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = if (verTodo) Int.MAX_VALUE else 3, overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.clickable { verTodo = !verTodo },
+                                    modifier = Modifier.clickable(onClickLabel = if (verTodo) "Ver menos" else "Ver más") { verTodo = !verTodo },
                                 )
                             }
                             TextButton(onClick = { VideoController.cerrar(); onMinimizar() }) { Text("Cerrar reproductor", color = MaterialTheme.colorScheme.onSurfaceVariant) }

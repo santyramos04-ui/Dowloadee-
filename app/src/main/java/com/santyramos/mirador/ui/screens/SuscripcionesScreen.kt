@@ -121,7 +121,7 @@ fun SuscripcionesScreen(
                 item {
                     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(vertical = 8.dp)) {
                         items(canales, key = { it.canalId }) { c ->
-                            Column(Modifier.width(68.dp).clickable { onAbrirCanal(c.urlCanal) }, horizontalAlignment = Alignment.CenterHorizontally) {
+                            Column(Modifier.width(68.dp).clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = "Abrir canal") { onAbrirCanal(c.urlCanal) }, horizontalAlignment = Alignment.CenterHorizontally) {
                                 AsyncImage(c.avatar, null, contentScale = ContentScale.Crop, modifier = Modifier.size(56.dp).clip(CircleShape).background(Paleta.S2))
                                 Text(c.nombre, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
                             }

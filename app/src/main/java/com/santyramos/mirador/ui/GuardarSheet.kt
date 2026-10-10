@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -76,7 +78,8 @@ fun GuardarSheetContent(video: Elemento.Video, onCerrar: () -> Unit) {
 @Composable
 private fun FilaGuardar(icono: androidx.compose.ui.graphics.vector.ImageVector, titulo: String, detalle: String?, marcada: Boolean, onClick: () -> Unit) {
     Surface(
-        onClick = onClick, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth(),
+        checked = marcada, onCheckedChange = { onClick() }, shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth().semantics { role = androidx.compose.ui.semantics.Role.Checkbox },
         color = if (marcada) Paleta.AcentoSuave else Paleta.S2,
         border = BorderStroke(1.dp, if (marcada) Paleta.AcentoBorde else Paleta.Linea),
     ) {
@@ -88,9 +91,9 @@ private fun FilaGuardar(icono: androidx.compose.ui.graphics.vector.ImageVector, 
             }
             Box(
                 Modifier.size(24.dp).clip(CircleShape)
-                    .then(if (marcada) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier.border(2.dp, Paleta.Texto3, CircleShape)),
+                    .then(if (marcada) Modifier.background(Paleta.Relleno) else Modifier.border(2.dp, Paleta.Texto3, CircleShape)),
                 contentAlignment = Alignment.Center,
-            ) { if (marcada) Icon(Icons.Filled.Check, null, Modifier.size(16.dp), tint = Paleta.SobreAcento) }
+            ) { if (marcada) Icon(Icons.Filled.Check, null, Modifier.size(16.dp), tint = Paleta.SobreRelleno) }
         }
     }
 }

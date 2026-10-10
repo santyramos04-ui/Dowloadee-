@@ -43,6 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
@@ -124,9 +126,9 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
                 BotonIcono(Icons.AutoMirrored.Filled.ArrowBack, if (puedeVolver) "Atrás" else "Cerrar navegador", { if (web.canGoBack()) web.goBack() else onAtras() })
                 OutlinedTextField(
                     value = direccion, onValueChange = { direccion = it },
-                    modifier = Modifier.weight(1f).onFocusChanged { editando = it.isFocused },
+                    modifier = Modifier.weight(1f).onFocusChanged { editando = it.isFocused }.semantics { contentDescription = "Dirección o búsqueda" },
                     singleLine = true, shape = RoundedCornerShape(16.dp),
-                    placeholder = { Text("Escribe una dirección o busca", color = Paleta.Texto3) },
+                    placeholder = { Text("Escribe una dirección o busca…", color = Paleta.Texto3) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = Paleta.S2, unfocusedContainerColor = Paleta.S2,
                         focusedBorderColor = Acento, unfocusedBorderColor = Paleta.Linea, cursorColor = Acento,
@@ -142,7 +144,7 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
             if (actual == null) {
                 // Pantalla de inicio del navegador
                 Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text("Navegador de Mirador", style = MaterialTheme.typography.headlineSmall)
+                    Text("Navegador de ${com.santyramos.mirador.util.Marca.NOMBRE}", style = MaterialTheme.typography.headlineSmall)
                     Text(
                         "Entra al sitio, abre la publicación que quieras y toca el botón verde «Descargar». Sirve para X, Instagram, TikTok, Facebook y más.",
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,

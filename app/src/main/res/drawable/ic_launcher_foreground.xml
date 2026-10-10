@@ -1,33 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- La «m» de Mirador: dos arcos, como las ventanas de un mirador. Centrada y reducida para la zona segura. -->
+<!-- «Play que descarga»: un triángulo de play que apunta hacia abajo sobre una barra. Se lee como reproducir y como descargar. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <group
-        android:pivotX="54"
-        android:pivotY="59.25"
-        android:scaleX="0.88"
-        android:scaleY="0.88"
-        android:translateY="-5.25">
-        <path
-            android:pathData="M31,76 L31,54 A11.5,11.5 0 0 1 54,54 A11.5,11.5 0 0 1 77,54 L77,76"
-            android:strokeWidth="9"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round">
-            <aapt:attr name="android:strokeColor">
-                <gradient
-                    android:startX="0"
-                    android:startY="38"
-                    android:endX="0"
-                    android:endY="80.5"
-                    android:type="linear">
-                    <item android:offset="0" android:color="#FFF68FB3" />
-                    <item android:offset="1" android:color="#FFD9416F" />
-                </gradient>
-            </aapt:attr>
-        </path>
+        android:scaleX="0.62"
+        android:scaleY="0.62"
+        android:translateX="23"
+        android:translateY="19.9">
+        <path android:fillColor="#FFFEF1D5" android:pathData="M24,22 H76 Q82,22 79,27.5 L54,70 Q50,76 46,70 L21,27.5 Q18,22 24,22 Z" />
+        <path android:fillColor="#FFFEF1D5" android:pathData="M28,80 H72 A4,4 0 0 1 72,88 H28 A4,4 0 0 1 28,80 Z" />
     </group>
 </vector>
