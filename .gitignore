@@ -14,3 +14,4 @@ captures/
 secrets/
 # yt-dlp embebido: lo descarga el CI al compilar (scripts/descargar-ytdlp.sh); no se sube al repositorio
 app/src/main/assets/ytdlp/
+__pycache__/
