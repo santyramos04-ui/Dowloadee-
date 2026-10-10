@@ -80,6 +80,9 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.santyramos.mirador.data.PlayerQuality
 import com.santyramos.mirador.extractor.Elemento
+import com.santyramos.mirador.extractor.bestUrl
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.Share
 import com.santyramos.mirador.extractor.Youtube
 import com.santyramos.mirador.player.VideoController
 import com.santyramos.mirador.ui.BotonPrimario
@@ -328,15 +331,24 @@ fun PlayerScreen(
                             ) {
                                 Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Text(info.uploaderName.orEmpty(), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    if (info.uploaderSubscriberCount > 0) Text("${Format.contar(info.uploaderSubscriberCount)} suscriptores", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    if (info.uploaderSubscriberCount > 0) Text("${Format.contar(info.uploaderSubscriberCount)} suscriptores", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 10.dp))
+                                    val canalId = com.santyramos.mirador.data.lib.Importar.canalIdDeUrl(info.uploaderUrl.orEmpty())
+                                    com.santyramos.mirador.ui.BotonSuscribir(
+                                        canalId,
+                                        { com.santyramos.mirador.data.lib.Suscripcion(canalId.orEmpty(), info.uploaderName.orEmpty(), com.santyramos.mirador.data.lib.Importar.urlDeCanal(canalId.orEmpty())) },
+                                    )
                                 }
                             }
                             // Acciones
+                            BotonPrimario("Descargar", { onDescargar(info.url) }, Modifier.fillMaxWidth(), icono = Icons.Outlined.FileDownload)
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                                BotonPrimario("Descargar", { onDescargar(info.url) }, Modifier.weight(1.4f), icono = Icons.Outlined.FileDownload)
+                                val guardar = com.santyramos.mirador.ui.LocalGuardar.current
+                                BotonSecundario("Guardar", {
+                                    guardar(Elemento.Video(info.name.orEmpty(), info.url, info.thumbnails.bestUrl(), info.uploaderName, info.uploaderUrl, info.duration, info.viewCount, info.textualUploadDate, false, false))
+                                }, Modifier.weight(1f), icono = Icons.Outlined.BookmarkBorder)
                                 BotonSecundario("Compartir", {
                                     contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.url), "Compartir enlace"))
-                                }, Modifier.weight(1f))
+                                }, Modifier.weight(1f), icono = Icons.Outlined.Share)
                             }
                             val desc = info.description?.content.orEmpty()
                             if (desc.isNotBlank()) {

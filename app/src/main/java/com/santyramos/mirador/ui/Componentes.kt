@@ -23,6 +23,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -196,4 +198,26 @@ fun HojaMirador(onCerrar: () -> Unit, contenido: @androidx.compose.runtime.Compo
         scrimColor = Color(0xB3000000),
         dragHandle = { Box(Modifier.padding(top = 12.dp, bottom = 8.dp).size(width = 40.dp, height = 4.dp).clip(CircleShape).background(Paleta.Linea)) },
     ) { contenido() }
+}
+
+
+/** Quien quiera guardar un video (ver más tarde / listas) llama a esto; la pantalla raíz abre la hoja. */
+val LocalGuardar = androidx.compose.runtime.staticCompositionLocalOf<(com.santyramos.mirador.extractor.Elemento.Video) -> Unit> { {} }
+
+/** Botón Suscribirse / Suscrito que lee y escribe en la biblioteca local. */
+@androidx.compose.runtime.Composable
+fun BotonSuscribir(canalId: String?, crear: () -> com.santyramos.mirador.data.lib.Suscripcion, modifier: Modifier = Modifier) {
+    if (canalId.isNullOrBlank()) return
+    val suscrito by com.santyramos.mirador.data.lib.Biblioteca.dao.estaSuscrito(canalId).collectAsState(initial = 0)
+    if (suscrito > 0) {
+        Surface(
+            onClick = { com.santyramos.mirador.data.lib.Biblioteca.anularSuscripcion(canalId) }, shape = RoundedCornerShape(12.dp),
+            color = Paleta.S2, border = BorderStroke(1.dp, Paleta.Linea), modifier = modifier.height(36.dp),
+        ) { Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text("Suscrito", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) } }
+    } else {
+        Surface(
+            onClick = { com.santyramos.mirador.data.lib.Biblioteca.suscribir(crear()) }, shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primary, modifier = modifier.height(36.dp),
+        ) { Box(Modifier.padding(horizontal = 14.dp), contentAlignment = Alignment.Center) { Text("Suscribirme", style = MaterialTheme.typography.labelMedium, color = Paleta.SobreAcento) } }
+    }
 }

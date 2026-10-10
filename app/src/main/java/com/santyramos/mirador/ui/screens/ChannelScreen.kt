@@ -93,6 +93,11 @@ fun ChannelScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> Un
                             Column {
                                 Text(d.info.name.orEmpty(), style = MaterialTheme.typography.titleMedium)
                                 if (d.info.subscriberCount >= 0) Text("${Format.contar(d.info.subscriberCount)} suscriptores", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                com.santyramos.mirador.ui.BotonSuscribir(
+                                    d.info.id,
+                                    { com.santyramos.mirador.data.lib.Suscripcion(d.info.id, d.info.name.orEmpty(), com.santyramos.mirador.data.lib.Importar.urlDeCanal(d.info.id), d.info.avatars.bestUrl()) },
+                                    Modifier.padding(top = 8.dp),
+                                )
                             }
                         }
                         if (videos.isEmpty()) Text("Este canal no tiene videos visibles.", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)

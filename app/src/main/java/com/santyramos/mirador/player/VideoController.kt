@@ -7,6 +7,9 @@ import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.santyramos.mirador.data.PlayerQuality
+import com.santyramos.mirador.data.lib.Biblioteca
+import com.santyramos.mirador.data.lib.Visto
+import com.santyramos.mirador.extractor.bestUrl
 import com.santyramos.mirador.data.Settings
 import com.santyramos.mirador.download.ErrorMapper
 import com.santyramos.mirador.extractor.StreamSelector
@@ -69,15 +72,26 @@ object VideoController {
         PlayerHolder.conectarServicio(app)
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) = publicar()
-            override fun onIsPlayingChanged(isPlaying: Boolean) = publicar()
+            override fun onIsPlayingChanged(isPlaying: Boolean) { publicar(); if (!isPlaying) guardarPosicionActual() }
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                 _video.value = _video.value?.copy(cargando = false, error = ErrorMapper.mensajeReproduccion(error))
             }
         })
         sondeo?.cancel()
         sondeo = scope.launch {
-            while (isActive) { publicar(); delay(400) }
+            var vueltas = 0
+            while (isActive) {
+                publicar(); delay(400)
+                // Cada ~4 s de reproducción se guarda el punto donde vas (para retomar después).
+                if (++vueltas % 10 == 0 && player.isPlaying) guardarPosicionActual()
+            }
         }
+    }
+
+    private fun guardarPosicionActual() {
+        val v = _video.value ?: return
+        if (v.info == null) return
+        Biblioteca.guardarPosicion(v.urlOriginal, player.currentPosition.coerceAtLeast(0))
     }
 
     private fun publicar() {
@@ -111,8 +125,15 @@ object VideoController {
                 val calidad = ajustes.calidad.first()
                 val velocidad = ajustes.velocidad.first()
                 val info = withContext(Dispatchers.IO) { Youtube.video(url) }
+                val desde = if (posicionInicialMs > 0) posicionInicialMs else Biblioteca.posicionParaRetomar(url)
+                Biblioteca.registrarVisto(
+                    Visto(
+                        url = url, titulo = info.name.orEmpty(), miniatura = info.thumbnails.bestUrl(), autor = info.uploaderName,
+                        urlAutor = info.uploaderUrl, duracionSeg = info.duration,
+                    ),
+                )
                 val alturas = StreamSelector.alturasDisponibles(info.videoStreams + info.videoOnlyStreams)
-                reproducir(info, calidad, alturas, posicionInicialMs)
+                reproducir(info, calidad, alturas, desde)
                 player.setPlaybackSpeed(velocidad)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -170,6 +191,7 @@ object VideoController {
 
     /** Cierra el reproductor y quita la notificación. */
     fun cerrar() {
+        guardarPosicionActual()
         trabajo?.cancel()
         PlayerHolder.detener()
         _video.value = null

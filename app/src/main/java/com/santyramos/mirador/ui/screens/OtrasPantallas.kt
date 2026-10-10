@@ -26,6 +26,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,27 +39,20 @@ import com.santyramos.mirador.ui.Insignia
 import com.santyramos.mirador.ui.theme.Paleta
 
 @Composable
-fun SuscripcionesScreen(modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxSize().statusBarsPadding()) {
-        Encabezado("Suscripciones", "Sin cuenta de Google")
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            EstadoVacio(
-                Icons.Outlined.Subscriptions,
-                "Tus canales, sin cuenta de Google",
-                "Aquí verás las novedades de los canales que sigas, guardados solo en tu celular.\n\nLlega en la próxima versión, junto con la importación desde Google Takeout.",
-            )
-        }
-    }
-}
-
-@Composable
-fun BibliotecaScreen(onAjustes: () -> Unit, modifier: Modifier = Modifier) {
+fun BibliotecaScreen(
+    onAjustes: () -> Unit, onHistorial: () -> Unit, onGuardados: () -> Unit, onListas: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dao = com.santyramos.mirador.data.lib.Biblioteca.dao
+    val vistos by dao.observarHistorial().collectAsState(initial = emptyList())
+    val guardados by dao.observarGuardados().collectAsState(initial = emptyList())
+    val listas by dao.observarListas().collectAsState(initial = emptyList())
     Column(modifier.fillMaxSize().statusBarsPadding()) {
         Encabezado("Biblioteca", "Todo queda guardado en tu celular", Modifier.padding(bottom = 8.dp))
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Fila(Icons.Outlined.History, "Historial", "Seguir viendo donde te quedaste", proximamente = true, onClick = null)
-            Fila(Icons.Outlined.Schedule, "Ver más tarde", "Tus videos guardados para después", proximamente = true, onClick = null)
-            Fila(Icons.AutoMirrored.Outlined.PlaylistPlay, "Mis listas", "Listas propias, guardadas en el celular", proximamente = true, onClick = null)
+            Fila(Icons.Outlined.History, "Historial", if (vistos.isEmpty()) "Seguir viendo donde te quedaste" else "${vistos.size} videos vistos", proximamente = false, onClick = onHistorial)
+            Fila(Icons.Outlined.Schedule, "Ver más tarde", if (guardados.isEmpty()) "Tus videos guardados para después" else "${guardados.size} videos", proximamente = false, onClick = onGuardados)
+            Fila(Icons.AutoMirrored.Outlined.PlaylistPlay, "Mis listas", if (listas.isEmpty()) "Listas propias, guardadas en el celular" else "${listas.size} listas", proximamente = false, onClick = onListas)
             Spacer(Modifier.padding(4.dp))
             Fila(Icons.Outlined.Settings, "Ajustes", "Descargas, motor yt-dlp, actualizaciones y batería", proximamente = false, onClick = onAjustes)
         }
