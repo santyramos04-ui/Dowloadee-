@@ -6,6 +6,10 @@ object ErrorMapper {
 
     private val reglas = listOf(
         Regla(
+            listOf("spotify-drm"),
+            "Spotify protege su música (DRM) y no se puede descargar de ahí. Busca la canción en YouTube y descárgala desde allí.",
+        ),
+        Regla(
             listOf("no space left", "enospc", "not enough space", "disk full"),
             "No hay espacio suficiente en el celular. Libera espacio e inténtalo otra vez.",
         ),

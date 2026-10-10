@@ -46,3 +46,12 @@ class ListasTest {
         assertEquals("https://i/1.jpg", l.entradas[0].miniatura)
     }
 }
+
+class SpotifyTest {
+    @Test fun spotifyNoSeDescargaYSeExplica() {
+        assertTrue(UrlTools.esSpotify("https://open.spotify.com/track/abc123"))
+        assertFalse(UrlTools.esSpotify("https://www.youtube.com/watch?v=abc"))
+        val msg = com.santyramos.mirador.download.ErrorMapper.mensaje(IllegalStateException("spotify-drm"))
+        assertTrue(msg.contains("DRM") && msg.contains("YouTube"))
+    }
+}

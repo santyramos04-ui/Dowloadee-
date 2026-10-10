@@ -229,6 +229,7 @@ private val Plataformas = listOf(
     Plataforma("Reddit", R.drawable.ic_plat_reddit, "https://www.reddit.com"),
     Plataforma("Twitch", R.drawable.ic_plat_twitch, "https://www.twitch.tv"),
     Plataforma("Vimeo", R.drawable.ic_plat_vimeo, "https://vimeo.com"),
+    Plataforma("Spotify", R.drawable.ic_plat_spotify, "https://open.spotify.com"),
     Plataforma("Pinterest", R.drawable.ic_plat_pinterest, "https://www.pinterest.com"),
     Plataforma("Otro sitio", null, ""),
 )
