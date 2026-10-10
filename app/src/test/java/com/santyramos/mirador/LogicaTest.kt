@@ -144,6 +144,8 @@ class ActualizacionTest {
         assertTrue(AppUpdater.esMasNueva("1.1.0", "1.0.99"))
         assertFalse(AppUpdater.esMasNueva("v1.0.57", "1.0.57"))
         assertFalse(AppUpdater.esMasNueva("1.0.9", "1.0.57"))
+        assertTrue(AppUpdater.esMasNueva("v1.0.30", "1.0.30-prueba"))
+        assertFalse(AppUpdater.esMasNueva("v1.0.29", "1.0.30-prueba"))
     }
 
     @Test fun leeLaRespuestaDeGitHub() {

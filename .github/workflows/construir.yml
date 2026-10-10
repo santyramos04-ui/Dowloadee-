@@ -41,8 +41,15 @@ jobs:
         run: |
           MAJOR=$(grep '^major=' version.properties | cut -d= -f2)
           MINOR=$(grep '^minor=' version.properties | cut -d= -f2)
-          COUNT=$(git rev-list --count HEAD)
-          echo "version=$MAJOR.$MINOR.$COUNT" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            COUNT=$(git rev-list --count HEAD)
+            echo "version=$MAJOR.$MINOR.$COUNT" >> "$GITHUB_OUTPUT"
+          else
+            # Versión de prueba: lleva el número que tendrá la próxima versión oficial (main + 1 al fusionar),
+            # así la oficial se instala encima sin problemas.
+            COUNT=$(( $(git rev-list --count origin/main 2>/dev/null || git rev-list --count HEAD) + 1 ))
+            echo "version=$MAJOR.$MINOR.$COUNT-prueba" >> "$GITHUB_OUTPUT"
+          fi
           echo "code=$((1000 + COUNT))" >> "$GITHUB_OUTPUT"
 
       - name: yt-dlp más reciente dentro del APK
@@ -129,6 +136,27 @@ jobs:
           Se instala encima de la versión anterior (misma clave de firma).
           NOTAS
           gh release create "v$VER" "salida/Mirador-$VER.apk" --title "Mirador $VER" --notes-file notas.md --latest
+
+      # Versión de prueba: cada push a una rama de trabajo reemplaza la release «prueba» (marcada como
+      # «pre-release»). No es la «última versión», así que la app de los demás no la ofrece.
+      - name: Publicar versión de prueba
+        if: github.event_name == 'push' && github.ref != 'refs/heads/main' && steps.clave.outputs.firmado == 'si'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER=${{ steps.version.outputs.version }}
+          cp "salida/Mirador-$VER.apk" salida/Mirador-prueba.apk
+          cat > notas.md <<NOTAS
+          Mirador $VER — versión de PRUEBA (todavía no publicada)
+
+          - Rama: ${GITHUB_REF_NAME}
+          - Commit: ${GITHUB_SHA::7}
+
+          Se instala encima de la versión normal (misma clave). Cuando salga la versión oficial, la app te avisará para pasarte a ella.
+          NOTAS
+          gh release delete prueba --yes --cleanup-tag 2>/dev/null || true
+          gh release create prueba salida/Mirador-prueba.apk --title "Mirador $VER (prueba)" --notes-file notas.md --prerelease --target "$GITHUB_SHA"
+          echo "### Versión de prueba lista: https://github.com/${GITHUB_REPOSITORY}/releases/download/prueba/Mirador-prueba.apk" >> "$GITHUB_STEP_SUMMARY"
 
   # Pruebas que hablan con YouTube de verdad (parte VER). No bloquean la publicación porque
   # YouTube puede bloquear las IP de los servidores de GitHub aunque la app funcione bien.
