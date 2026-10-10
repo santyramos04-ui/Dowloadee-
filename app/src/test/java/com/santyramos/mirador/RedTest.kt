@@ -67,4 +67,41 @@ class RedTest {
         println("PRUEBA_VER canal: «${datos.info.name}» ${datos.videos.elementos.size} videos")
         assertTrue("El canal no devolvió videos", datos.videos.elementos.isNotEmpty())
     }
+
+    @Test fun feedRssDeUnCanalReal() = runBlocking {
+        requiere()
+        Youtube.iniciar()
+        val id = Youtube.canal("https://www.youtube.com/@NASA").info.id
+        println("PRUEBA_VER rss: canal NASA = $id")
+        val xml = Http.client.newCall(Request.Builder().url(com.santyramos.mirador.data.lib.FeedRss.url(id)).header("User-Agent", "Mozilla/5.0").build()).execute().use { r ->
+            println("PRUEBA_VER rss: HTTP ${r.code}")
+            // Informativa: si YouTube responde 404 la app usa el extractor en su lugar.
+            if (!r.isSuccessful) return@runBlocking
+            r.body.string()
+        }
+        val n = com.santyramos.mirador.data.lib.FeedRss.parsear(xml, id)
+        println("PRUEBA_VER rss: ${n.size} videos; primero = ${n.firstOrNull()?.titulo}")
+        assertTrue("El feed no trajo videos", n.isNotEmpty())
+    }
+
+    @Test fun tendenciasDeColombia() = runBlocking {
+        requiere()
+        Youtube.iniciar()
+        val t = Youtube.tendencias()
+        // Informativa: YouTube retiró su página de tendencias; si no existe, la app muestra solo la portada.
+        println("PRUEBA_VER tendencias: ${t?.size ?: "no disponible"}")
+    }
+
+    @Test fun comentariosDeUnVideo() = runBlocking {
+        requiere()
+        Youtube.iniciar()
+        try {
+            val p = Youtube.comentarios("https://www.youtube.com/watch?v=jNQXAC9IVRw")
+            println("PRUEBA_VER comentarios: ${p.comentarios.size}; primero = ${p.comentarios.firstOrNull()?.texto?.take(60)}")
+            assertTrue("No hubo comentarios", p.comentarios.isNotEmpty())
+        } catch (e: org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException) {
+            println("PRUEBA_VER comentarios: NO CONCLUYENTE — YouTube bloqueó la IP del servidor")
+            assumeTrue("YouTube bloqueó la IP del servidor", false)
+        }
+    }
 }

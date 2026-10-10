@@ -80,6 +80,11 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.santyramos.mirador.data.PlayerQuality
 import com.santyramos.mirador.extractor.Elemento
+import com.santyramos.mirador.extractor.bestUrl
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Share
 import com.santyramos.mirador.extractor.Youtube
 import com.santyramos.mirador.player.VideoController
 import com.santyramos.mirador.ui.BotonPrimario
@@ -280,6 +285,9 @@ fun PlayerScreen(
                             Icon(if (estado.reproduciendo) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (estado.reproduciendo) "Pausar" else "Reproducir", tint = Color.White, modifier = Modifier.size(40.dp))
                         }
                         IconButton(onClick = { VideoController.saltar(10_000) }) { Icon(Icons.Filled.Forward10, "Adelantar 10 segundos", tint = Color.White, modifier = Modifier.size(40.dp)) }
+                        if (video?.info != null && VideoController.haySiguiente()) {
+                            IconButton(onClick = { VideoController.siguiente() }) { Icon(Icons.Filled.SkipNext, "Siguiente video", tint = Color.White, modifier = Modifier.size(40.dp)) }
+                        }
                     }
                     // Barra inferior
                     Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 12.dp)) {
@@ -309,6 +317,10 @@ fun PlayerScreen(
             } else if (info != null) {
                 val relacionados = remember(info) { info.relatedItems.mapNotNull { Youtube.aElemento(it) }.filterIsInstance<Elemento.Video>() }
                 var verTodo by remember(info) { mutableStateOf(false) }
+                var verComentarios by remember(info) { mutableStateOf(false) }
+                if (verComentarios) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verComentarios = false }) {
+                    com.santyramos.mirador.ui.ComentariosSheetContent(info.url)
+                }
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
                     item {
                         Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -328,16 +340,40 @@ fun PlayerScreen(
                             ) {
                                 Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Text(info.uploaderName.orEmpty(), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    if (info.uploaderSubscriberCount > 0) Text("${Format.contar(info.uploaderSubscriberCount)} suscriptores", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    if (info.uploaderSubscriberCount > 0) Text("${Format.contar(info.uploaderSubscriberCount)} suscriptores", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 10.dp))
+                                    val canalId = com.santyramos.mirador.data.lib.Importar.canalIdDeUrl(info.uploaderUrl.orEmpty())
+                                    com.santyramos.mirador.ui.BotonSuscribir(
+                                        canalId,
+                                        { com.santyramos.mirador.data.lib.Suscripcion(canalId.orEmpty(), info.uploaderName.orEmpty(), com.santyramos.mirador.data.lib.Importar.urlDeCanal(canalId.orEmpty())) },
+                                    )
                                 }
                             }
                             // Acciones
+                            BotonPrimario("Descargar", { onDescargar(info.url) }, Modifier.fillMaxWidth(), icono = Icons.Outlined.FileDownload)
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                                BotonPrimario("Descargar", { onDescargar(info.url) }, Modifier.weight(1.4f), icono = Icons.Outlined.FileDownload)
+                                val guardar = com.santyramos.mirador.ui.LocalGuardar.current
+                                BotonSecundario("Guardar", {
+                                    guardar(Elemento.Video(info.name.orEmpty(), info.url, info.thumbnails.bestUrl(), info.uploaderName, info.uploaderUrl, info.duration, info.viewCount, info.textualUploadDate, false, false))
+                                }, Modifier.weight(1f), icono = Icons.Outlined.BookmarkBorder)
                                 BotonSecundario("Compartir", {
                                     contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.url), "Compartir enlace"))
-                                }, Modifier.weight(1f))
+                                }, Modifier.weight(1f), icono = Icons.Outlined.Share)
                             }
+                            val auto by VideoController.autoSiguiente.collectAsState()
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Reproducción automática", style = MaterialTheme.typography.titleSmall)
+                                    Text("Al terminar, sigue con el siguiente video", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                androidx.compose.material3.Switch(
+                                    checked = auto, onCheckedChange = { VideoController.cambiarAutoSiguiente(it) },
+                                    colors = androidx.compose.material3.SwitchDefaults.colors(
+                                        checkedThumbColor = Paleta.SobreAcento, checkedTrackColor = MaterialTheme.colorScheme.primary, checkedBorderColor = MaterialTheme.colorScheme.primary,
+                                        uncheckedThumbColor = Paleta.Texto2, uncheckedTrackColor = Paleta.S3, uncheckedBorderColor = Paleta.Linea,
+                                    ),
+                                )
+                            }
+                            BotonSecundario("Ver comentarios", { verComentarios = true }, Modifier.fillMaxWidth(), icono = Icons.Outlined.ChatBubbleOutline)
                             val desc = info.description?.content.orEmpty()
                             if (desc.isNotBlank()) {
                                 Text(

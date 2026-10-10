@@ -48,6 +48,7 @@ class Settings(private val context: Context) {
         val appUltimaRevision = longPreferencesKey("app_ultima_revision")
         val portapapelesVisto = stringPreferencesKey("portapapeles_visto")
         val usarCookies = booleanPreferencesKey("usar_cookies")
+        val autoSiguiente = booleanPreferencesKey("reproduccion_automatica")
     }
 
     val simultaneas: Flow<Int> = ds.data.map { it[K.simultaneas] ?: 2 }
@@ -57,6 +58,7 @@ class Settings(private val context: Context) {
     val ytdlpAuto: Flow<Boolean> = ds.data.map { it[K.ytdlpAuto] ?: true }
     val ytdlpCanal: Flow<YtdlpChannel> = ds.data.map { YtdlpChannel.from(it[K.ytdlpCanal]) }
     val ytdlpVersion: Flow<String?> = ds.data.map { it[K.ytdlpVersion] }
+    val autoSiguiente: Flow<Boolean> = ds.data.map { it[K.autoSiguiente] ?: true }
     val usarCookies: Flow<Boolean> = ds.data.map { it[K.usarCookies] ?: false }
 
     suspend fun setSimultaneas(n: Int) = ds.edit { it[K.simultaneas] = n.coerceIn(1, 5) }
@@ -66,6 +68,7 @@ class Settings(private val context: Context) {
     suspend fun setYtdlpAuto(v: Boolean) = ds.edit { it[K.ytdlpAuto] = v }
     suspend fun setYtdlpCanal(c: YtdlpChannel) = ds.edit { it[K.ytdlpCanal] = c.name }
     suspend fun setYtdlpVersion(v: String?) = ds.edit { if (v == null) it.remove(K.ytdlpVersion) else it[K.ytdlpVersion] = v }
+    suspend fun setAutoSiguiente(v: Boolean) = ds.edit { it[K.autoSiguiente] = v }
     suspend fun setUsarCookies(v: Boolean) = ds.edit { it[K.usarCookies] = v }
 
     suspend fun ytdlpUltimoIntento(): Long = ds.data.first()[K.ytdlpUltimoIntento] ?: 0L

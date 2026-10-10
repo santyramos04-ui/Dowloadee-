@@ -187,16 +187,22 @@ Navegación inferior: **Inicio · Suscripciones · Descargas · Biblioteca**.
 * **Inicio**: escribe en el buscador. Filtros: *Todo, Videos, Canales, Listas* y duración.
 * Toca un video para abrir el **reproductor**: calidad (Auto/1080/720/480), velocidad, pantalla completa, **doble toque a los lados = ±10 s**, **deslizar a la izquierda = brillo / a la derecha = volumen**.
 * Al salir del reproductor el **audio sigue sonando** (barra pequeña abajo, notificación y pantalla de bloqueo). Si estás viendo un video y sales de la app, entra en **imagen en imagen**.
-* Cada video tiene el botón **Descargar**.
+* Cada video tiene el botón **Descargar**. En el reproductor también hay **Guardar**, **Compartir** y **Ver comentarios**.
+* **Reproducción automática**: al terminar un video sigue con el siguiente (el de la lista que estés viendo, o un relacionado). Se apaga con el interruptor del reproductor; el botón ⏭ pasa al siguiente a mano.
+* **Guardar**: toca el marcador de un video (o mantén pulsado cualquier video) para ponerlo en **Ver más tarde** o en tus **listas**.
+* **Suscripciones** (sin cuenta de Google): en la página de un canal toca **Suscribirme**. Para traer las que ya tienes en YouTube: pestaña *Suscripciones → Importar mis suscripciones* y elige el ZIP de **Google Takeout** (la app te explica cómo obtenerlo). También sirve el respaldo de NewPipe.
+* **Historial**: la app recuerda por dónde ibas en cada video y lo retoma al abrirlo. Está en *Biblioteca → Historial*.
+* **Tendencias**: si YouTube las ofrece, aparecen en Inicio como «Tendencias en Colombia». (YouTube retiró esa página en 2025; la versión probada no la devolvió, así que probablemente no la veas.)
 * También puedes tocar un enlace de YouTube en cualquier app y elegir **Mirador** para verlo sin anuncios.
 
 ### Descargar de cualquier app o página
 
 Hay tres formas:
 
+0. **Accesos directos**: la pantalla de Inicio tiene un botón por plataforma (X, Instagram, TikTok, Facebook, Reddit, Twitch, Vimeo…) que abre el navegador de Mirador en ese sitio. «YouTube» te lleva al buscador.
 1. **Compartir**: en X, Instagram, TikTok, Facebook, el navegador… toca **Compartir → Mirador**. Se abre una hoja desde abajo (sin salir de la app de origen) con la vista previa y los formatos.
 2. **Pegar**: pestaña **Descargas** → pega el enlace → **Buscar**. Si abres Mirador con un enlace copiado, te pregunta **«¿Descargar este enlace?»**.
-3. *(Próxima versión)* **Navegador interno** con botón flotante «⬇️ Descargar».
+3. **Navegador interno**: en Inicio toca el ícono del mundo, entra a X, Instagram, TikTok o Facebook, abre la publicación y toca el botón verde **Descargar**.
 
 Formatos:
 
@@ -208,6 +214,7 @@ Formatos:
 | **Audio MP3** | 192 kbps con portada y título incrustados |
 | **Fotos y videos del post** | En publicaciones de X o Instagram con fotos o carruseles, baja todo |
 
+Si descargas una **lista de reproducción** (o una lista tuya), aparecen todos los videos con casilla: **Todos / Ninguno** o marca solo los que quieras.
 Antes de descargar ves **miniatura, título, duración y peso estimado** de cada opción.
 Las descargas van a una **cola** (2 a la vez; puedes cambiarlo en Ajustes) con progreso, velocidad, tiempo restante, **pausar, reanudar, cancelar y reintentar**. Siguen con la pantalla apagada.
 Los archivos se guardan en **Descargas/Mirador/** (subcarpetas *Videos*, *Audio* e *Imagenes*) y se ven en **Archivos** y en la **Galería**. La app no pide permisos de almacenamiento.
@@ -243,6 +250,15 @@ Las pruebas automáticas corren en GitHub Actions en cada cambio (pestaña **Act
 * [ ] Descargar un video (Mejor), un audio MP3 y una publicación de X con fotos; abrirlos desde «✅ Lista» y verlos en Archivos y Galería.
 * [ ] Descargar con la pantalla apagada (que no se corte) y probar pausar/reanudar/cancelar.
 * [ ] Ajustes → Actualizar motor ahora, y Buscar actualización.
+* [ ] Suscribirte a un canal desde su página y ver sus videos en la pestaña Suscripciones.
+* [ ] Importar tus suscripciones con el ZIP de Google Takeout.
+* [ ] Ver la mitad de un video, salir y volver a abrirlo: debe retomar donde ibas. Revisar Biblioteca → Historial.
+* [ ] Guardar un video en Ver más tarde y en una lista nueva; descargar la lista completa.
+* [ ] Ver comentarios de un video.
+* [ ] Reproducir una lista y dejar que pase sola al siguiente video (también con la pantalla apagada).
+* [ ] Descargar una lista de YouTube eligiendo solo algunos videos.
+* [ ] Inicio: tocar cada acceso directo y comprobar que abre el sitio.
+* [ ] Navegador interno: abrir un video de X o TikTok y tocar Descargar.
 
 ---
 

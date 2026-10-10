@@ -7,8 +7,12 @@ import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.santyramos.mirador.data.PlayerQuality
+import com.santyramos.mirador.data.lib.Biblioteca
+import com.santyramos.mirador.data.lib.Visto
+import com.santyramos.mirador.extractor.bestUrl
 import com.santyramos.mirador.data.Settings
 import com.santyramos.mirador.download.ErrorMapper
+import com.santyramos.mirador.extractor.Elemento
 import com.santyramos.mirador.extractor.StreamSelector
 import com.santyramos.mirador.extractor.Youtube
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +63,12 @@ object VideoController {
     private val _video = MutableStateFlow<VideoActual?>(null)
     val video: StateFlow<VideoActual?> = _video.asStateFlow()
 
+    /** Videos que van a continuación (una lista de reproducción, tus listas, Ver más tarde…). Vacía = se usan los relacionados. */
+    private var cola: List<String> = emptyList()
+    private val reproducidos = LinkedHashSet<String>()
+    private val _autoSiguiente = MutableStateFlow(true)
+    val autoSiguiente: StateFlow<Boolean> = _autoSiguiente.asStateFlow()
+
     private val _estado = MutableStateFlow(EstadoReproduccion())
     val estado: StateFlow<EstadoReproduccion> = _estado.asStateFlow()
 
@@ -66,18 +76,33 @@ object VideoController {
 
     fun init(context: Context) {
         app = context.applicationContext
+        scope.launch { _autoSiguiente.value = Settings(app).autoSiguiente.first() }
         PlayerHolder.conectarServicio(app)
         player.addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) = publicar()
-            override fun onIsPlayingChanged(isPlaying: Boolean) = publicar()
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                publicar()
+                if (playbackState == Player.STATE_ENDED && _autoSiguiente.value && _video.value?.info != null) siguiente()
+            }
+            override fun onIsPlayingChanged(isPlaying: Boolean) { publicar(); if (!isPlaying) guardarPosicionActual() }
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                 _video.value = _video.value?.copy(cargando = false, error = ErrorMapper.mensajeReproduccion(error))
             }
         })
         sondeo?.cancel()
         sondeo = scope.launch {
-            while (isActive) { publicar(); delay(400) }
+            var vueltas = 0
+            while (isActive) {
+                publicar(); delay(400)
+                // Cada ~4 s de reproducción se guarda el punto donde vas (para retomar después).
+                if (++vueltas % 10 == 0 && player.isPlaying) guardarPosicionActual()
+            }
         }
+    }
+
+    private fun guardarPosicionActual() {
+        val v = _video.value ?: return
+        if (v.info == null) return
+        Biblioteca.guardarPosicion(v.urlOriginal, player.currentPosition.coerceAtLeast(0))
     }
 
     private fun publicar() {
@@ -99,11 +124,39 @@ object VideoController {
         return !cm.isActiveNetworkMetered || caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
+    /** Define lo que sigue después: al abrir un video de esta lista, el siguiente será el que viene en ella. */
+    fun definirCola(urls: List<String>) { cola = urls }
+
+    fun cambiarAutoSiguiente(v: Boolean) {
+        _autoSiguiente.value = v
+        scope.launch { Settings(app).setAutoSiguiente(v) }
+    }
+
+    /** El siguiente de la cola; si no hay cola (o se acabó), el primer relacionado que aún no viste. */
+    fun urlSiguiente(): String? {
+        val actual = _video.value ?: return null
+        val i = cola.indexOf(actual.urlOriginal)
+        if (i >= 0 && i + 1 < cola.size) return cola[i + 1]
+        if (i >= 0) return null // era el último de la lista: se termina ahí
+        val relacionados = actual.info?.relatedItems.orEmpty()
+            .mapNotNull { Youtube.aElemento(it) }.filterIsInstance<Elemento.Video>()
+            .filter { !it.esDirecto && it.url != actual.urlOriginal && it.url !in reproducidos }
+        return relacionados.firstOrNull()?.url
+    }
+
+    fun haySiguiente(): Boolean = urlSiguiente() != null
+
+    fun siguiente() { urlSiguiente()?.let { abrir(it) } }
+
     /** Abre un video. Si es el mismo que ya está sonando, no lo reinicia. */
     fun abrir(url: String, posicionInicialMs: Long = 0) {
         val actual = _video.value
         if (actual != null && actual.urlOriginal == url && actual.info != null && player.mediaItemCount > 0) return
         trabajo?.cancel()
+        // Si el video no pertenece a la cola actual, se descarta (y se vuelve a los relacionados).
+        if (url !in cola) cola = emptyList()
+        reproducidos.add(url)
+        if (reproducidos.size > 200) reproducidos.remove(reproducidos.first())
         _video.value = VideoActual(urlOriginal = url)
         trabajo = scope.launch {
             try {
@@ -111,8 +164,15 @@ object VideoController {
                 val calidad = ajustes.calidad.first()
                 val velocidad = ajustes.velocidad.first()
                 val info = withContext(Dispatchers.IO) { Youtube.video(url) }
+                val desde = if (posicionInicialMs > 0) posicionInicialMs else Biblioteca.posicionParaRetomar(url)
+                Biblioteca.registrarVisto(
+                    Visto(
+                        url = url, titulo = info.name.orEmpty(), miniatura = info.thumbnails.bestUrl(), autor = info.uploaderName,
+                        urlAutor = info.uploaderUrl, duracionSeg = info.duration,
+                    ),
+                )
                 val alturas = StreamSelector.alturasDisponibles(info.videoStreams + info.videoOnlyStreams)
-                reproducir(info, calidad, alturas, posicionInicialMs)
+                reproducir(info, calidad, alturas, desde)
                 player.setPlaybackSpeed(velocidad)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -170,6 +230,7 @@ object VideoController {
 
     /** Cierra el reproductor y quita la notificación. */
     fun cerrar() {
+        guardarPosicionActual()
         trabajo?.cancel()
         PlayerHolder.detener()
         _video.value = null

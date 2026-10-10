@@ -1,6 +1,7 @@
 package com.santyramos.mirador
 
 import android.app.Application
+import com.santyramos.mirador.data.lib.Biblioteca
 import com.santyramos.mirador.download.DownloadCenter
 import com.santyramos.mirador.download.Notifications
 import com.santyramos.mirador.download.YtDlpEngine
@@ -19,6 +20,7 @@ class MiradorApp : Application() {
         Notifications.crearCanales(this)
         Youtube.iniciar()
         DownloadCenter.init(this)
+        Biblioteca.init(this)
         YtdlpUpdater.programar(this)
         scope.launch(Dispatchers.IO) {
             // Descomprime Python, ffmpeg y QuickJS la primera vez (tarda unos segundos).

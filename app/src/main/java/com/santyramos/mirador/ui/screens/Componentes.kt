@@ -2,6 +2,7 @@ package com.santyramos.mirador.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.santyramos.mirador.extractor.Elemento
 import com.santyramos.mirador.ui.BotonIcono
+import com.santyramos.mirador.ui.LocalGuardar
 import com.santyramos.mirador.ui.theme.Paleta
 import com.santyramos.mirador.util.Format
 
@@ -46,8 +49,10 @@ private fun Elemento.Video.datos(): String =
 
 /** Tarjeta grande de video para el feed: miniatura 16:9, título, datos y botón de descarga. */
 @Composable
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 8.dp)) {
+    val guardar = LocalGuardar.current
+    Column(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = { guardar(v) }).padding(horizontal = 20.dp, vertical = 8.dp)) {
         Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(18.dp)).background(Paleta.S2)) {
             AsyncImage(model = v.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
             val etiqueta = when {
@@ -63,16 +68,19 @@ fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit
                 Text(v.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(v.datos(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
             }
-            BotonIcono(Icons.Outlined.FileDownload, "Descargar", onDescargar, Modifier.padding(start = 12.dp), destacado = true)
+            BotonIcono(Icons.Outlined.BookmarkBorder, "Guardar", { guardar(v) }, Modifier.padding(start = 8.dp))
+            BotonIcono(Icons.Outlined.FileDownload, "Descargar", onDescargar, Modifier.padding(start = 4.dp), destacado = true)
         }
     }
 }
 
 /** Fila compacta (videos de un canal, de una lista o relacionados). */
 @Composable
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
+    val guardar = LocalGuardar.current
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = { guardar(v) }).padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(120.dp).height(68.dp).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
