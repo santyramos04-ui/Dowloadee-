@@ -107,7 +107,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
             Toast.makeText(
                 contexto,
                 r.getOrNull()?.let { "Restaurado: ${it.suscripciones} canales, ${it.historial} del historial, ${it.guardados} guardados y ${it.listas} listas." }
-                    ?: "Ese archivo no es un respaldo de Mirador.",
+                    ?: "Ese archivo no es un respaldo de ${com.santyramos.mirador.util.Marca.NOMBRE}.",
                 Toast.LENGTH_LONG,
             ).show()
         }
@@ -182,7 +182,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                 }
             }
             Seccion("Aplicación") {
-                Text("Mirador ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyMedium)
+                Text("${com.santyramos.mirador.util.Marca.NOMBRE} ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyMedium)
                 when (val e = estadoApp) {
                     AppUpdater.Estado.Nada -> {}
                     AppUpdater.Estado.Buscando -> LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -220,7 +220,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                 if (confirmarCierre) androidx.compose.material3.AlertDialog(
                     onDismissRequest = { confirmarCierre = false },
                     title = { Text("¿Cerrar todas las sesiones?") },
-                    text = { Text("Se cierra la sesión de ${conSesion.joinToString(", ")} dentro de Mirador. Para volver a bajar contenido privado tendrás que iniciar sesión otra vez.") },
+                    text = { Text("Se cierra la sesión de ${conSesion.joinToString(", ")} dentro de ${com.santyramos.mirador.util.Marca.NOMBRE}. Para volver a bajar contenido privado tendrás que iniciar sesión otra vez.") },
                     confirmButton = { androidx.compose.material3.TextButton(onClick = { Cookies.cerrarSesiones(contexto); conSesion = emptyList(); confirmarCierre = false }) { Text("Cerrar sesiones") } },
                     dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmarCierre = false }) { Text("Cancelar") } },
                 )
@@ -235,7 +235,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
             }
             Seccion("Batería (importante en Xiaomi / HyperOS)") {
                 Text(
-                    "Para que la música en segundo plano y las descargas no se corten con la pantalla apagada, pon Mirador en «Sin restricciones» (Ajustes del sistema → Aplicaciones → Mirador → Ahorro de batería) y activa «Inicio automático».",
+                    "Para que la música en segundo plano y las descargas no se corten con la pantalla apagada, pon ${com.santyramos.mirador.util.Marca.NOMBRE} en «Sin restricciones» (Ajustes del sistema → Aplicaciones → ${com.santyramos.mirador.util.Marca.NOMBRE} → Ahorro de batería) y activa «Inicio automático».",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 BotonSecundario("Quitar restricción de batería", {
@@ -252,7 +252,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                 }, Modifier.fillMaxWidth())
             }
             Seccion("Acerca de") {
-                Text("Mirador es software libre (GPLv3). Usa NewPipeExtractor para ver YouTube sin anuncios y yt-dlp para descargar. Todo queda en tu celular.", style = MaterialTheme.typography.bodySmall)
+                Text("${com.santyramos.mirador.util.Marca.NOMBRE} es software libre (GPLv3). Usa NewPipeExtractor para ver YouTube sin anuncios y yt-dlp para descargar. Todo queda en tu celular.", style = MaterialTheme.typography.bodySmall)
             }
         }
     }

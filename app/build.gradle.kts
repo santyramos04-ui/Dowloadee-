@@ -38,6 +38,9 @@ android {
         ndk { abiFilters += "arm64-v8a" }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GITHUB_REPO", "\"santyramos04-ui/Dowloadee-\"")
+        val nombreApp = (versionProps["nombre"] as String?)?.trim().orEmpty().ifEmpty { "Mirador" }
+        buildConfigField("String", "NOMBRE_APP", "\"$nombreApp\"")
+        resValue("string", "app_name", nombreApp)
     }
 
     signingConfigs {

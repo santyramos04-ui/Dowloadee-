@@ -189,8 +189,8 @@ fun HomeScreen(
         // ---- Marca + atajo para pegar ----
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.ic_mark), contentDescription = null, modifier = Modifier.size(30.dp))
-            Text("mirador", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 10.dp).weight(1f))
-            BotonIcono(Icons.Outlined.Public, "Navegador de Mirador", { onAbrirNavegador(null) }, bordeado = true)
+            Text(com.santyramos.mirador.util.Marca.NOMBRE.lowercase(), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 10.dp).weight(1f))
+            BotonIcono(Icons.Outlined.Public, "Navegador de ${com.santyramos.mirador.util.Marca.NOMBRE}", { onAbrirNavegador(null) }, bordeado = true)
             BotonIcono(Icons.Outlined.ContentPaste, "Pegar enlaces para descargar", onIrADescargas, Modifier.padding(start = 8.dp), bordeado = true)
         }
         // ---- Buscador ----

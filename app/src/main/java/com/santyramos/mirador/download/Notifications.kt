@@ -39,7 +39,7 @@ object Notifications {
             setShowBadge(false)
         })
         nm.createNotificationChannel(NotificationChannel(CANAL_ACTUALIZACION, "Actualizaciones", NotificationManager.IMPORTANCE_DEFAULT).apply {
-            description = "Avisa cuando hay una versión nueva de Mirador"
+            description = "Avisa cuando hay una versión nueva de ${com.santyramos.mirador.util.Marca.NOMBRE}"
         })
     }
 
@@ -64,7 +64,7 @@ object Notifications {
             .setContentIntent(abrirApp(context))
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
         if (activas.isEmpty()) {
-            b.setContentTitle("Mirador").setContentText(if (enCola > 0) "$enCola en cola" else "Preparando descarga…")
+            b.setContentTitle(com.santyramos.mirador.util.Marca.NOMBRE).setContentText(if (enCola > 0) "$enCola en cola" else "Preparando descarga…")
                 .setProgress(0, 0, true)
         } else {
             val a = activas.first()
@@ -100,7 +100,7 @@ object Notifications {
             .setSmallIcon(R.drawable.ic_stat_mirador)
             .setContentTitle("✅ Lista")
             .setContentText(d.titulo)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(d.titulo + "\nToca para abrir. Guardado en Descargas/Mirador"))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(d.titulo + "\nToca para abrir. Guardado en Descargas/${com.santyramos.mirador.util.Marca.NOMBRE}"))
             .setContentIntent(pi)
             .setAutoCancel(true)
             .build()
@@ -127,7 +127,7 @@ object Notifications {
             .setSmallIcon(R.drawable.ic_stat_mirador)
             .setContentTitle(if (errores == 0) "✅ Lista: $nombre" else "⚠ Terminó: $nombre")
             .setContentText(texto)
-            .setStyle(NotificationCompat.BigTextStyle().bigText("$texto\nGuardados en Descargas/Mirador"))
+            .setStyle(NotificationCompat.BigTextStyle().bigText("$texto\nGuardados en Descargas/${com.santyramos.mirador.util.Marca.NOMBRE}"))
             .setContentIntent(abrirApp(context))
             .setAutoCancel(true)
             .build()

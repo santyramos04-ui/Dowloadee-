@@ -208,7 +208,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                         border = androidx.compose.foundation.BorderStroke(1.dp, com.santyramos.mirador.ui.theme.Paleta.AcentoBorde),
                     ) {
                         Row(Modifier.padding(12.dp)) {
-                            Text("Hay una versión nueva de Mirador (${d.nueva.version}). Toca para instalarla.", color = com.santyramos.mirador.ui.theme.Acento, style = MaterialTheme.typography.labelMedium)
+                            Text("Hay una versión nueva de ${com.santyramos.mirador.util.Marca.NOMBRE} (${d.nueva.version}). Toca para instalarla.", color = com.santyramos.mirador.ui.theme.Acento, style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }

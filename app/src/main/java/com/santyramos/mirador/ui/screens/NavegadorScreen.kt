@@ -144,7 +144,7 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
             if (actual == null) {
                 // Pantalla de inicio del navegador
                 Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text("Navegador de Mirador", style = MaterialTheme.typography.headlineSmall)
+                    Text("Navegador de ${com.santyramos.mirador.util.Marca.NOMBRE}", style = MaterialTheme.typography.headlineSmall)
                     Text(
                         "Entra al sitio, abre la publicación que quieras y toca el botón verde «Descargar». Sirve para X, Instagram, TikTok, Facebook y más.",
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -135,7 +135,7 @@ fun SeleccionListaContent(l: ListaInfo, onCerrar: () -> Unit, onEncolada: () -> 
             item {
                 Text(l.titulo, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
-                    "$total videos" + (l.autor?.let { " · $it" } ?: "") + "\nSe guardan en Descargas/Mirador/…/${UrlTools.nombreSeguro(l.titulo, 60)}, numerados en orden.",
+                    "$total videos" + (l.autor?.let { " · $it" } ?: "") + "\nSe guardan en Descargas/${com.santyramos.mirador.util.Marca.NOMBRE}/…/${UrlTools.nombreSeguro(l.titulo, 60)}, numerados en orden.",
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp),
                 )
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 14.dp)) {

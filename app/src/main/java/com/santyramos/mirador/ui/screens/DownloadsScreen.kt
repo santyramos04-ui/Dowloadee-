@@ -195,7 +195,7 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
 
         if (descargas.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                EstadoVacio(Icons.Outlined.FileDownload, "Aún no hay descargas", "Pega un enlace arriba o usa «Compartir → Mirador» desde otra app.")
+                EstadoVacio(Icons.Outlined.FileDownload, "Aún no hay descargas", "Pega un enlace arriba o usa «Compartir → ${com.santyramos.mirador.util.Marca.NOMBRE}» desde otra app.")
             }
         } else if (visibles.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No hay nada en esta categoría.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
