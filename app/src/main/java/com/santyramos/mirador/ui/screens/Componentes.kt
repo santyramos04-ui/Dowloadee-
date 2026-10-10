@@ -44,8 +44,9 @@ private fun Etiqueta(texto: String, modifier: Modifier = Modifier, fondo: Color 
     )
 }
 
+/** Segunda línea de un video: vistas y fecha. El canal va en su propia línea, arriba. */
 private fun Elemento.Video.datos(): String =
-    listOfNotNull(autor, if (vistas >= 0) "${Format.contar(vistas)} vistas" else null, fecha).joinToString(" · ")
+    listOfNotNull(if (vistas >= 0) "${Format.contar(vistas)} vistas" else null, fecha).joinToString(", ")
 
 /** Tarjeta grande de video para el feed: miniatura 16:9, título, datos y botón de descarga. */
 @Composable
@@ -53,7 +54,7 @@ private fun Elemento.Video.datos(): String =
 fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
     val guardar = LocalGuardar.current
     Column(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = { guardar(v) }).padding(horizontal = 20.dp, vertical = 8.dp)) {
-        Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(18.dp)).background(Paleta.S2)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
             AsyncImage(model = v.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
             val etiqueta = when {
                 v.esDirecto -> "EN VIVO"
@@ -66,7 +67,9 @@ fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit
         Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
                 Text(v.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(v.datos(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+                if (!v.autor.isNullOrBlank()) Text(v.autor, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+                val d = v.datos()
+                if (d.isNotEmpty()) Text(d, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 1.dp))
             }
             BotonIcono(Icons.Outlined.BookmarkBorder, "Guardar", { guardar(v) }, Modifier.padding(start = 8.dp))
             BotonIcono(Icons.Outlined.FileDownload, "Descargar", onDescargar, Modifier.padding(start = 4.dp), destacado = true)
@@ -90,7 +93,9 @@ fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
         }
         Column(Modifier.weight(1f)) {
             Text(v.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(v.datos(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
+            if (!v.autor.isNullOrBlank()) Text(v.autor, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 3.dp))
+            val d = v.datos()
+            if (d.isNotEmpty()) Text(d, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         BotonIcono(Icons.Outlined.FileDownload, "Descargar", onDescargar, destacado = true)
     }

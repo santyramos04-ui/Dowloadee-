@@ -11,7 +11,7 @@ El dueño no programa: explicar todo en español sencillo y paso a paso.
 
 ## Código
 - Interfaz en español. Paquete `com.santyramos.mirador`.
-- Diseño: tokens en `app/src/main/java/com/santyramos/mirador/ui/theme/Theme.kt` (`Paleta`, `Acento`, tema claro/oscuro). Usarlos en vez de colores fijos. Fuentes estáticas en `res/font` (no variables).
+- Diseño: tokens en `app/src/main/java/com/santyramos/mirador/ui/theme/Theme.kt` (`Paleta`, `Acento`, tema claro/oscuro). Usarlos en vez de colores fijos. Fuentes estáticas en `res/font` (no variables): Bricolage Grotesque para títulos y Atkinson Hyperlegible Next para el texto.
 - Componentes compartidos en `ui/Componentes.kt` (BotonPrimario, BotonSecundario, BotonIcono, Filtro, HojaMirador…).
 - Datos: `data/db` (descargas) y `data/lib` (biblioteca: suscripciones, historial, listas). Nunca borrar datos del usuario: cambios de tablas con migraciones.
 - Pruebas unitarias en `app/src/test`; las de red (`RedTest`) solo corren en CI con `-PredTests=1`.

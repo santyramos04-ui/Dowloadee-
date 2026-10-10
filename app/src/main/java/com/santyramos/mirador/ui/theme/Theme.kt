@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.santyramos.mirador.R
 
-/** Verde de Mirador (#3DDC97): el color de la marca (ícono, botones sobre fondo oscuro). */
-val AcentoMarca = Color(0xFF3DDC97)
+/** Buganvilla (#E85A8C): el color de la marca, tomado de las flores de los balcones (miradores) colombianos. */
+val AcentoMarca = Color(0xFFE85A8C)
 
 /** Paleta completa de un tema. Rejilla de 4 dp, sin sombras: la profundidad sale de tonos de superficie y líneas finas. */
 @androidx.compose.runtime.Immutable
@@ -32,18 +32,19 @@ data class Colores(
     val aviso: Color, val error: Color, val errorSuave: Color,
 )
 
+/** Oscuro: azul de noche (como la vista desde un mirador al anochecer), blanco de cal y buganvilla. */
 val ColoresOscuros = Colores(
-    fondo = Color(0xFF000000), s1 = Color(0xFF0D0D0F), s2 = Color(0xFF151518), s3 = Color(0xFF1D1D21), linea = Color(0xFF27272C),
-    texto1 = Color(0xFFF5F5F7), texto2 = Color(0xFFA3A3AD), texto3 = Color(0xFF858590), // 7:1 y 5.6:1 sobre negro
-    acento = AcentoMarca, acentoSuave = Color(0xFF0F2B20), acentoBorde = Color(0xFF1D5A40), sobreAcento = Color(0xFF04281A),
-    aviso = Color(0xFFF5C451), error = Color(0xFFFF6B6B), errorSuave = Color(0xFF2A1313),
+    fondo = Color(0xFF0F1420), s1 = Color(0xFF182031), s2 = Color(0xFF212A3D), s3 = Color(0xFF2A344A), linea = Color(0xFF2C374D),
+    texto1 = Color(0xFFF1EEE6), texto2 = Color(0xFFA5AEC2), texto3 = Color(0xFF8C96AB), // 8.4:1 y 5.9:1 sobre el fondo
+    acento = AcentoMarca, acentoSuave = Color(0xFF3A1B2B), acentoBorde = Color(0xFF7A2E4E), sobreAcento = Color(0xFF14090F),
+    aviso = Color(0xFFF2B544), error = Color(0xFFFF7A7A), errorSuave = Color(0xFF3A1A1E),
 )
 
-/** Claro: blanco y grises suaves; el verde se oscurece para que el texto y los íconos tengan contraste (≥ 4.5:1). */
+/** Claro: gris niebla frío y blanco; la buganvilla se oscurece para que texto e íconos tengan contraste (≥ 4.5:1). */
 val ColoresClaros = Colores(
-    fondo = Color(0xFFF6F7F6), s1 = Color(0xFFFFFFFF), s2 = Color(0xFFEEF0EF), s3 = Color(0xFFE3E6E4), linea = Color(0xFFD5D9D7),
-    texto1 = Color(0xFF121413), texto2 = Color(0xFF4A504D), texto3 = Color(0xFF6A716E),
-    acento = Color(0xFF0A7A50), acentoSuave = Color(0xFFDDF3E8), acentoBorde = Color(0xFF8CCFB0), sobreAcento = Color(0xFFFFFFFF),
+    fondo = Color(0xFFF4F5F8), s1 = Color(0xFFFFFFFF), s2 = Color(0xFFEAECF1), s3 = Color(0xFFDFE2E9), linea = Color(0xFFD6DAE3),
+    texto1 = Color(0xFF161A24), texto2 = Color(0xFF4A5263), texto3 = Color(0xFF5F6778),
+    acento = Color(0xFFC22A63), acentoSuave = Color(0xFFF8DCE7), acentoBorde = Color(0xFFE4A3BC), sobreAcento = Color(0xFFFFFFFF),
     aviso = Color(0xFF8A5A00), error = Color(0xFFC62828), errorSuave = Color(0xFFFBE4E4),
 )
 
@@ -81,7 +82,7 @@ private fun esquema(c: Colores, oscuro: Boolean): androidx.compose.material3.Col
         surfaceContainerLowest = c.fondo, surfaceContainerLow = c.s1, surfaceContainer = c.s1,
         surfaceContainerHigh = c.s2, surfaceContainerHighest = c.s3,
         error = c.error, onError = c.fondo, errorContainer = c.errorSuave, onErrorContainer = c.error,
-        outline = if (oscuro) Color(0xFF3A3A41) else Color(0xFFB4BAB7), outlineVariant = c.linea,
+        outline = if (oscuro) Color(0xFF3D4A63) else Color(0xFFB3B9C6), outlineVariant = c.linea,
         scrim = Color(0xCC000000),
     )
 }
@@ -94,33 +95,34 @@ private val Formas = Shapes(
     extraLarge = RoundedCornerShape(30.dp),
 )
 
-// Tipografías incluidas en la app (licencia OFL): Outfit para títulos y marca, Inter para el texto.
-// Son archivos estáticos (uno por grosor): las fuentes variables no aplicaban el grosor y los títulos salían finísimos.
-val Outfit = FontFamily(
-    Font(R.font.outfit_medium, FontWeight.Medium),
-    Font(R.font.outfit_semibold, FontWeight.SemiBold),
-    Font(R.font.outfit_bold, FontWeight.Bold),
+// Tipografías incluidas (licencia OFL):
+// - Bricolage Grotesque, algo condensada, para títulos y la marca: tiene carácter sin perder claridad.
+// - Atkinson Hyperlegible Next para el texto: hecha para leerse bien, incluso con baja visión.
+// Archivos estáticos (uno por grosor): las fuentes variables no aplicaban el grosor en Android.
+val Titulos = FontFamily(
+    Font(R.font.titulos_semibold, FontWeight.SemiBold),
+    Font(R.font.titulos_bold, FontWeight.Bold),
 )
-val Inter = FontFamily(
-    Font(R.font.inter_regular, FontWeight.Normal),
-    Font(R.font.inter_medium, FontWeight.Medium),
-    Font(R.font.inter_semibold, FontWeight.SemiBold),
-    Font(R.font.inter_bold, FontWeight.Bold),
+val Texto = FontFamily(
+    Font(R.font.texto_regular, FontWeight.Normal),
+    Font(R.font.texto_medium, FontWeight.Medium),
+    Font(R.font.texto_semibold, FontWeight.SemiBold),
+    Font(R.font.texto_bold, FontWeight.Bold),
 )
 
 private val Tipografia = Typography(
-    displaySmall = TextStyle(fontFamily = Outfit, fontWeight = FontWeight.SemiBold, fontSize = 34.sp, lineHeight = 37.sp, letterSpacing = (-0.5).sp),
-    headlineMedium = TextStyle(fontFamily = Outfit, fontWeight = FontWeight.SemiBold, fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = (-0.4).sp),
-    headlineSmall = TextStyle(fontFamily = Outfit, fontWeight = FontWeight.SemiBold, fontSize = 26.sp, lineHeight = 30.sp, letterSpacing = (-0.3).sp),
-    titleLarge = TextStyle(fontFamily = Outfit, fontWeight = FontWeight.SemiBold, fontSize = 22.sp, lineHeight = 27.sp, letterSpacing = (-0.2).sp),
-    titleMedium = TextStyle(fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
-    titleSmall = TextStyle(fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp),
-    bodyLarge = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
-    bodyMedium = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Normal, fontSize = 15.sp, lineHeight = 22.sp),
-    bodySmall = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Normal, fontSize = 13.sp, lineHeight = 18.sp),
-    labelLarge = TextStyle(fontFamily = Inter, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp),
-    labelMedium = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp),
-    labelSmall = TextStyle(fontFamily = Inter, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, lineHeight = 15.sp, letterSpacing = 0.2.sp),
+    displaySmall = TextStyle(fontFamily = Titulos, fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 37.sp, letterSpacing = (-0.5).sp),
+    headlineMedium = TextStyle(fontFamily = Titulos, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = (-0.4).sp),
+    headlineSmall = TextStyle(fontFamily = Titulos, fontWeight = FontWeight.Bold, fontSize = 26.sp, lineHeight = 30.sp, letterSpacing = (-0.3).sp),
+    titleLarge = TextStyle(fontFamily = Titulos, fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 27.sp, letterSpacing = (-0.2).sp),
+    titleMedium = TextStyle(fontFamily = Texto, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
+    titleSmall = TextStyle(fontFamily = Texto, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp),
+    bodyLarge = TextStyle(fontFamily = Texto, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
+    bodyMedium = TextStyle(fontFamily = Texto, fontWeight = FontWeight.Normal, fontSize = 15.sp, lineHeight = 22.sp),
+    bodySmall = TextStyle(fontFamily = Texto, fontWeight = FontWeight.Normal, fontSize = 13.sp, lineHeight = 18.sp),
+    labelLarge = TextStyle(fontFamily = Texto, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp),
+    labelMedium = TextStyle(fontFamily = Texto, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp),
+    labelSmall = TextStyle(fontFamily = Texto, fontWeight = FontWeight.Medium, fontSize = 11.5.sp, lineHeight = 15.sp, letterSpacing = 0.2.sp),
 )
 
 /** ¿Hay que usar el tema oscuro? Según el ajuste (Automático sigue al celular). */
