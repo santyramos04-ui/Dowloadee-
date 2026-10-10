@@ -182,7 +182,7 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No hay nada en esta categoría.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         } else {
             LazyColumn(contentPadding = PaddingValues(top = 6.dp, bottom = 16.dp)) {
-                items(visibles, key = { it.id }) { d -> FilaDescarga(d) }
+                items(visibles, key = { it.id }) { d -> Box(Modifier.animateItem()) { FilaDescarga(d) } }
             }
         }
     }

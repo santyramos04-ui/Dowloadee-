@@ -142,7 +142,7 @@ fun SuscripcionesScreen(
                 }
                 items(novedades, key = { it.url }) { n ->
                     val v = n.aElemento()
-                    TarjetaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) })
+                    Box(Modifier.animateItem()) { TarjetaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
                 }
             }
         }
