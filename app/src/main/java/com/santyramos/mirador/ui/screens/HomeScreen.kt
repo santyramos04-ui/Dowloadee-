@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -96,7 +97,7 @@ fun HomeScreen(
     onAbrirCanal: (String) -> Unit,
     onAbrirLista: (String) -> Unit,
     onIrADescargas: () -> Unit = {},
-    onAbrirNavegador: () -> Unit = {},
+    onAbrirNavegador: (String?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -110,6 +111,7 @@ fun HomeScreen(
     var buscado by remember { mutableStateOf<String?>(null) }
     var trabajo by remember { mutableStateOf<Job?>(null) }
     val foco = LocalFocusManager.current
+    val pedirFoco = remember { androidx.compose.ui.focus.FocusRequester() }
     val lista = rememberLazyListState()
 
     fun buscar() {
@@ -152,13 +154,13 @@ fun HomeScreen(
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.ic_mark), contentDescription = null, modifier = Modifier.size(30.dp))
             Text("mirador", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 10.dp).weight(1f))
-            BotonIcono(Icons.Outlined.Public, "Navegador de Mirador", onAbrirNavegador, bordeado = true)
+            BotonIcono(Icons.Outlined.Public, "Navegador de Mirador", { onAbrirNavegador(null) }, bordeado = true)
             BotonIcono(Icons.Outlined.ContentPaste, "Pegar enlaces para descargar", onIrADescargas, Modifier.padding(start = 8.dp), bordeado = true)
         }
         // ---- Buscador ----
         OutlinedTextField(
             value = consulta, onValueChange = { consulta = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp).focusRequester(pedirFoco),
             placeholder = { Text("Buscar videos, canales o listas", color = Paleta.Texto3) },
             leadingIcon = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             trailingIcon = { if (consulta.isNotEmpty()) IconButton(onClick = { consulta = "" }) { Icon(Icons.Filled.Clear, "Borrar") } },
@@ -174,7 +176,7 @@ fun HomeScreen(
         LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(FiltroBusqueda.entries) { f -> Filtro(f.etiqueta, filtro == f) { filtro = f } }
         }
-        if (filtro == FiltroBusqueda.TODO || filtro == FiltroBusqueda.VIDEOS) {
+        if (buscado != null && (filtro == FiltroBusqueda.TODO || filtro == FiltroBusqueda.VIDEOS)) {
             LazyRow(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(FiltroDuracion.entries) { d -> Filtro(d.etiqueta, duracion == d) { duracion = d } }
             }
@@ -186,7 +188,7 @@ fun HomeScreen(
                     Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                     BotonSecundario("Reintentar", { buscar() })
                 }
-                buscado == null && !cargando -> Portada(onIrADescargas, onAbrirNavegador, onAbrirVideo, onDescargar)
+                buscado == null && !cargando -> Portada(onIrADescargas, onAbrirNavegador, { pedirFoco.requestFocus() }, onAbrirVideo, onDescargar)
                 visibles.isEmpty() && !cargando -> Text("No encontré resultados.", Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else -> LazyColumn(state = lista, contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp)) {
                     items(visibles, key = { it.url }) { e ->
@@ -210,41 +212,80 @@ private object TendenciasCache {
     var intentado = false
 }
 
-/** Pantalla de bienvenida: motivo de la marca, atajos y, si YouTube las ofrece, las tendencias de Colombia. */
+private class Plataforma(val nombre: String, val sigla: String, val url: String?)
+
+/** Sitios desde los que más se descarga. Al tocar uno se abre el navegador de Mirador ahí mismo. */
+private val Plataformas = listOf(
+    Plataforma("YouTube", "Yt", null),
+    Plataforma("X", "X", "https://x.com"),
+    Plataforma("Instagram", "Ig", "https://www.instagram.com"),
+    Plataforma("TikTok", "Tk", "https://www.tiktok.com"),
+    Plataforma("Facebook", "Fb", "https://m.facebook.com"),
+    Plataforma("Reddit", "Rd", "https://www.reddit.com"),
+    Plataforma("Twitch", "Tw", "https://www.twitch.tv"),
+    Plataforma("Vimeo", "Vm", "https://vimeo.com"),
+)
+
+/** Inicio sin búsqueda: accesos directos a las plataformas, pegar enlaces y, si YouTube las ofrece, tendencias. */
 @Composable
-private fun Portada(onIrADescargas: () -> Unit, onAbrirNavegador: () -> Unit, onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Unit) {
+private fun Portada(
+    onIrADescargas: () -> Unit, onAbrirNavegador: (String?) -> Unit, onBuscarYoutube: () -> Unit,
+    onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Unit,
+) {
     var tendencias by remember { mutableStateOf(TendenciasCache.datos) }
-    var cargando by remember { mutableStateOf(!TendenciasCache.intentado) }
     LaunchedEffect(Unit) {
         if (!TendenciasCache.intentado) {
             tendencias = Youtube.tendencias()
-            TendenciasCache.datos = tendencias; TendenciasCache.intentado = true; cargando = false
+            TendenciasCache.datos = tendencias; TendenciasCache.intentado = true
         }
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
-            Column(Modifier.padding(horizontal = 28.dp).padding(top = 28.dp)) {
-                Arcos(Modifier.padding(bottom = 26.dp))
-                Text("Mira y descarga,", style = MaterialTheme.typography.displaySmall)
-                Text("sin ruido.", style = MaterialTheme.typography.displaySmall, color = Acento)
-                Text(
-                    "YouTube sin anuncios y sin cuenta de Google. Descarga videos, audio y fotos de cualquier sitio.",
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 14.dp, end = 24.dp),
-                )
-                Spacer(Modifier.height(26.dp))
-                Atajo(Icons.Outlined.FileDownload, "Pega uno o varios enlaces", "En la pestaña Descargas", onIrADescargas)
+            Column(Modifier.padding(horizontal = 20.dp).padding(top = 8.dp)) {
+                Text("Descargar desde", style = MaterialTheme.typography.titleLarge)
+                Text("Toca un sitio, abre la publicación y pulsa Descargar.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp, bottom = 14.dp))
+                val todas = Plataformas.map { it to false } + (Plataforma("Otro sitio", "", null) to true)
+                todas.chunked(3).forEach { fila ->
+                    Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        fila.forEach { (p, generico) ->
+                            Box(Modifier.weight(1f)) {
+                                TarjetaPlataforma(p, generico) {
+                                    when {
+                                        generico -> onAbrirNavegador(null)
+                                        p.url == null -> onBuscarYoutube()
+                                        else -> onAbrirNavegador(p.url)
+                                    }
+                                }
+                            }
+                        }
+                        repeat(3 - fila.size) { Box(Modifier.weight(1f)) {} }
+                    }
+                }
+                Atajo(Icons.Outlined.ContentPaste, "Pegar uno o varios enlaces", "Ve a la pestaña Descargas", onIrADescargas)
                 Spacer(Modifier.height(10.dp))
-                Atajo(Icons.Outlined.Public, "Navegador de Mirador", "Entra a X, Instagram o TikTok y descarga con un toque", onAbrirNavegador)
-                Spacer(Modifier.height(10.dp))
-                Atajo(Icons.Outlined.Share, "Compártelos desde otra app", "Compartir → Mirador, sin salir de X o Instagram", null)
+                Atajo(Icons.Outlined.Share, "Compartir desde otra app", "Compartir → Mirador, sin salir de X o Instagram", null)
             }
         }
         if (!tendencias.isNullOrEmpty()) {
             item { Text("Tendencias en Colombia", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 30.dp, bottom = 6.dp)) }
             items(tendencias!!, key = { it.url }) { v -> TarjetaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
-        } else if (cargando) {
-            item { Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Acento, modifier = Modifier.size(28.dp)) } }
+        }
+    }
+}
+
+@Composable
+private fun TarjetaPlataforma(p: Plataforma, generico: Boolean, onClick: () -> Unit) {
+    androidx.compose.material3.Surface(
+        onClick = onClick, shape = RoundedCornerShape(20.dp), color = Paleta.S1,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Paleta.Linea), modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.size(48.dp).clip(RoundedCornerShape(15.dp)).background(Paleta.AcentoSuave), contentAlignment = Alignment.Center) {
+                if (generico) Icon(Icons.Outlined.Public, null, tint = Acento, modifier = Modifier.size(24.dp))
+                else Text(p.sigla, style = MaterialTheme.typography.titleMedium, color = Acento)
+            }
+            Text(p.nombre, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 10.dp), maxLines = 1)
+            Text(if (p.url == null && !generico) "Buscar y ver" else "Descargar", style = MaterialTheme.typography.labelSmall, color = Paleta.Texto3)
         }
     }
 }
@@ -264,28 +305,5 @@ private fun Atajo(icono: ImageVector, titulo: String, detalle: String, onClick: 
                 Text(detalle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-    }
-}
-
-/** Tres arcos de ventana dibujados con líneas finas (el central, en verde). */
-@Composable
-private fun Arcos(modifier: Modifier = Modifier) {
-    Canvas(modifier.size(width = 190.dp, height = 104.dp)) {
-        val trazo = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
-        fun arco(x: Float, ancho: Float, alto: Float, color: Color) {
-            val r = ancho / 2
-            val p = Path().apply {
-                moveTo(x, size.height)
-                lineTo(x, size.height - alto + r)
-                arcTo(androidx.compose.ui.geometry.Rect(x, size.height - alto, x + ancho, size.height - alto + ancho), 180f, 180f, false)
-                lineTo(x + ancho, size.height)
-            }
-            drawPath(p, color, style = trazo)
-        }
-        val ancho = 54.dp.toPx()
-        val sep = 10.dp.toPx()
-        arco(0f, ancho, 76.dp.toPx(), Paleta.Linea)
-        arco(ancho + sep, ancho, 104.dp.toPx(), Acento.copy(alpha = 0.55f))
-        arco((ancho + sep) * 2, ancho, 76.dp.toPx(), Paleta.Linea)
     }
 }

@@ -79,7 +79,7 @@ internal fun aDireccion(texto: String): String {
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun NavegadorScreen(onAtras: () -> Unit, onDescargar: (String) -> Unit) {
+fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (String) -> Unit) {
     val contexto = LocalContext.current
     val foco = LocalFocusManager.current
     var direccion by remember { mutableStateOf("") }
@@ -113,6 +113,7 @@ fun NavegadorScreen(onAtras: () -> Unit, onDescargar: (String) -> Unit) {
         }
         onDispose { web.stopLoading(); web.destroy() }
     }
+    androidx.compose.runtime.LaunchedEffect(urlInicial) { urlInicial?.let { web.loadUrl(it) } }
     BackHandler { if (web.canGoBack()) web.goBack() else onAtras() }
 
     Box(Modifier.fillMaxSize()) {

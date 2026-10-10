@@ -90,7 +90,7 @@ fun PlaylistScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> U
                         )
                     }
                     items(videos.filterIsInstance<Elemento.Video>(), key = { it.url }) { v ->
-                        FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) })
+                        FilaVideo(v, onClick = { com.santyramos.mirador.player.VideoController.definirCola(videos.filterIsInstance<Elemento.Video>().map { it.url }); onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) })
                     }
                     if (cargandoMas) item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
                 }

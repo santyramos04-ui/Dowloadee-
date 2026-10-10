@@ -1,7 +1,23 @@
 package com.santyramos.mirador.ui
 
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
+import com.santyramos.mirador.ui.theme.Paleta
+import com.santyramos.mirador.util.Format
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.filled.Warning
@@ -61,16 +77,13 @@ private fun SelectorFormato(elegido: Preset, onElegir: (Preset) -> Unit) {
     }
 }
 
-/** Descargar una lista de reproducción de YouTube: un archivo por video, en una carpeta con el nombre de la lista. */
+/** Descargar una lista de reproducción de YouTube: se leen sus videos y se eligen todos o solo algunos. */
 @Composable
 fun ListaSheetContent(url: String, onCerrar: () -> Unit, onEncolada: () -> Unit) {
     val contexto = LocalContext.current
-    val scope = rememberCoroutineScope()
     var lista by remember(url) { mutableStateOf<ListaInfo?>(null) }
     var error by remember(url) { mutableStateOf<String?>(null) }
     var intento by remember(url) { mutableStateOf(0) }
-    var elegido by remember { mutableStateOf(Preset.MEJOR) }
-    var trabajando by remember { mutableStateOf(false) }
 
     LaunchedEffect(url, intento) {
         error = null; lista = null
@@ -84,51 +97,98 @@ fun ListaSheetContent(url: String, onCerrar: () -> Unit, onEncolada: () -> Unit)
         }
     }
 
-    Column(
-        Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        val l = lista
-        when {
-            error != null -> {
-                Text("No se puede leer la lista", style = MaterialTheme.typography.titleMedium)
-                Text(error!!, color = MaterialTheme.colorScheme.error)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    BotonSecundario("Cerrar", onCerrar, Modifier.weight(1f))
-                    BotonPrimario("Reintentar", { intento++ }, Modifier.weight(1f))
-                }
+    val l = lista
+    if (l != null) {
+        SeleccionListaContent(l, onCerrar, onEncolada)
+        return
+    }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (error != null) {
+            Text("No se puede leer la lista", style = MaterialTheme.typography.titleMedium)
+            Text(error!!, color = MaterialTheme.colorScheme.error)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                BotonSecundario("Cerrar", onCerrar, Modifier.weight(1f))
+                BotonPrimario("Reintentar", { intento++ }, Modifier.weight(1f))
             }
-            l == null -> Row(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+        } else {
+            Row(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(28.dp)); Spacer(Modifier.width(16.dp)); Text("Leyendo la lista…")
             }
-            else -> {
-                Text(l.titulo, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** Lista ya conocida (de YouTube o propia): formato + casillas para elegir qué videos bajar. Todos vienen marcados. */
+@Composable
+fun SeleccionListaContent(l: ListaInfo, onCerrar: () -> Unit, onEncolada: () -> Unit) {
+    val contexto = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var elegido by remember { mutableStateOf(Preset.MEJOR) }
+    var seleccion by remember(l) { mutableStateOf(l.entradas.indices.toSet()) }
+    var trabajando by remember { mutableStateOf(false) }
+    val total = l.entradas.size
+
+    Column(Modifier.fillMaxWidth().fillMaxHeight(0.92f)) {
+        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 20.dp)) {
+            item {
+                Text(l.titulo, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
-                    "${l.entradas.size} videos" + (l.autor?.let { " · $it" } ?: "") + "\nSe guardan en Descargas/Mirador/…/${UrlTools.nombreSeguro(l.titulo, 60)}, numerados en orden.",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    "$total videos" + (l.autor?.let { " · $it" } ?: "") + "\nSe guardan en Descargas/Mirador/…/${UrlTools.nombreSeguro(l.titulo, 60)}, numerados en orden.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp),
                 )
-                SelectorFormato(elegido) { elegido = it }
-                if (l.entradas.size > 50) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Filled.Warning, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
-                    Text(
-                        "Son ${l.entradas.size} videos: tardará bastante y ocupará mucho espacio. Puedes pausar o cancelar desde Descargas.",
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary,
-                    )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 14.dp)) {
+                    items(PRESETS_MASIVOS) { p -> Filtro(p.etiqueta, elegido == p) { elegido = p } }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    BotonSecundario("Cancelar", onCerrar, Modifier.weight(1f))
-                    BotonPrimario(
-                        "Descargar ${l.entradas.size}", enabled = !trabajando, modifier = Modifier.weight(1.5f), icono = Icons.Outlined.FileDownload,
-                        onClick = {
-                            trabajando = true
-                            scope.launch {
-                                val n = DownloadCenter.encolarLista(l, elegido)
-                                Toast.makeText(contexto, "Se agregaron $n videos a la cola", Toast.LENGTH_LONG).show()
-                                onEncolada()
-                            }
-                        },
-                    )
+                Text(elegido.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+                Row(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${seleccion.size} de $total elegidos", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { seleccion = l.entradas.indices.toSet() }, enabled = seleccion.size < total) { Text("Todos") }
+                    TextButton(onClick = { seleccion = emptySet() }, enabled = seleccion.isNotEmpty()) { Text("Ninguno") }
                 }
+            }
+            itemsIndexed(l.entradas) { i, e ->
+                val marcado = i in seleccion
+                Row(
+                    Modifier.fillMaxWidth().clickable { seleccion = if (marcado) seleccion - i else seleccion + i }.padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Box(
+                        Modifier.size(24.dp).clip(CircleShape)
+                            .then(if (marcado) Modifier.background(MaterialTheme.colorScheme.primary) else Modifier.border(2.dp, Paleta.Texto3, CircleShape)),
+                        contentAlignment = Alignment.Center,
+                    ) { if (marcado) Icon(Icons.Filled.Check, null, Modifier.size(16.dp), tint = Paleta.SobreAcento) }
+                    Box(Modifier.size(width = 84.dp, height = 48.dp).clip(RoundedCornerShape(10.dp)).background(Paleta.S3)) {
+                        AsyncImage(model = e.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(e.titulo, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, color = if (marcado) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+                        e.duracionSeg?.takeIf { it > 0 }?.let { Text(Format.duracion(it), style = MaterialTheme.typography.labelSmall, color = Paleta.Texto3) }
+                    }
+                }
+            }
+        }
+        Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 8.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (seleccion.size > 50) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Filled.Warning, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
+                Text(
+                    "Son ${seleccion.size} videos: tardará bastante y ocupará mucho espacio. Puedes pausar o cancelar desde Descargas.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                BotonSecundario("Cancelar", onCerrar, Modifier.weight(1f))
+                BotonPrimario(
+                    if (seleccion.isEmpty()) "Elige videos" else "Descargar ${seleccion.size}", enabled = !trabajando && seleccion.isNotEmpty(),
+                    modifier = Modifier.weight(1.5f), icono = Icons.Outlined.FileDownload,
+                    onClick = {
+                        trabajando = true
+                        scope.launch {
+                            val n = DownloadCenter.encolarLista(l, elegido, seleccion)
+                            Toast.makeText(contexto, "Se agregaron $n videos a la cola", Toast.LENGTH_LONG).show()
+                            onEncolada()
+                        }
+                    },
+                )
             }
         }
     }

@@ -81,6 +81,7 @@ import androidx.media3.ui.PlayerView
 import com.santyramos.mirador.data.PlayerQuality
 import com.santyramos.mirador.extractor.Elemento
 import com.santyramos.mirador.extractor.bestUrl
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Share
@@ -284,6 +285,9 @@ fun PlayerScreen(
                             Icon(if (estado.reproduciendo) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (estado.reproduciendo) "Pausar" else "Reproducir", tint = Color.White, modifier = Modifier.size(40.dp))
                         }
                         IconButton(onClick = { VideoController.saltar(10_000) }) { Icon(Icons.Filled.Forward10, "Adelantar 10 segundos", tint = Color.White, modifier = Modifier.size(40.dp)) }
+                        if (video?.info != null && VideoController.haySiguiente()) {
+                            IconButton(onClick = { VideoController.siguiente() }) { Icon(Icons.Filled.SkipNext, "Siguiente video", tint = Color.White, modifier = Modifier.size(40.dp)) }
+                        }
                     }
                     // Barra inferior
                     Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 12.dp)) {
@@ -354,6 +358,20 @@ fun PlayerScreen(
                                 BotonSecundario("Compartir", {
                                     contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.url), "Compartir enlace"))
                                 }, Modifier.weight(1f), icono = Icons.Outlined.Share)
+                            }
+                            val auto by VideoController.autoSiguiente.collectAsState()
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Reproducción automática", style = MaterialTheme.typography.titleSmall)
+                                    Text("Al terminar, sigue con el siguiente video", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                androidx.compose.material3.Switch(
+                                    checked = auto, onCheckedChange = { VideoController.cambiarAutoSiguiente(it) },
+                                    colors = androidx.compose.material3.SwitchDefaults.colors(
+                                        checkedThumbColor = Paleta.SobreAcento, checkedTrackColor = MaterialTheme.colorScheme.primary, checkedBorderColor = MaterialTheme.colorScheme.primary,
+                                        uncheckedThumbColor = Paleta.Texto2, uncheckedTrackColor = Paleta.S3, uncheckedBorderColor = Paleta.Linea,
+                                    ),
+                                )
                             }
                             BotonSecundario("Ver comentarios", { verComentarios = true }, Modifier.fillMaxWidth(), icono = Icons.Outlined.ChatBubbleOutline)
                             val desc = info.description?.content.orEmpty()

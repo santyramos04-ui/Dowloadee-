@@ -145,7 +145,7 @@ fun GuardadosScreen(onAtras: () -> Unit, onAbrirVideo: (String) -> Unit, onDesca
             }
         } else LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
             items(lista, key = { it.url }) { g ->
-                FilaBiblioteca(g.aElemento(), null, { onAbrirVideo(g.url) }, { onDescargar(g.url) }, "Quitar de la lista") { Biblioteca.quitarGuardado(g.url) }
+                FilaBiblioteca(g.aElemento(), null, { com.santyramos.mirador.player.VideoController.definirCola(lista.map { it.url }); onAbrirVideo(g.url) }, { onDescargar(g.url) }, "Quitar de la lista") { Biblioteca.quitarGuardado(g.url) }
             }
         }
     }
@@ -194,7 +194,7 @@ fun ListasScreen(onAtras: () -> Unit, onAbrirLista: (Long) -> Unit) {
 }
 
 @Composable
-fun ListaPropiaScreen(id: Long, onAtras: () -> Unit, onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Unit, onDescargarTodo: (List<String>) -> Unit) {
+fun ListaPropiaScreen(id: Long, onAtras: () -> Unit, onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Unit, onDescargarTodo: (com.santyramos.mirador.download.ListaInfo) -> Unit) {
     BackHandler(onBack = onAtras)
     val items by Biblioteca.dao.observarItems(id).collectAsState(initial = emptyList())
     val listas by Biblioteca.dao.observarListas().collectAsState(initial = emptyList())
@@ -209,13 +209,20 @@ fun ListaPropiaScreen(id: Long, onAtras: () -> Unit, onAbrirVideo: (String) -> U
         } else LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
                 com.santyramos.mirador.ui.BotonPrimario(
-                    "Descargar los ${items.size} videos", { onDescargarTodo(items.map { it.url }) },
+                    "Descargar videos de la lista", {
+                        onDescargarTodo(
+                            com.santyramos.mirador.download.ListaInfo(
+                                nombreActual, null,
+                                items.map { com.santyramos.mirador.download.EntradaLista(it.url, it.titulo, it.miniatura, it.duracionSeg) },
+                            ),
+                        )
+                    },
                     Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
                     icono = Icons.Outlined.FileDownload,
                 )
             }
             items(items, key = { it.id }) { it ->
-                FilaBiblioteca(it.aElemento(), null, { onAbrirVideo(it.url) }, { onDescargar(it.url) }, "Quitar de la lista") { Biblioteca.quitarDeLista(id, it.url) }
+                FilaBiblioteca(it.aElemento(), null, { com.santyramos.mirador.player.VideoController.definirCola(items.map { x -> x.url }); onAbrirVideo(it.url) }, { onDescargar(it.url) }, "Quitar de la lista") { Biblioteca.quitarDeLista(id, it.url) }
             }
         }
     }

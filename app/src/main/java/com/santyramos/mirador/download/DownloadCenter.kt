@@ -83,12 +83,15 @@ object DownloadCenter {
     }
 
     /** Una descarga por cada video de la lista (cada uno con su progreso, pausa y reintento). */
-    suspend fun encolarLista(lista: ListaInfo, preset: Preset): Int {
+    suspend fun encolarLista(lista: ListaInfo, preset: Preset, seleccion: Set<Int>? = null): Int {
         val grupo = System.currentTimeMillis()
         val carpeta = UrlTools.nombreSeguro(lista.titulo, 60)
         val ancho = maxOf(2, lista.entradas.size.toString().length)
+        // Si se eligieron solo algunos, el número del nombre conserva su posición original en la lista.
+        val elegidas = lista.entradas.withIndex().filter { seleccion == null || it.index in seleccion }
+        if (elegidas.isEmpty()) return 0
         dao.insertarVarias(
-            lista.entradas.mapIndexed { i, e ->
+            elegidas.map { (i, e) ->
                 DownloadEntity(
                     url = e.url, titulo = e.titulo, miniatura = e.miniatura, autor = lista.autor,
                     preset = preset.name, sinLista = true, carpeta = carpeta,
@@ -97,7 +100,7 @@ object DownloadCenter {
             },
         )
         arrancarServicio()
-        return lista.entradas.size
+        return elegidas.size
     }
 
     class ResultadoLote(val enlaces: Int, val archivos: Int, val listasLeidas: Int, val listasConError: List<String>)

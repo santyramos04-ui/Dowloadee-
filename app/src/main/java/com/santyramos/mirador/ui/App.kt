@@ -60,7 +60,7 @@ sealed interface Destino {
     data class Canal(val url: String) : Destino
     data class Lista(val url: String) : Destino
     data object Ajustes : Destino
-    data object Navegador : Destino
+    data class Navegador(val url: String?) : Destino
     data object Historial : Destino
     data object Guardados : Destino
     data object Listas : Destino
@@ -83,6 +83,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     var reproductorAbierto by rememberSaveable { mutableStateOf(false) }
     var urlDescarga by remember { mutableStateOf<String?>(null) }
     var urlsLote by remember { mutableStateOf<List<String>?>(null) }
+    var listaADescargar by remember { mutableStateOf<com.santyramos.mirador.download.ListaInfo?>(null) }
     var videoAGuardar by remember { mutableStateOf<com.santyramos.mirador.extractor.Elemento.Video?>(null) }
     val video by VideoController.video.collectAsState()
     val actualizacion by AppUpdater.estado.collectAsState()
@@ -139,19 +140,19 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                     is Destino.Canal -> ChannelScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
                     is Destino.Lista -> PlaylistScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
                     Destino.Ajustes -> SettingsScreen(onAtras = { pila.removeLastOrNull() })
-                    Destino.Navegador -> com.santyramos.mirador.ui.screens.NavegadorScreen({ pila.removeLastOrNull() }, { urlDescarga = it })
+                    is Destino.Navegador -> com.santyramos.mirador.ui.screens.NavegadorScreen(destino.url, { pila.removeLastOrNull() }, { urlDescarga = it })
                     Destino.Historial -> com.santyramos.mirador.ui.screens.HistorialScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Guardados -> com.santyramos.mirador.ui.screens.GuardadosScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Listas -> com.santyramos.mirador.ui.screens.ListasScreen({ pila.removeLastOrNull() }, { pila.add(Destino.ListaPropia(it)) })
                     is Destino.ListaPropia -> com.santyramos.mirador.ui.screens.ListaPropiaScreen(
-                        destino.id, { pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it }, { urlsLote = it },
+                        destino.id, { pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it }, { listaADescargar = it },
                     )
                     null -> Crossfade(targetState = pestana, label = "pestanas") { p ->
                         when (p) {
                             0 -> HomeScreen(
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
                                 onAbrirCanal = { pila.add(Destino.Canal(it)) }, onAbrirLista = { pila.add(Destino.Lista(it)) },
-                                onIrADescargas = { pestana = 2 }, onAbrirNavegador = { pila.add(Destino.Navegador) },
+                                onIrADescargas = { pestana = 2 }, onAbrirNavegador = { pila.add(Destino.Navegador(it)) },
                             )
                             1 -> SuscripcionesScreen(
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
@@ -205,6 +206,12 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     urlDescarga?.let { u ->
         com.santyramos.mirador.ui.HojaMirador(onCerrar = { urlDescarga = null }) {
             DownloadSheetContent(url = u, onCerrar = { urlDescarga = null }, onEncolada = { urlDescarga = null })
+        }
+    }
+
+    listaADescargar?.let { l ->
+        com.santyramos.mirador.ui.HojaMirador(onCerrar = { listaADescargar = null }) {
+            SeleccionListaContent(l, onCerrar = { listaADescargar = null }, onEncolada = { listaADescargar = null })
         }
     }
 
