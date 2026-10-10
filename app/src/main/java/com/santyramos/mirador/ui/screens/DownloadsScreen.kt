@@ -205,6 +205,10 @@ private fun etiquetaPreset(d: DownloadEntity): String = when (Preset.from(d.pres
     Preset.P480 -> "MP4 · 480p"
     Preset.MAX_4K -> "4K"
     Preset.MP3 -> "MP3"
+    Preset.MP3_320 -> "MP3 320"
+    Preset.M4A -> "M4A"
+    Preset.OPUS -> "OPUS"
+    Preset.FLAC -> "FLAC"
     Preset.IMAGENES -> "Fotos / archivos"
 }
 

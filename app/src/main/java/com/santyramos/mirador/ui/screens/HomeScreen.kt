@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.Refresh
 import com.santyramos.mirador.data.lib.Recomendador
 import com.santyramos.mirador.player.VideoController
 import com.santyramos.mirador.ui.BotonPrimario
+import com.santyramos.mirador.ui.Entrada
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
@@ -135,6 +136,12 @@ fun HomeScreen(
                 error = ErrorMapper.mensajeVer(e)
             } finally { cargando = false }
         }
+    }
+
+    // Búsquedas pedidas desde fuera (canción de Spotify → YouTube).
+    val pedida = Entrada.buscar
+    LaunchedEffect(pedida) {
+        if (pedida != null) { consulta = pedida; filtro = FiltroBusqueda.VIDEOS; Entrada.buscar = null; buscar() }
     }
 
     // Al cambiar el filtro se repite la búsqueda.

@@ -154,12 +154,15 @@ object YtDlpEngine {
         cookies?.let { r.addOption("--cookies", it.absolutePath) }
 
         if (preset.esAudio) {
-            r.addOption("-f", "ba/b")
+            // M4A: si el sitio ya da AAC en m4a se guarda tal cual (sin pérdida extra); si no, la mejor pista.
+            r.addOption("-f", if (preset == Preset.M4A) "ba[ext=m4a]/ba/b" else if (preset == Preset.OPUS) "ba[acodec=opus]/ba/b" else "ba/b")
             r.addOption("-x")
-            r.addOption("--audio-format", "mp3")
-            r.addOption("--audio-quality", "192K")
-            r.addOption("--embed-thumbnail")
-            r.addOption("--convert-thumbnails", "jpg")
+            r.addOption("--audio-format", preset.formatoAudio ?: "mp3")
+            r.addOption("--audio-quality", preset.calidadAudio)
+            if (preset.portada) {
+                r.addOption("--embed-thumbnail")
+                r.addOption("--convert-thumbnails", "jpg")
+            }
             r.addOption("--embed-metadata")
         } else {
             // Orden de preferencia: la mayor resolución hasta el tope, luego H.264 y AAC (compatibles

@@ -168,7 +168,7 @@ object SizeEstimator {
         if (info.directos.isNotEmpty()) return null
         val dur = info.duracionSeg
         return when {
-            preset == Preset.MP3 -> dur?.let { it * 192_000 / 8 }
+            preset.esAudio -> dur?.let { it * preset.bitsPorSeg / 8 }
             preset == Preset.IMAGENES -> null
             else -> {
                 val v = mejorVideo(info.formatos, preset.altura) ?: return null

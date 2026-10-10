@@ -61,7 +61,7 @@ internal fun opcionesDisponibles(info: MediaInfo): List<Preset> {
             if (alturaMax == 0 || alturaMax >= 480) add(Preset.P480)
             if (alturaMax > 1080) add(Preset.MAX_4K)
         }
-        add(Preset.MP3)
+        addAll(listOf(Preset.MP3, Preset.MP3_320, Preset.M4A, Preset.OPUS, Preset.FLAC))
     }
 }
 
@@ -156,6 +156,21 @@ internal fun VideoSheetContent(
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     BotonSecundario("Cerrar", onCerrar, Modifier.weight(1f))
                     BotonPrimario("Reintentar", { intento++ }, Modifier.weight(1f))
+                }
+                if (UrlTools.esSpotify(url)) {
+                    var buscando by remember(url) { mutableStateOf(false) }
+                    BotonPrimario(
+                        if (buscando) "Buscando la canción…" else "Buscar esta canción en YouTube", enabled = !buscando, modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            buscando = true
+                            scope.launch {
+                                val q = com.santyramos.mirador.download.SpotifyPuente.consulta(url)
+                                if (q == null) android.widget.Toast.makeText(contexto, "No pude leer los datos de esa canción.", android.widget.Toast.LENGTH_LONG).show()
+                                else { Entrada.buscar = q; Entrada.pestana = 0; onCerrar() }
+                                buscando = false
+                            }
+                        },
+                    )
                 }
             }
             is Estado.Listo -> {

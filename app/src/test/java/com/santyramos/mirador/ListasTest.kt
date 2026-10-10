@@ -55,3 +55,18 @@ class SpotifyTest {
         assertTrue(msg.contains("DRM") && msg.contains("YouTube"))
     }
 }
+
+class AudioYSpotifyTest {
+    @Test fun consultaDeSpotify() {
+        val html = """<meta property="og:title" content="Canción de prueba"/><meta property="og:description" content="Artista X · Álbum · Canción de prueba · 2020"/>"""
+        assertEquals("Artista X Canción de prueba", com.santyramos.mirador.download.SpotifyPuente.consultaDe(html))
+        assertEquals("Solo título", com.santyramos.mirador.download.SpotifyPuente.consultaDe("""<meta property="og:title" content="Solo título"/>"""))
+    }
+
+    @Test fun formatosDeAudio() {
+        val audio = com.santyramos.mirador.download.Preset.entries.filter { it.esAudio }
+        assertTrue(audio.all { it.formatoAudio != null && it.bitsPorSeg > 0 })
+        assertEquals(listOf("mp3", "mp3", "m4a", "opus", "flac"), audio.map { it.formatoAudio })
+        assertFalse(com.santyramos.mirador.download.Preset.FLAC.portada)
+    }
+}
