@@ -300,11 +300,28 @@ fun PlayerScreen(
                     // Barra inferior
                     Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 12.dp)) {
                         val dur = estado.duracionMs.coerceAtLeast(1)
+                        val coloresBarra = androidx.compose.material3.SliderDefaults.colors(
+                            thumbColor = com.santyramos.mirador.ui.theme.Acento, activeTrackColor = com.santyramos.mirador.ui.theme.Acento,
+                            inactiveTrackColor = Color(0x55FFFFFF),
+                        )
+                        // Barra fina con un punto redondo (la de serie traía un tirador alto que tapaba el video).
                         Slider(
                             value = if (arrastrando) posArrastre else (estado.posicionMs.toFloat() / dur).coerceIn(0f, 1f),
                             onValueChange = { arrastrando = true; posArrastre = it },
                             onValueChangeFinished = { VideoController.moverA((posArrastre * dur).toLong()); arrastrando = false },
-                            colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = com.santyramos.mirador.ui.theme.Acento, activeTrackColor = com.santyramos.mirador.ui.theme.Acento, inactiveTrackColor = Color(0x55FFFFFF)),
+                            colors = coloresBarra,
+                            thumb = {
+                                androidx.compose.material3.SliderDefaults.Thumb(
+                                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                    colors = coloresBarra, thumbSize = androidx.compose.ui.unit.DpSize(16.dp, 16.dp),
+                                )
+                            },
+                            track = { estadoBarra ->
+                                androidx.compose.material3.SliderDefaults.Track(
+                                    sliderState = estadoBarra, colors = coloresBarra, modifier = Modifier.height(4.dp),
+                                    thumbTrackGapSize = 0.dp, trackInsideCornerSize = 0.dp, drawStopIndicator = null,
+                                )
+                            },
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("${Format.duracion(estado.posicionMs / 1000)} / ${Format.duracion(estado.duracionMs / 1000)}", color = Color.White, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))

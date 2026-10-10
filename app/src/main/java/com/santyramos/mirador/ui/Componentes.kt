@@ -66,11 +66,11 @@ fun BotonSecundario(texto: String, onClick: () -> Unit, modifier: Modifier = Mod
     }
 }
 
-/** Botón de ícono de 44 dp con fondo suave. [destacado] = verde. */
+/** Botón de ícono de 48 dp con fondo suave. [destacado] = verde. */
 @Composable
 fun BotonIcono(icono: ImageVector, descripcion: String, onClick: () -> Unit, modifier: Modifier = Modifier, destacado: Boolean = false, bordeado: Boolean = false) {
     Surface(
-        onClick = onClick, shape = RoundedCornerShape(14.dp), modifier = modifier.size(44.dp).semantics { contentDescription = descripcion },
+        onClick = onClick, shape = RoundedCornerShape(14.dp), modifier = modifier.size(48.dp).semantics { contentDescription = descripcion },
         color = if (destacado) Paleta.AcentoSuave else if (bordeado) Paleta.S2 else Color.Transparent,
         border = if (bordeado) BorderStroke(1.dp, Paleta.Linea) else null,
     ) {
@@ -84,7 +84,7 @@ fun BotonIcono(icono: ImageVector, descripcion: String, onClick: () -> Unit, mod
 @Composable
 fun Filtro(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
     Surface(
-        onClick = onClick, shape = RoundedCornerShape(12.dp), modifier = Modifier.height(36.dp),
+        onClick = onClick, shape = RoundedCornerShape(12.dp), modifier = Modifier.height(40.dp),
         color = if (seleccionado) Paleta.AcentoSuave else Paleta.S2,
         border = BorderStroke(1.dp, if (seleccionado) Paleta.AcentoBorde else Paleta.Linea),
     ) {

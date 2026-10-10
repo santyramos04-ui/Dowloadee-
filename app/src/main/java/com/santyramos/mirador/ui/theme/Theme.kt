@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,7 +31,7 @@ object Paleta {
     val Linea = Color(0xFF27272C)     // bordes de 1 dp
     val Texto1 = Color(0xFFF5F5F7)
     val Texto2 = Color(0xFFA3A3AD)    // contraste 7:1 sobre negro
-    val Texto3 = Color(0xFF6E6E78)
+    val Texto3 = Color(0xFF858590)    // contraste 5.6:1 sobre negro (antes 4.2:1)
     val AcentoSuave = Color(0xFF0F2B20)   // fondo de elementos seleccionados
     val AcentoBorde = Color(0xFF1D5A40)
     val SobreAcento = Color(0xFF04281A)
@@ -87,23 +86,17 @@ private val Formas = Shapes(
 )
 
 // Tipografías incluidas en la app (licencia OFL): Outfit para títulos y marca, Inter para el texto.
-@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
-private fun variable(res: Int, peso: Int) = Font(
-    resId = res,
-    weight = FontWeight(peso),
-    variationSettings = FontVariation.Settings(FontVariation.weight(peso)),
-)
-
+// Son archivos estáticos (uno por grosor): las fuentes variables no aplicaban el grosor y los títulos salían finísimos.
 val Outfit = FontFamily(
-    variable(R.font.outfit_variable, 500),
-    variable(R.font.outfit_variable, 600),
-    variable(R.font.outfit_variable, 700),
+    Font(R.font.outfit_medium, FontWeight.Medium),
+    Font(R.font.outfit_semibold, FontWeight.SemiBold),
+    Font(R.font.outfit_bold, FontWeight.Bold),
 )
 val Inter = FontFamily(
-    variable(R.font.inter_variable, 400),
-    variable(R.font.inter_variable, 500),
-    variable(R.font.inter_variable, 600),
-    variable(R.font.inter_variable, 700),
+    Font(R.font.inter_regular, FontWeight.Normal),
+    Font(R.font.inter_medium, FontWeight.Medium),
+    Font(R.font.inter_semibold, FontWeight.SemiBold),
+    Font(R.font.inter_bold, FontWeight.Bold),
 )
 
 private val Tipografia = Typography(
