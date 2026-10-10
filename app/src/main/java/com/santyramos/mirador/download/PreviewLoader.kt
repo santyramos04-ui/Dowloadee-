@@ -5,6 +5,8 @@ import java.io.File
 /** Decide cómo obtener la información de un enlace: yt-dlp primero; complementos si hace falta. */
 object PreviewLoader {
     suspend fun cargar(url: String, cookies: File? = null, soloEste: Boolean = true): MediaInfo {
+        // Spotify cifra su audio (DRM): ninguna herramienta legítima lo descarga. Se avisa de entrada, sin intentos inútiles.
+        if (UrlTools.esSpotify(url)) throw IllegalStateException("spotify-drm")
         // Publicaciones de X con fotos: yt-dlp no las baja, así que se leen directo (y se incluyen sus videos).
         if (UrlTools.esX(url)) {
             val x = runCatching { DirectResolver.x(url) }.getOrNull()

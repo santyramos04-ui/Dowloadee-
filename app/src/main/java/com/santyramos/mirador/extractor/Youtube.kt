@@ -66,6 +66,15 @@ object FechaRelativa {
     }
 }
 
+/** «2013-02-08T17:38:24-08:00» → «8 feb 2013»; los textos como «hace 3 días» se dejan igual. */
+fun fechaLegible(texto: String?): String? {
+    if (texto.isNullOrBlank()) return null
+    val m = Regex("^(\\d{4})-(\\d{2})-(\\d{2})").find(texto) ?: return texto
+    val meses = listOf("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
+    val mes = meses.getOrNull(m.groupValues[2].toInt() - 1) ?: return texto
+    return "${m.groupValues[3].toInt()} $mes ${m.groupValues[1]}"
+}
+
 data class Pagina<T>(val elementos: List<T>, val siguiente: Page?)
 
 enum class FiltroBusqueda(val etiqueta: String, val clave: String) {
@@ -175,7 +184,7 @@ object Youtube {
     class PaginaComentarios(val info: org.schabi.newpipe.extractor.comments.CommentsInfo, val comentarios: List<Comentario>, val siguiente: Page?)
 
     /** Los comentarios llegan con entidades HTML (&apos;, &amp;…) y <br>; se dejan como texto normal. */
-    internal fun limpiarHtml(t: String): String = t
+    fun limpiarHtml(t: String): String = t
         .replace(Regex("(?i)<br\\s*/?>"), "\n").replace(Regex("<[^>]+>"), "")
         .replace("&apos;", "'").replace("&#39;", "'").replace("&quot;", "\"").replace("&lt;", "<").replace("&gt;", ">").replace("&nbsp;", " ").replace("&amp;", "&")
 

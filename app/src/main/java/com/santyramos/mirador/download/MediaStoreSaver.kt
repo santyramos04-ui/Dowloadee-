@@ -28,6 +28,7 @@ object MediaStoreSaver {
             "mp3" -> "audio/mpeg"
             "m4a" -> "audio/mp4"
             "opus", "ogg" -> "audio/ogg"
+            "flac" -> "audio/flac"
             "jpg", "jpeg" -> "image/jpeg"
             "png" -> "image/png"
             "webp" -> "image/webp"

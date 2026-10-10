@@ -22,6 +22,11 @@ object UrlTools {
         return h == "youtube.com" || h == "youtu.be" || h == "music.youtube.com" || h.endsWith(".youtube.com")
     }
 
+    fun esSpotify(url: String): Boolean {
+        val h = host(url) ?: return false
+        return h == "spotify.com" || h.endsWith(".spotify.com") || h == "spotify.link"
+    }
+
     fun esX(url: String): Boolean {
         val h = host(url) ?: return false
         return h == "x.com" || h == "twitter.com" || h == "mobile.twitter.com" || h.endsWith(".x.com")

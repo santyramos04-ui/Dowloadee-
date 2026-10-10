@@ -73,6 +73,8 @@ object Entrada {
     var abrirCanal by mutableStateOf<String?>(null)
     var abrirLista by mutableStateOf<String?>(null)
     var pestana by mutableStateOf<Int?>(null)
+    /** Texto que Inicio debe buscar en YouTube apenas aparezca (por ejemplo, una canción de Spotify). */
+    var buscar by mutableStateOf<String?>(null)
     var enlacePortapapeles by mutableStateOf<String?>(null)
 }
 

@@ -64,7 +64,7 @@ import com.santyramos.mirador.download.YtDlpEngine
 import kotlinx.coroutines.launch
 
 /** Formatos que tienen sentido para muchos archivos a la vez. */
-private val PRESETS_MASIVOS = listOf(Preset.MEJOR, Preset.P720, Preset.P480, Preset.MP3)
+private val PRESETS_MASIVOS = listOf(Preset.MEJOR, Preset.P720, Preset.P480, Preset.MP3, Preset.MP3_320, Preset.M4A, Preset.OPUS, Preset.FLAC)
 
 @Composable
 private fun SelectorFormato(elegido: Preset, onElegir: (Preset) -> Unit) {
