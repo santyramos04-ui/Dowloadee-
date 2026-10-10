@@ -12,6 +12,16 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Subscriptions
+import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -83,20 +93,25 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
         Scaffold(
             bottomBar = {
                 Column {
-                    if (video != null && !reproductorAbierto) MiniReproductor(onAbrir = { reproductorAbierto = true })
-                    NavigationBar {
+                    AnimatedVisibility(
+                        visible = video != null && !reproductorAbierto,
+                        enter = slideInVertically { it } + fadeIn(),
+                        exit = slideOutVertically { it } + fadeOut(),
+                    ) { MiniReproductor(onAbrir = { reproductorAbierto = true }) }
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 0.dp) {
                         val items = listOf(
-                            Triple("Inicio", Icons.Filled.Home, 0),
-                            Triple("Suscripciones", Icons.Filled.Subscriptions, 1),
-                            Triple("Descargas", Icons.Filled.Download, 2),
-                            Triple("Biblioteca", Icons.Filled.VideoLibrary, 3),
+                            Triple("Inicio", Icons.Filled.Home to Icons.Outlined.Home, 0),
+                            Triple("Suscripciones", Icons.Filled.Subscriptions to Icons.Outlined.Subscriptions, 1),
+                            Triple("Descargas", Icons.Filled.Download to Icons.Outlined.Download, 2),
+                            Triple("Biblioteca", Icons.Filled.VideoLibrary to Icons.Outlined.VideoLibrary, 3),
                         )
-                        items.forEach { (nombre, icono, i) ->
+                        items.forEach { (nombre, iconos, i) ->
+                            val activo = pestana == i && pila.isEmpty()
                             NavigationBarItem(
-                                selected = pestana == i && pila.isEmpty(),
+                                selected = activo,
                                 onClick = { pestana = i; pila.clear() },
-                                icon = { Icon(icono, nombre) },
-                                label = { Text(nombre, maxLines = 1) },
+                                icon = { Icon(if (activo) iconos.first else iconos.second, nombre) },
+                                label = { Text(nombre, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                             )
                         }
                     }
@@ -109,14 +124,17 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                     is Destino.Canal -> ChannelScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
                     is Destino.Lista -> PlaylistScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
                     Destino.Ajustes -> SettingsScreen(onAtras = { pila.removeLastOrNull() })
-                    null -> when (pestana) {
-                        0 -> HomeScreen(
-                            onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
-                            onAbrirCanal = { pila.add(Destino.Canal(it)) }, onAbrirLista = { pila.add(Destino.Lista(it)) },
-                        )
-                        1 -> SuscripcionesScreen()
-                        2 -> DownloadsScreen()
-                        else -> BibliotecaScreen(onAjustes = { pila.add(Destino.Ajustes) })
+                    null -> Crossfade(targetState = pestana, label = "pestanas") { p ->
+                        when (p) {
+                            0 -> HomeScreen(
+                                onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
+                                onAbrirCanal = { pila.add(Destino.Canal(it)) }, onAbrirLista = { pila.add(Destino.Lista(it)) },
+                                onIrADescargas = { pestana = 2 },
+                            )
+                            1 -> SuscripcionesScreen()
+                            2 -> DownloadsScreen()
+                            else -> BibliotecaScreen(onAjustes = { pila.add(Destino.Ajustes) })
+                        }
                     }
                 }
                 // Aviso de versión nueva

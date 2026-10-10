@@ -38,7 +38,10 @@ fun MiniReproductor(onAbrir: () -> Unit, modifier: Modifier = Modifier) {
     val video by VideoController.video.collectAsState()
     val estado by VideoController.estado.collectAsState()
     val v = video ?: return
-    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable(onClick = onAbrir)) {
+    Column(
+        modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest).clickable(onClick = onAbrir),
+    ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = v.info?.thumbnails?.bestUrl(), contentDescription = null, contentScale = ContentScale.Crop,

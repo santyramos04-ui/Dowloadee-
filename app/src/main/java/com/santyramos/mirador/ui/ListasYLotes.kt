@@ -47,16 +47,12 @@ private val PRESETS_MASIVOS = listOf(Preset.MEJOR, Preset.P720, Preset.P480, Pre
 
 @Composable
 private fun SelectorFormato(elegido: Preset, onElegir: (Preset) -> Unit) {
-    PRESETS_MASIVOS.forEach { p ->
-        Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onElegir(p) }.padding(vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            RadioButton(selected = elegido == p, onClick = { onElegir(p) })
-            Column(Modifier.weight(1f)) {
-                Text(p.etiqueta, style = MaterialTheme.typography.bodyLarge)
-                Text(p.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        PRESETS_MASIVOS.forEach { p ->
+            OpcionTarjeta(
+                seleccionada = elegido == p, titulo = p.etiqueta, detalle = p.descripcion,
+                recomendada = p == Preset.MEJOR, onClick = { onElegir(p) },
+            )
         }
     }
 }

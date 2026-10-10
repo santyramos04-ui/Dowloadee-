@@ -159,7 +159,7 @@ internal fun VideoSheetContent(
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
                     AsyncImage(
                         model = info.miniatura, contentDescription = null, contentScale = ContentScale.Crop,
-                        modifier = Modifier.width(132.dp).height(76.dp).clip(RoundedCornerShape(10.dp)),
+                        modifier = Modifier.width(144.dp).height(81.dp).clip(RoundedCornerShape(14.dp)),
                     )
                     Column(Modifier.weight(1f)) {
                         Text(info.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -170,18 +170,15 @@ internal fun VideoSheetContent(
                 }
                 val opciones = opcionesDisponibles(info)
                 opciones.forEach { p ->
-                    Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { elegido = p }.padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = elegido == p, onClick = { elegido = p })
-                        Column(Modifier.weight(1f)) {
-                            Text(if (p == Preset.IMAGENES) "Descargar todo (${info.directos.size} archivos)" else p.etiqueta, style = MaterialTheme.typography.bodyLarge)
-                            Text(p.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        val peso = SizeEstimator.estimar(info, p)
-                        Text(if (peso != null) "≈ ${Format.bytes(peso)}" else "", style = MaterialTheme.typography.labelLarge)
-                    }
+                    val peso = SizeEstimator.estimar(info, p)
+                    OpcionTarjeta(
+                        seleccionada = elegido == p,
+                        titulo = if (p == Preset.IMAGENES) "Descargar todo (${info.directos.size} archivos)" else p.etiqueta,
+                        detalle = p.descripcion,
+                        derecha = if (peso != null) "≈ ${Format.bytes(peso)}" else null,
+                        recomendada = p == Preset.MEJOR,
+                        onClick = { elegido = p },
+                    )
                 }
                 if (elegido == Preset.MAX_4K) {
                     Text("⚠ Los archivos 4K pesan mucho y no todos los celulares los reproducen.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)

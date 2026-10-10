@@ -45,13 +45,7 @@ import com.santyramos.mirador.util.Format
 import kotlinx.coroutines.launch
 
 @Composable
-private fun Seccion(titulo: String, contenido: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(titulo, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-        contenido()
-    }
-    HorizontalDivider()
-}
+private fun Seccion(titulo: String, contenido: @Composable () -> Unit) = com.santyramos.mirador.ui.TarjetaSeccion(titulo) { contenido() }
 
 @Composable
 fun SettingsScreen(onAtras: () -> Unit) {
@@ -71,7 +65,7 @@ fun SettingsScreen(onAtras: () -> Unit) {
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onAtras) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
-            Text("Ajustes", style = MaterialTheme.typography.titleLarge)
+            Text("Ajustes", style = MaterialTheme.typography.headlineSmall)
         }
         Column(Modifier.verticalScroll(rememberScrollState())) {
             Seccion("Descargas") {

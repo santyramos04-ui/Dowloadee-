@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import com.santyramos.mirador.ui.EstadoVacio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,7 +20,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -72,6 +78,7 @@ fun HomeScreen(
     onDescargar: (String) -> Unit,
     onAbrirCanal: (String) -> Unit,
     onAbrirLista: (String) -> Unit,
+    onIrADescargas: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -123,25 +130,50 @@ fun HomeScreen(
     }
 
     Column(modifier.fillMaxSize().statusBarsPadding()) {
-        OutlinedTextField(
+        androidx.compose.foundation.layout.Row(
+            Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(com.santyramos.mirador.R.drawable.ic_stat_mirador),
+                contentDescription = null,
+                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.primary),
+                modifier = Modifier.size(26.dp),
+            )
+            Text("Mirador", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 8.dp))
+        }
+        androidx.compose.material3.TextField(
             value = consulta, onValueChange = { consulta = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
             placeholder = { Text("Buscar videos, canales o listas") },
             leadingIcon = { Icon(Icons.Filled.Search, null) },
             trailingIcon = { if (consulta.isNotEmpty()) IconButton(onClick = { consulta = "" }) { Icon(Icons.Filled.Clear, "Borrar") } },
             singleLine = true,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+            colors = androidx.compose.material3.TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { buscar() }),
         )
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(FiltroBusqueda.entries) { f ->
-                FilterChip(selected = filtro == f, onClick = { filtro = f }, label = { Text(f.etiqueta) })
+                FilterChip(
+                    selected = filtro == f, onClick = { filtro = f }, label = { Text(f.etiqueta) },
+                    leadingIcon = if (filtro == f) ({ Icon(Icons.Filled.Check, null, Modifier.size(16.dp)) }) else null,
+                )
             }
         }
         if (filtro == FiltroBusqueda.TODO || filtro == FiltroBusqueda.VIDEOS) {
             LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(FiltroDuracion.entries) { d ->
-                    FilterChip(selected = duracion == d, onClick = { duracion = d }, label = { Text(d.etiqueta) })
+                    FilterChip(
+                        selected = duracion == d, onClick = { duracion = d }, label = { Text(d.etiqueta) },
+                        leadingIcon = if (duracion == d) ({ Icon(Icons.Filled.Check, null, Modifier.size(16.dp)) }) else null,
+                    )
                 }
             }
         }
@@ -152,15 +184,21 @@ fun HomeScreen(
                     Text(error!!, color = MaterialTheme.colorScheme.error)
                     OutlinedButton(onClick = { buscar() }, modifier = Modifier.padding(top = 12.dp)) { Text("Reintentar") }
                 }
-                buscado == null && !cargando -> Column(Modifier.align(Alignment.Center).padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Mirador", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
-                    Text("Busca un video, un canal o una lista.\nSin anuncios y sin cuenta de Google.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
+                buscado == null && !cargando -> EstadoVacio(
+                    icono = Icons.Filled.Search,
+                    titulo = "Mira y descarga",
+                    texto = "Busca un video, un canal o una lista.\nSin anuncios y sin cuenta de Google.",
+                    modifier = Modifier.align(Alignment.Center),
+                ) {
+                    androidx.compose.material3.FilledTonalButton(onClick = onIrADescargas) {
+                        Icon(Icons.Filled.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Pegar enlaces para descargar")
+                    }
                 }
                 visibles.isEmpty() && !cargando -> Text("No encontré resultados.", Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else -> LazyColumn(state = lista, contentPadding = PaddingValues(bottom = 16.dp)) {
                     items(visibles, key = { it.url }) { e ->
                         when (e) {
-                            is Elemento.Video -> FilaVideo(e, onClick = { onAbrirVideo(e.url) }, onDescargar = { onDescargar(e.url) })
+                            is Elemento.Video -> TarjetaVideo(e, onClick = { onAbrirVideo(e.url) }, onDescargar = { onDescargar(e.url) })
                             is Elemento.Canal -> FilaCanal(e, onClick = { onAbrirCanal(e.url) })
                             is Elemento.Lista -> FilaLista(e, onClick = { onAbrirLista(e.url) })
                         }

@@ -34,6 +34,10 @@ object DownloadCenter {
     private lateinit var app: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val trabajos = ConcurrentHashMap<Long, Job>()
+
+    private val _trabajosActivos = kotlinx.coroutines.flow.MutableStateFlow(0)
+    /** Cuántas descargas están corriendo ahora mismo (el servicio lo usa para saber cuándo apagarse). */
+    val trabajosActivos: kotlinx.coroutines.flow.StateFlow<Int> = _trabajosActivos
     private val candado = Mutex()
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -66,8 +70,16 @@ object DownloadCenter {
             extraJson = if (directo) json.encodeToString(info.directos) else null,
         )
         val id = dao.insertar(d)
+        guardarInfo(id, info)
         arrancarServicio()
         return id
+    }
+
+    private fun archivoInfo(id: Long) = File(app.cacheDir, "info/$id.json")
+
+    private fun guardarInfo(id: Long, info: MediaInfo) {
+        val crudo = info.rawJson ?: return
+        runCatching { archivoInfo(id).apply { parentFile?.mkdirs() }.writeText(crudo) }
     }
 
     /** Una descarga por cada video de la lista (cada uno con su progreso, pausa y reintento). */
@@ -181,6 +193,7 @@ object DownloadCenter {
                     val siguiente = dao.siguienteEnCola() ?: break
                     dao.cambiarEstado(siguiente.id, DownloadStatus.RUNNING.name)
                     trabajos[siguiente.id] = scope.launch { ejecutar(siguiente.copy(estado = DownloadStatus.RUNNING.name)) }
+                    _trabajosActivos.value = trabajos.size
                 }
             }
         }
@@ -215,6 +228,7 @@ object DownloadCenter {
                     preset = if (directo) Preset.IMAGENES.name else d.preset,
                 )
                 dao.actualizar(d)
+                guardarInfo(d.id, info)
             }
         }
         val dir = File(app.cacheDir, "dl/${d.id}")
@@ -239,7 +253,7 @@ object DownloadCenter {
                 descargarDirectos(d, dir) { frac -> guardarProgreso(Avance((frac * 1000).toLong(), 1000, 0, 0), false) }
             } else {
                 // yt-dlp nos avisa desde otro hilo; lo pasamos a una corrutina.
-                YtDlpEngine.descargar(d, dir, Cookies.archivo(app)) { av, proc -> scope.launch { guardarProgreso(av, proc) } }
+                YtDlpEngine.descargar(d, dir, Cookies.archivo(app), archivoInfo(d.id)) { av, proc -> scope.launch { guardarProgreso(av, proc) } }
             }
             if (archivos.isEmpty()) throw IllegalStateException("No hay video en este enlace")
             var primero: MediaStoreSaver.Guardado? = null
@@ -267,8 +281,9 @@ object DownloadCenter {
             }
         } finally {
             val terminada = dao.buscar(d.id)?.status
-            if (terminada == DownloadStatus.DONE || terminada == DownloadStatus.ERROR) dir.deleteRecursively()
+            if (terminada == DownloadStatus.DONE || terminada == DownloadStatus.ERROR) { dir.deleteRecursively(); archivoInfo(d.id).delete() }
             trabajos.remove(d.id)
+            _trabajosActivos.value = trabajos.size
             runCatching { avisarSiTerminoElGrupo(d) }
             bombear()
         }

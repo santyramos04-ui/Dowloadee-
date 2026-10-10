@@ -50,6 +50,8 @@ data class MediaInfo(
     val cantidadLista: Int = 0,
     /** Si no es null, este contenido se baja con descarga directa (fotos/carruseles). */
     val directos: List<ArchivoDirecto> = emptyList(),
+    /** JSON completo de yt-dlp: se reutiliza al descargar para no extraer dos veces. */
+    val rawJson: String? = null,
 ) {
     val soloImagenes get() = directos.isNotEmpty() && directos.none { it.esVideo }
     val tieneVideo get() = formatos.any { it.tieneVideo } || directos.any { it.esVideo }
@@ -71,8 +73,12 @@ object MediaInfoParser {
         // yt-dlp a veces imprime avisos antes del JSON: buscamos la primera llave.
         val inicio = texto.indexOf('{')
         require(inicio >= 0) { "yt-dlp no devolvió datos" }
-        val raiz: JsonElement = json.parseToJsonElement(texto.substring(inicio))
-        return desdeObjeto(raiz.jsonObject, urlOriginal)
+        val crudo = texto.substring(inicio)
+        val raiz: JsonElement = json.parseToJsonElement(crudo)
+        val info = desdeObjeto(raiz.jsonObject, urlOriginal)
+        // Solo se guarda para un video suelto (no para listas) y si no es enorme.
+        val guardable = !info.esLista && raiz.jsonObject.str("_type").let { it == null || it == "video" } && crudo.length < 6_000_000
+        return if (guardable) info.copy(rawJson = crudo) else info
     }
 
     fun parsearLista(texto: String): ListaInfo {
