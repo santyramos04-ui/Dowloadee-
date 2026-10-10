@@ -60,6 +60,7 @@ sealed interface Destino {
     data class Canal(val url: String) : Destino
     data class Lista(val url: String) : Destino
     data object Ajustes : Destino
+    data object Navegador : Destino
     data object Historial : Destino
     data object Guardados : Destino
     data object Listas : Destino
@@ -138,6 +139,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                     is Destino.Canal -> ChannelScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
                     is Destino.Lista -> PlaylistScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
                     Destino.Ajustes -> SettingsScreen(onAtras = { pila.removeLastOrNull() })
+                    Destino.Navegador -> com.santyramos.mirador.ui.screens.NavegadorScreen({ pila.removeLastOrNull() }, { urlDescarga = it })
                     Destino.Historial -> com.santyramos.mirador.ui.screens.HistorialScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Guardados -> com.santyramos.mirador.ui.screens.GuardadosScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Listas -> com.santyramos.mirador.ui.screens.ListasScreen({ pila.removeLastOrNull() }, { pila.add(Destino.ListaPropia(it)) })
@@ -149,7 +151,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                             0 -> HomeScreen(
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
                                 onAbrirCanal = { pila.add(Destino.Canal(it)) }, onAbrirLista = { pila.add(Destino.Lista(it)) },
-                                onIrADescargas = { pestana = 2 },
+                                onIrADescargas = { pestana = 2 }, onAbrirNavegador = { pila.add(Destino.Navegador) },
                             )
                             1 -> SuscripcionesScreen(
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },

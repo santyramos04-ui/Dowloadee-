@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.CircularProgressIndicator
@@ -95,6 +96,7 @@ fun HomeScreen(
     onAbrirCanal: (String) -> Unit,
     onAbrirLista: (String) -> Unit,
     onIrADescargas: () -> Unit = {},
+    onAbrirNavegador: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -150,7 +152,8 @@ fun HomeScreen(
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.ic_mark), contentDescription = null, modifier = Modifier.size(30.dp))
             Text("mirador", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 10.dp).weight(1f))
-            BotonIcono(Icons.Outlined.ContentPaste, "Pegar enlaces para descargar", onIrADescargas, bordeado = true)
+            BotonIcono(Icons.Outlined.Public, "Navegador de Mirador", onAbrirNavegador, bordeado = true)
+            BotonIcono(Icons.Outlined.ContentPaste, "Pegar enlaces para descargar", onIrADescargas, Modifier.padding(start = 8.dp), bordeado = true)
         }
         // ---- Buscador ----
         OutlinedTextField(
@@ -183,7 +186,7 @@ fun HomeScreen(
                     Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                     BotonSecundario("Reintentar", { buscar() })
                 }
-                buscado == null && !cargando -> Portada(onIrADescargas)
+                buscado == null && !cargando -> Portada(onIrADescargas, onAbrirNavegador, onAbrirVideo, onDescargar)
                 visibles.isEmpty() && !cargando -> Text("No encontré resultados.", Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else -> LazyColumn(state = lista, contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp)) {
                     items(visibles, key = { it.url }) { e ->
@@ -201,22 +204,48 @@ fun HomeScreen(
     }
 }
 
-/** Pantalla de bienvenida: tres arcos (el motivo de la marca), un titular y dos atajos. */
+/** Tendencias ya cargadas (se conservan al cambiar de pestaña). */
+private object TendenciasCache {
+    var datos: List<Elemento.Video>? = null
+    var intentado = false
+}
+
+/** Pantalla de bienvenida: motivo de la marca, atajos y, si YouTube las ofrece, las tendencias de Colombia. */
 @Composable
-private fun Portada(onIrADescargas: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(horizontal = 28.dp).padding(top = 28.dp)) {
-        Arcos(Modifier.padding(bottom = 26.dp))
-        Text("Mira y descarga,", style = MaterialTheme.typography.displaySmall)
-        Text("sin ruido.", style = MaterialTheme.typography.displaySmall, color = Acento)
-        Text(
-            "YouTube sin anuncios y sin cuenta de Google. Descarga videos, audio y fotos de cualquier sitio.",
-            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 14.dp, end = 24.dp),
-        )
-        Spacer(Modifier.height(26.dp))
-        Atajo(Icons.Outlined.FileDownload, "Pega uno o varios enlaces", "En la pestaña Descargas", onIrADescargas)
-        Spacer(Modifier.height(10.dp))
-        Atajo(Icons.Outlined.Share, "Compártelos desde otra app", "Compartir → Mirador, sin salir de X o Instagram", null)
+private fun Portada(onIrADescargas: () -> Unit, onAbrirNavegador: () -> Unit, onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Unit) {
+    var tendencias by remember { mutableStateOf(TendenciasCache.datos) }
+    var cargando by remember { mutableStateOf(!TendenciasCache.intentado) }
+    LaunchedEffect(Unit) {
+        if (!TendenciasCache.intentado) {
+            tendencias = Youtube.tendencias()
+            TendenciasCache.datos = tendencias; TendenciasCache.intentado = true; cargando = false
+        }
+    }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        item {
+            Column(Modifier.padding(horizontal = 28.dp).padding(top = 28.dp)) {
+                Arcos(Modifier.padding(bottom = 26.dp))
+                Text("Mira y descarga,", style = MaterialTheme.typography.displaySmall)
+                Text("sin ruido.", style = MaterialTheme.typography.displaySmall, color = Acento)
+                Text(
+                    "YouTube sin anuncios y sin cuenta de Google. Descarga videos, audio y fotos de cualquier sitio.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 14.dp, end = 24.dp),
+                )
+                Spacer(Modifier.height(26.dp))
+                Atajo(Icons.Outlined.FileDownload, "Pega uno o varios enlaces", "En la pestaña Descargas", onIrADescargas)
+                Spacer(Modifier.height(10.dp))
+                Atajo(Icons.Outlined.Public, "Navegador de Mirador", "Entra a X, Instagram o TikTok y descarga con un toque", onAbrirNavegador)
+                Spacer(Modifier.height(10.dp))
+                Atajo(Icons.Outlined.Share, "Compártelos desde otra app", "Compartir → Mirador, sin salir de X o Instagram", null)
+            }
+        }
+        if (!tendencias.isNullOrEmpty()) {
+            item { Text("Tendencias en Colombia", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 30.dp, bottom = 6.dp)) }
+            items(tendencias!!, key = { it.url }) { v -> TarjetaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
+        } else if (cargando) {
+            item { Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Acento, modifier = Modifier.size(28.dp)) } }
+        }
     }
 }
 

@@ -82,6 +82,7 @@ import com.santyramos.mirador.data.PlayerQuality
 import com.santyramos.mirador.extractor.Elemento
 import com.santyramos.mirador.extractor.bestUrl
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Share
 import com.santyramos.mirador.extractor.Youtube
 import com.santyramos.mirador.player.VideoController
@@ -312,6 +313,10 @@ fun PlayerScreen(
             } else if (info != null) {
                 val relacionados = remember(info) { info.relatedItems.mapNotNull { Youtube.aElemento(it) }.filterIsInstance<Elemento.Video>() }
                 var verTodo by remember(info) { mutableStateOf(false) }
+                var verComentarios by remember(info) { mutableStateOf(false) }
+                if (verComentarios) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verComentarios = false }) {
+                    com.santyramos.mirador.ui.ComentariosSheetContent(info.url)
+                }
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
                     item {
                         Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -350,6 +355,7 @@ fun PlayerScreen(
                                     contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.url), "Compartir enlace"))
                                 }, Modifier.weight(1f), icono = Icons.Outlined.Share)
                             }
+                            BotonSecundario("Ver comentarios", { verComentarios = true }, Modifier.fillMaxWidth(), icono = Icons.Outlined.ChatBubbleOutline)
                             val desc = info.description?.content.orEmpty()
                             if (desc.isNotBlank()) {
                                 Text(

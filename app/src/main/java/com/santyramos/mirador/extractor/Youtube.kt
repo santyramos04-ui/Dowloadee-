@@ -137,7 +137,39 @@ object Youtube {
         val p = PlaylistInfo.getMoreItems(servicio, url, pagina)
         Pagina(p.items.mapNotNull(::aElemento), p.nextPage)
     }
+
+    /** Tendencias del país configurado (Colombia). Si YouTube ya no ofrece esa página, devuelve null. */
+    suspend fun tendencias(): List<Elemento.Video>? = withContext(Dispatchers.IO) {
+        iniciar()
+        runCatching {
+            val k = org.schabi.newpipe.extractor.kiosk.KioskInfo.getInfo(servicio, "https://www.youtube.com/feed/trending")
+            k.relatedItems.mapNotNull(::aElemento).filterIsInstance<Elemento.Video>().takeIf { it.isNotEmpty() }
+        }.getOrNull()
+    }
+
+    class PaginaComentarios(val info: org.schabi.newpipe.extractor.comments.CommentsInfo, val comentarios: List<Comentario>, val siguiente: Page?)
+
+    private fun aComentario(c: org.schabi.newpipe.extractor.comments.CommentsInfoItem) = Comentario(
+        autor = c.uploaderName.orEmpty(), texto = c.commentText?.content.orEmpty(), avatar = c.uploaderAvatars.bestUrl(),
+        megusta = c.likeCount, fecha = c.textualUploadDate, fijado = c.isPinned, respuestas = c.replyCount,
+    )
+
+    suspend fun comentarios(url: String): PaginaComentarios = withContext(Dispatchers.IO) {
+        iniciar()
+        val info = org.schabi.newpipe.extractor.comments.CommentsInfo.getInfo(servicio, url)
+        PaginaComentarios(info, info.relatedItems.map(::aComentario), info.nextPage)
+    }
+
+    suspend fun masComentarios(info: org.schabi.newpipe.extractor.comments.CommentsInfo, pagina: Page): Pair<List<Comentario>, Page?> = withContext(Dispatchers.IO) {
+        iniciar()
+        val p = org.schabi.newpipe.extractor.comments.CommentsInfo.getMoreItems(servicio, info, pagina)
+        p.items.map(::aComentario) to p.nextPage
+    }
 }
+
+data class Comentario(
+    val autor: String, val texto: String, val avatar: String?, val megusta: Int, val fecha: String?, val fijado: Boolean, val respuestas: Int,
+)
 
 /** La miniatura más grande que no pase de ~720 px de ancho (ahorra datos en las listas). */
 fun List<org.schabi.newpipe.extractor.Image>.bestUrl(): String? {
