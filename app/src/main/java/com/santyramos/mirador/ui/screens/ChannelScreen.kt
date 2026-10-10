@@ -19,9 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,16 +74,16 @@ fun ChannelScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> Un
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onAtras) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
-            Text(datos?.info?.name ?: "Canal", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(Modifier.padding(start = 8.dp, top = 6.dp, end = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            com.santyramos.mirador.ui.BotonIcono(Icons.AutoMirrored.Filled.ArrowBack, "Volver", onAtras)
+            Text(datos?.info?.name ?: "Canal", style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Box(Modifier.fillMaxSize()) {
             val d = datos
             when {
                 error != null -> Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(error!!, color = MaterialTheme.colorScheme.error)
-                    OutlinedButton(onClick = { intento++ }, modifier = Modifier.padding(top = 12.dp)) { Text("Reintentar") }
+                    com.santyramos.mirador.ui.BotonSecundario("Reintentar", { intento++ }, Modifier.padding(top = 12.dp))
                 }
                 d == null -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 else -> LazyColumn(state = lista, contentPadding = PaddingValues(bottom = 16.dp)) {

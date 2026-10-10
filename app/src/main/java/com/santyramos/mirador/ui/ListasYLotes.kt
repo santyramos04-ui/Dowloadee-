@@ -3,7 +3,7 @@ package com.santyramos.mirador.ui
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Arrangement
@@ -93,9 +93,9 @@ fun ListaSheetContent(url: String, onCerrar: () -> Unit, onEncolada: () -> Unit)
             error != null -> {
                 Text("No se puede leer la lista", style = MaterialTheme.typography.titleMedium)
                 Text(error!!, color = MaterialTheme.colorScheme.error)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(onClick = { intento++ }) { Text("Reintentar") }
-                    OutlinedButton(onClick = onCerrar) { Text("Cerrar") }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    BotonSecundario("Cerrar", onCerrar, Modifier.weight(1f))
+                    BotonPrimario("Reintentar", { intento++ }, Modifier.weight(1f))
                 }
             }
             l == null -> Row(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
@@ -116,9 +116,9 @@ fun ListaSheetContent(url: String, onCerrar: () -> Unit, onEncolada: () -> Unit)
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(onClick = onCerrar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
-                    Button(
-                        enabled = !trabajando,
+                    BotonSecundario("Cancelar", onCerrar, Modifier.weight(1f))
+                    BotonPrimario(
+                        "Descargar ${l.entradas.size}", enabled = !trabajando, modifier = Modifier.weight(1.5f), icono = Icons.Outlined.FileDownload,
                         onClick = {
                             trabajando = true
                             scope.launch {
@@ -127,8 +127,7 @@ fun ListaSheetContent(url: String, onCerrar: () -> Unit, onEncolada: () -> Unit)
                                 onEncolada()
                             }
                         },
-                        modifier = Modifier.weight(1f),
-                    ) { Icon(Icons.Filled.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Descargar ${l.entradas.size}") }
+                    )
                 }
             }
         }
@@ -150,7 +149,7 @@ fun LoteSheetContent(urls: List<String>, onCerrar: () -> Unit, onEncolada: () ->
         Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("${urls.size} enlaces", style = MaterialTheme.typography.titleMedium)
+        Text("${urls.size} enlaces", style = MaterialTheme.typography.titleLarge)
         Text(
             "Se descargarán todos, uno tras otro (2 a la vez). Las publicaciones con fotos se bajan como fotos.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -164,9 +163,9 @@ fun LoteSheetContent(urls: List<String>, onCerrar: () -> Unit, onEncolada: () ->
             Switch(checked = listasCompletas, onCheckedChange = { listasCompletas = it })
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = onCerrar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
-            Button(
-                enabled = !trabajando,
+            BotonSecundario("Cancelar", onCerrar, Modifier.weight(1f))
+            BotonPrimario(
+                "Descargar todo", enabled = !trabajando, modifier = Modifier.weight(1.5f), icono = Icons.Outlined.FileDownload,
                 onClick = {
                     trabajando = true
                     scope.launch {
@@ -176,12 +175,7 @@ fun LoteSheetContent(urls: List<String>, onCerrar: () -> Unit, onEncolada: () ->
                         onEncolada()
                     }
                 },
-                modifier = Modifier.weight(1f),
-            ) {
-                if (trabajando) CircularProgressIndicator(Modifier.size(18.dp)) else {
-                    Icon(Icons.Filled.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Descargar todo")
-                }
-            }
+            )
         }
     }
 }

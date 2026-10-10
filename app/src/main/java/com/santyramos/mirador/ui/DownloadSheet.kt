@@ -2,7 +2,7 @@ package com.santyramos.mirador.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Arrangement
@@ -98,11 +98,11 @@ fun DownloadSheetContent(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Este video viene de una lista", style = MaterialTheme.typography.titleMedium)
+            Text("Este video viene de una lista", style = MaterialTheme.typography.titleLarge)
             Text("¿Qué quieres descargar?", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Button(onClick = { modo = Modo.VIDEO }, modifier = Modifier.fillMaxWidth()) { Text("Solo este video") }
-            OutlinedButton(onClick = { modo = Modo.LISTA }, modifier = Modifier.fillMaxWidth()) { Text("La lista completa") }
-            OutlinedButton(onClick = onCerrar, modifier = Modifier.fillMaxWidth()) { Text("Cancelar") }
+            BotonPrimario("Solo este video", { modo = Modo.VIDEO }, Modifier.fillMaxWidth())
+            BotonSecundario("La lista completa", { modo = Modo.LISTA }, Modifier.fillMaxWidth())
+            BotonSecundario("Cancelar", onCerrar, Modifier.fillMaxWidth())
         }
         Modo.LISTA -> ListaSheetContent(UrlTools.urlDeLista(url), onCerrar, onEncolada)
         Modo.VIDEO -> VideoSheetContent(url, true, onCerrar, onEncolada)
@@ -145,17 +145,17 @@ internal fun VideoSheetContent(
     ) {
         when (val s = estado) {
             Estado.Cargando -> Row(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(Modifier.size(28.dp))
+                CircularProgressIndicator(Modifier.size(26.dp), color = MaterialTheme.colorScheme.primary, strokeWidth = 3.dp)
                 Spacer(Modifier.width(16.dp))
-                Text("Buscando opciones de descarga…")
+                Text("Buscando opciones de descarga…", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             is Estado.Error -> {
-                Text("No se puede descargar", style = MaterialTheme.typography.titleMedium)
-                Text(s.mensaje, color = MaterialTheme.colorScheme.error)
+                Text("No se puede descargar", style = MaterialTheme.typography.titleLarge)
+                Text(s.mensaje, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                 Text(url, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedButton(onClick = { intento++ }) { Text("Reintentar") }
-                    OutlinedButton(onClick = onCerrar) { Text("Cerrar") }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    BotonSecundario("Cerrar", onCerrar, Modifier.weight(1f))
+                    BotonPrimario("Reintentar", { intento++ }, Modifier.weight(1f))
                 }
             }
             is Estado.Listo -> {
@@ -163,7 +163,7 @@ internal fun VideoSheetContent(
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
                     AsyncImage(
                         model = info.miniatura, contentDescription = null, contentScale = ContentScale.Crop,
-                        modifier = Modifier.width(144.dp).height(81.dp).clip(RoundedCornerShape(14.dp)),
+                        modifier = Modifier.width(140.dp).height(79.dp).clip(RoundedCornerShape(14.dp)),
                     )
                     Column(Modifier.weight(1f)) {
                         Text(info.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -190,12 +190,13 @@ internal fun VideoSheetContent(
                         Text("Los archivos 4K pesan mucho y no todos los celulares los reproducen.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
                     }
                 }
+                Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(onClick = onCerrar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
-                    Button(
-                        onClick = { scope.launch { DownloadCenter.encolar(info, elegido, soloEste); onEncolada() } },
-                        modifier = Modifier.weight(1f),
-                    ) { Icon(Icons.Filled.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Descargar") }
+                    BotonSecundario("Cancelar", onCerrar, Modifier.weight(1f))
+                    BotonPrimario(
+                        "Descargar", { scope.launch { DownloadCenter.encolar(info, elegido, soloEste); onEncolada() } },
+                        Modifier.weight(1.5f), icono = Icons.Outlined.FileDownload,
+                    )
                 }
             }
         }

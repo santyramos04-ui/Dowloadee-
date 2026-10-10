@@ -1,21 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- La «m» de Mirador: dos arcos, como las ventanas de un mirador. Centrada y reducida para la zona segura. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Arco de la ventana -->
-    <path
-        android:strokeColor="#3DDC97"
-        android:strokeWidth="5"
-        android:strokeLineJoin="round"
-        android:pathData="M32,78 L32,50 A22,22 0 0 1 76,50 L76,78 Z" />
-    <!-- Flecha de descarga -->
-    <path
-        android:fillColor="#3DDC97"
-        android:pathData="M51,40 L57,40 L57,52 L63,52 L54,64 L45,52 L51,52 Z" />
-    <!-- Alféizar -->
-    <path
-        android:fillColor="#3DDC97"
-        android:pathData="M26,80 L82,80 L82,85 L26,85 Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="59.25"
+        android:scaleX="0.88"
+        android:scaleY="0.88"
+        android:translateY="-5.25">
+        <path
+            android:pathData="M31,76 L31,54 A11.5,11.5 0 0 1 54,54 A11.5,11.5 0 0 1 77,54 L77,76"
+            android:strokeWidth="9"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round">
+            <aapt:attr name="android:strokeColor">
+                <gradient
+                    android:startX="0"
+                    android:startY="38"
+                    android:endX="0"
+                    android:endY="80.5"
+                    android:type="linear">
+                    <item android:offset="0" android:color="#FF7BF7C4" />
+                    <item android:offset="1" android:color="#FF2FC88C" />
+                </gradient>
+            </aapt:attr>
+        </path>
+    </group>
 </vector>

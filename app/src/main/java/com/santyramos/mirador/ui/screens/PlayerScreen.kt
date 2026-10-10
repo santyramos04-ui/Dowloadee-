@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -81,7 +82,12 @@ import com.santyramos.mirador.data.PlayerQuality
 import com.santyramos.mirador.extractor.Elemento
 import com.santyramos.mirador.extractor.Youtube
 import com.santyramos.mirador.player.VideoController
+import com.santyramos.mirador.ui.BotonPrimario
+import com.santyramos.mirador.ui.BotonSecundario
 import com.santyramos.mirador.ui.PipState
+import com.santyramos.mirador.ui.theme.Paleta
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material3.Surface
 import com.santyramos.mirador.util.Format
 import kotlinx.coroutines.delay
 
@@ -270,8 +276,8 @@ fun PlayerScreen(
                     // Centro
                     Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(28.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { VideoController.saltar(-10_000) }) { Icon(Icons.Filled.Replay10, "Atrasar 10 segundos", tint = Color.White, modifier = Modifier.size(40.dp)) }
-                        IconButton(onClick = { VideoController.alternar() }, modifier = Modifier.size(64.dp)) {
-                            Icon(if (estado.reproduciendo) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (estado.reproduciendo) "Pausar" else "Reproducir", tint = Color.White, modifier = Modifier.size(56.dp))
+                        IconButton(onClick = { VideoController.alternar() }, modifier = Modifier.size(68.dp).clip(CircleShape).background(Color(0x99000000))) {
+                            Icon(if (estado.reproduciendo) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (estado.reproduciendo) "Pausar" else "Reproducir", tint = Color.White, modifier = Modifier.size(40.dp))
                         }
                         IconButton(onClick = { VideoController.saltar(10_000) }) { Icon(Icons.Filled.Forward10, "Adelantar 10 segundos", tint = Color.White, modifier = Modifier.size(40.dp)) }
                     }
@@ -282,6 +288,7 @@ fun PlayerScreen(
                             value = if (arrastrando) posArrastre else (estado.posicionMs.toFloat() / dur).coerceIn(0f, 1f),
                             onValueChange = { arrastrando = true; posArrastre = it },
                             onValueChangeFinished = { VideoController.moverA((posArrastre * dur).toLong()); arrastrando = false },
+                            colors = androidx.compose.material3.SliderDefaults.colors(thumbColor = com.santyramos.mirador.ui.theme.Acento, activeTrackColor = com.santyramos.mirador.ui.theme.Acento, inactiveTrackColor = Color(0x55FFFFFF)),
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("${Format.duracion(estado.posicionMs / 1000)} / ${Format.duracion(estado.duracionMs / 1000)}", color = Color.White, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
@@ -304,8 +311,8 @@ fun PlayerScreen(
                 var verTodo by remember(info) { mutableStateOf(false) }
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
                     item {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(info.name.orEmpty(), style = MaterialTheme.typography.titleMedium)
+                        Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(info.name.orEmpty(), style = MaterialTheme.typography.titleLarge)
                             Text(
                                 listOfNotNull(
                                     if (info.viewCount >= 0) "${Format.contar(info.viewCount)} vistas" else null,
@@ -313,34 +320,36 @@ fun PlayerScreen(
                                 ).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Row(
-                                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(enabled = !info.uploaderUrl.isNullOrBlank()) { onAbrirCanal(info.uploaderUrl) }.padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
+                            // Canal
+                            Surface(
+                                onClick = { onAbrirCanal(info.uploaderUrl) }, enabled = !info.uploaderUrl.isNullOrBlank(),
+                                shape = RoundedCornerShape(16.dp), color = Paleta.S1, border = androidx.compose.foundation.BorderStroke(1.dp, Paleta.Linea),
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                Text(info.uploaderName.orEmpty(), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                if (info.uploaderSubscriberCount > 0) Text("${Format.contar(info.uploaderSubscriberCount)} suscriptores", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(info.uploaderName.orEmpty(), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    if (info.uploaderSubscriberCount > 0) Text("${Format.contar(info.uploaderSubscriberCount)} suscriptores", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Button(onClick = { onDescargar(info.url) }) {
-                                    Icon(Icons.Filled.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Descargar")
-                                }
-                                OutlinedButton(onClick = {
+                            // Acciones
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                                BotonPrimario("Descargar", { onDescargar(info.url) }, Modifier.weight(1.4f), icono = Icons.Outlined.FileDownload)
+                                BotonSecundario("Compartir", {
                                     contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.url), "Compartir enlace"))
-                                }) { Icon(Icons.Filled.Share, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Compartir") }
-                                OutlinedButton(onClick = { VideoController.cerrar(); onMinimizar() }) {
-                                    Icon(Icons.Filled.Close, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Cerrar")
-                                }
+                                }, Modifier.weight(1f))
                             }
                             val desc = info.description?.content.orEmpty()
                             if (desc.isNotBlank()) {
                                 Text(
-                                    desc, style = MaterialTheme.typography.bodySmall, maxLines = if (verTodo) Int.MAX_VALUE else 3, overflow = TextOverflow.Ellipsis,
+                                    desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = if (verTodo) Int.MAX_VALUE else 3, overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.clickable { verTodo = !verTodo },
                                 )
                             }
+                            TextButton(onClick = { VideoController.cerrar(); onMinimizar() }) { Text("Cerrar reproductor", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         }
-                        HorizontalDivider()
-                        if (relacionados.isNotEmpty()) Text("Videos relacionados", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(16.dp))
+                        HorizontalDivider(color = Paleta.Linea)
+                        if (relacionados.isNotEmpty()) Text("Videos relacionados", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
                     }
                     items(relacionados, key = { it.url }) { v -> FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
                 }

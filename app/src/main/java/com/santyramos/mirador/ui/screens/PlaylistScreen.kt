@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -19,9 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,26 +69,24 @@ fun PlaylistScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> U
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onAtras) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver") }
-            Text(titulo, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(Modifier.padding(start = 8.dp, top = 6.dp, end = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            com.santyramos.mirador.ui.BotonIcono(Icons.AutoMirrored.Filled.ArrowBack, "Volver", onAtras)
+            Text(titulo, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Box(Modifier.fillMaxSize()) {
             when {
                 error != null -> Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(error!!, color = MaterialTheme.colorScheme.error)
-                    OutlinedButton(onClick = { intento++ }, modifier = Modifier.padding(top = 12.dp)) { Text("Reintentar") }
+                    com.santyramos.mirador.ui.BotonSecundario("Reintentar", { intento++ }, Modifier.padding(top = 12.dp))
                 }
                 !cargado -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 else -> LazyColumn(state = lista, contentPadding = PaddingValues(bottom = 16.dp)) {
                     item {
-                        androidx.compose.material3.Button(
-                            onClick = { descargarLista = true },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        ) {
-                            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.Download, null, Modifier.size(18.dp))
-                            androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp)); Text("Descargar toda la lista")
-                        }
+                        com.santyramos.mirador.ui.BotonPrimario(
+                            "Descargar toda la lista", { descargarLista = true },
+                            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            icono = androidx.compose.material.icons.Icons.Outlined.Download,
+                        )
                     }
                     items(videos.filterIsInstance<Elemento.Video>(), key = { it.url }) { v ->
                         FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) })
@@ -102,10 +98,7 @@ fun PlaylistScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> U
     }
 
     if (descargarLista) {
-        androidx.compose.material3.ModalBottomSheet(
-            onDismissRequest = { descargarLista = false },
-            sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        ) {
+        com.santyramos.mirador.ui.HojaMirador(onCerrar = { descargarLista = false }) {
             com.santyramos.mirador.ui.ListaSheetContent(url = url, onCerrar = { descargarLista = false }, onEncolada = { descargarLista = false })
         }
     }

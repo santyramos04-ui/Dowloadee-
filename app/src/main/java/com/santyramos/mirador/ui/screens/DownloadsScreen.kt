@@ -25,16 +25,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentPaste
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.OpenInNew
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
@@ -72,7 +72,13 @@ import com.santyramos.mirador.download.DownloadCenter
 import com.santyramos.mirador.download.Preset
 import com.santyramos.mirador.download.UrlTools
 import com.santyramos.mirador.ui.DownloadSheetContent
+import com.santyramos.mirador.ui.BotonIcono
+import com.santyramos.mirador.ui.BotonPrimario
+import com.santyramos.mirador.ui.Encabezado
 import com.santyramos.mirador.ui.EstadoVacio
+import com.santyramos.mirador.ui.Filtro
+import com.santyramos.mirador.ui.Panel
+import com.santyramos.mirador.ui.theme.Acento
 import com.santyramos.mirador.ui.Insignia
 import com.santyramos.mirador.ui.LoteSheetContent
 import com.santyramos.mirador.ui.theme.Paleta
@@ -123,79 +129,71 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
     val visibles = descargas.filter { it.coincide(filtro) }
 
     Column(modifier.fillMaxSize().statusBarsPadding()) {
-        Text("Descargas", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 20.dp, top = 14.dp, end = 20.dp))
+        Encabezado(
+            "Descargas",
+            if (descargas.isEmpty()) "Pega un enlace para empezar"
+            else "$enCurso en curso · ${descargas.count { it.status == DownloadStatus.DONE }} listas",
+        )
 
-        // ---- Tarjeta para pegar enlaces ----
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surfaceContainer,
-        ) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    "Pega uno o varios enlaces (uno por línea): videos, audios, fotos o listas de YouTube, X, Instagram, TikTok, Facebook y más.",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                TextField(
+        // ---- Panel para pegar enlaces ----
+        Panel(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                androidx.compose.material3.OutlinedTextField(
                     value = texto, onValueChange = { texto = it }, modifier = Modifier.fillMaxWidth(),
-                    minLines = 1, maxLines = 5, shape = MaterialTheme.shapes.medium,
-                    placeholder = { Text("https://…") },
-                    supportingText = { if (enlaces.size > 1) Text("${enlaces.size} enlaces detectados") },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
+                    minLines = 1, maxLines = 5, shape = RoundedCornerShape(14.dp),
+                    placeholder = { Text("Pega aquí uno o varios enlaces", color = Paleta.Texto3) },
+                    trailingIcon = { IconButton(onClick = { pegar() }) { Icon(Icons.Outlined.ContentPaste, "Pegar del portapapeles", tint = MaterialTheme.colorScheme.onSurfaceVariant) } },
+                    supportingText = {
+                        if (enlaces.size > 1) Text("${enlaces.size} enlaces detectados")
+                        else if (avisoEnlace != null) Text(avisoEnlace!!, color = MaterialTheme.colorScheme.error)
+                    },
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Paleta.S2, unfocusedContainerColor = Paleta.S2,
+                        focusedBorderColor = Acento, unfocusedBorderColor = Paleta.Linea, cursorColor = Acento,
                     ),
                 )
-                avisoEnlace?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                    androidx.compose.material3.OutlinedButton(onClick = { pegar() }, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Filled.ContentPaste, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Pegar")
-                    }
-                    Button(onClick = { continuar() }, modifier = Modifier.weight(1.4f)) {
-                        Icon(Icons.Filled.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
-                        Text(if (enlaces.size > 1) "Descargar ${enlaces.size}" else "Buscar opciones")
-                    }
-                }
+                BotonPrimario(
+                    if (enlaces.size > 1) "Descargar ${enlaces.size} enlaces" else "Buscar opciones",
+                    onClick = { continuar() }, modifier = Modifier.fillMaxWidth(), icono = Icons.Outlined.FileDownload,
+                )
             }
         }
 
         // ---- Filtros ----
         if (descargas.isNotEmpty()) {
-            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(FiltroDescargas.entries) { f ->
                     val n = descargas.count { it.coincide(f) }
-                    FilterChip(selected = filtro == f, onClick = { filtro = f }, label = { Text(if (f == FiltroDescargas.TODAS) f.etiqueta else "${f.etiqueta} ($n)") })
+                    Filtro(if (f == FiltroDescargas.TODAS) f.etiqueta else "${f.etiqueta} ($n)", filtro == f) { filtro = f }
                 }
             }
             if (descargas.any { it.status in setOf(DownloadStatus.DONE, DownloadStatus.ERROR, DownloadStatus.CANCELED) }) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (enCurso > 0) "$enCurso en curso" else "Todo al día", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    TextButton(onClick = { scope.launch { DownloadCenter.limpiarTerminadas() } }) { Text("Limpiar terminadas") }
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = { scope.launch { DownloadCenter.limpiarTerminadas() } }) { Text("Limpiar terminadas", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
         }
 
         if (descargas.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                EstadoVacio(Icons.Filled.Download, "Aún no hay descargas", "Pega un enlace arriba o usa «Compartir → Mirador» desde otra app.")
+                EstadoVacio(Icons.Outlined.FileDownload, "Aún no hay descargas", "Pega un enlace arriba o usa «Compartir → Mirador» desde otra app.")
             }
         } else if (visibles.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No hay nada en esta categoría.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         } else {
-            LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(visibles, key = { it.id }) { d -> TarjetaDescarga(d) }
+            LazyColumn(contentPadding = PaddingValues(top = 6.dp, bottom = 16.dp)) {
+                items(visibles, key = { it.id }) { d -> FilaDescarga(d) }
             }
         }
     }
 
     urlsLote?.let { lote ->
-        ModalBottomSheet(onDismissRequest = { urlsLote = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        com.santyramos.mirador.ui.HojaMirador(onCerrar = { urlsLote = null }) {
             LoteSheetContent(urls = lote, onCerrar = { urlsLote = null }, onEncolada = { urlsLote = null; texto = "" })
         }
     }
     urlParaDescargar?.let { u ->
-        ModalBottomSheet(onDismissRequest = { urlParaDescargar = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+        com.santyramos.mirador.ui.HojaMirador(onCerrar = { urlParaDescargar = null }) {
             DownloadSheetContent(url = u, onCerrar = { urlParaDescargar = null }, onEncolada = { urlParaDescargar = null; texto = "" })
         }
     }
@@ -211,76 +209,71 @@ private fun etiquetaPreset(d: DownloadEntity): String = when (Preset.from(d.pres
 }
 
 @Composable
-private fun TarjetaDescarga(d: DownloadEntity) {
+private fun FilaDescarga(d: DownloadEntity) {
     val contexto = LocalContext.current
     val scope = rememberCoroutineScope()
     val estado = d.status
     val colorEstado = when (estado) {
         DownloadStatus.ERROR -> MaterialTheme.colorScheme.error
-        DownloadStatus.DONE -> MaterialTheme.colorScheme.primary
         DownloadStatus.PAUSED -> Paleta.Aviso
+        DownloadStatus.DONE -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val progresoAnimado by animateFloatAsState((d.progreso / 100f).coerceIn(0f, 1f), label = "progreso")
 
-    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.width(112.dp).height(64.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-                    AsyncImage(model = d.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-                    if (estado == DownloadStatus.DONE || estado == DownloadStatus.ERROR) {
-                        Box(Modifier.matchParentSize().background(Color(0x66000000)), contentAlignment = Alignment.Center) {
-                            Icon(if (estado == DownloadStatus.DONE) Icons.Filled.CheckCircle else Icons.Filled.ErrorOutline, null, tint = if (estado == DownloadStatus.DONE) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error, modifier = Modifier.size(28.dp))
-                        }
-                    }
-                }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(d.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Insignia(etiquetaPreset(d))
-                        d.grupoNombre?.let { Insignia("Lista", color = MaterialTheme.colorScheme.surfaceContainerHighest, colorTexto = MaterialTheme.colorScheme.onSurfaceVariant) }
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(104.dp).height(60.dp).clip(RoundedCornerShape(12.dp)).background(Paleta.S2)) {
+                AsyncImage(model = d.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                if (estado == DownloadStatus.DONE || estado == DownloadStatus.ERROR) {
+                    Box(Modifier.matchParentSize().background(Color(0x99000000)), contentAlignment = Alignment.Center) {
+                        Icon(
+                            if (estado == DownloadStatus.DONE) Icons.Filled.Check else Icons.Outlined.ErrorOutline, null,
+                            tint = if (estado == DownloadStatus.DONE) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(26.dp),
+                        )
                     }
                 }
             }
-            Text(textoEstado(d), style = MaterialTheme.typography.bodySmall, color = colorEstado, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            when (estado) {
-                DownloadStatus.RUNNING ->
-                    if (d.progreso in 0f..98.9f) LinearProgressIndicator(progress = { progresoAnimado }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape), trackColor = MaterialTheme.colorScheme.surfaceContainerHighest)
-                    else LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape), trackColor = MaterialTheme.colorScheme.surfaceContainerHighest)
-                DownloadStatus.PAUSED -> LinearProgressIndicator(progress = { progresoAnimado }, modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape), color = Paleta.Aviso, trackColor = MaterialTheme.colorScheme.surfaceContainerHighest)
-                DownloadStatus.QUEUED -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(3.dp).clip(CircleShape), trackColor = MaterialTheme.colorScheme.surfaceContainerHighest)
-                else -> {}
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(d.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(7.dp).clip(CircleShape).background(colorEstado))
+                    Text(textoEstado(d), style = MaterialTheme.typography.bodySmall, color = colorEstado, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Insignia(etiquetaPreset(d))
+                }
+                when (estado) {
+                    DownloadStatus.RUNNING ->
+                        if (d.progreso in 0f..98.9f) LinearProgressIndicator(progress = { progresoAnimado }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape), color = Acento, trackColor = Paleta.S3, gapSize = 0.dp, drawStopIndicator = {})
+                        else LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape), color = Acento, trackColor = Paleta.S3)
+                    DownloadStatus.PAUSED -> LinearProgressIndicator(progress = { progresoAnimado }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape), color = Paleta.Aviso, trackColor = Paleta.S3, gapSize = 0.dp, drawStopIndicator = {})
+                    DownloadStatus.QUEUED -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(3.dp).clip(CircleShape), color = Paleta.Texto3, trackColor = Paleta.S3)
+                    else -> {}
+                }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(0.dp), verticalAlignment = Alignment.CenterVertically) {
                 when (estado) {
                     DownloadStatus.RUNNING, DownloadStatus.QUEUED -> {
-                        AccionIcono(Icons.Filled.Pause, "Pausar") { scope.launch { DownloadCenter.pausar(d.id) } }
-                        AccionIcono(Icons.Filled.Close, "Cancelar") { scope.launch { DownloadCenter.cancelar(d.id) } }
+                        BotonIcono(Icons.Outlined.Pause, "Pausar", { scope.launch { DownloadCenter.pausar(d.id) } })
+                        BotonIcono(Icons.Outlined.Close, "Cancelar", { scope.launch { DownloadCenter.cancelar(d.id) } })
                     }
                     DownloadStatus.PAUSED -> {
-                        AccionIcono(Icons.Filled.PlayArrow, "Reanudar", destacado = true) { scope.launch { DownloadCenter.reanudar(d.id) } }
-                        AccionIcono(Icons.Filled.Close, "Cancelar") { scope.launch { DownloadCenter.cancelar(d.id) } }
+                        BotonIcono(Icons.Outlined.PlayArrow, "Reanudar", { scope.launch { DownloadCenter.reanudar(d.id) } }, destacado = true)
+                        BotonIcono(Icons.Outlined.Close, "Cancelar", { scope.launch { DownloadCenter.cancelar(d.id) } })
                     }
                     DownloadStatus.ERROR, DownloadStatus.CANCELED -> {
-                        AccionIcono(Icons.Filled.Refresh, "Reintentar", destacado = true) { scope.launch { DownloadCenter.reintentar(d.id) } }
-                        AccionIcono(Icons.Filled.Delete, "Quitar de la lista") { scope.launch { DownloadCenter.borrar(d.id) } }
+                        BotonIcono(Icons.Outlined.Refresh, "Reintentar", { scope.launch { DownloadCenter.reintentar(d.id) } }, destacado = true)
+                        BotonIcono(Icons.Outlined.Delete, "Quitar de la lista", { scope.launch { DownloadCenter.borrar(d.id) } })
                     }
                     DownloadStatus.DONE -> {
-                        if (d.archivoUri != null) Button(onClick = { abrir(contexto, d) }, contentPadding = PaddingValues(horizontal = 16.dp)) {
-                            Icon(Icons.Filled.OpenInNew, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Abrir")
-                        }
-                        AccionIcono(Icons.Filled.Delete, "Quitar de la lista") { scope.launch { DownloadCenter.borrar(d.id) } }
+                        if (d.archivoUri != null) BotonIcono(Icons.Outlined.OpenInNew, "Abrir", { abrir(contexto, d) }, destacado = true)
+                        BotonIcono(Icons.Outlined.Delete, "Quitar de la lista", { scope.launch { DownloadCenter.borrar(d.id) } })
                     }
                 }
             }
         }
+        androidx.compose.material3.HorizontalDivider(color = Color(0xFF1A1A1E), modifier = Modifier.padding(start = 20.dp))
     }
-}
-
-@Composable
-private fun AccionIcono(icono: androidx.compose.ui.graphics.vector.ImageVector, descripcion: String, destacado: Boolean = false, onClick: () -> Unit) {
-    if (destacado) FilledTonalIconButton(onClick = onClick, modifier = Modifier.size(48.dp)) { Icon(icono, descripcion, Modifier.size(20.dp)) }
-    else IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) { Icon(icono, descripcion, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
 }
 
 private fun textoEstado(d: DownloadEntity): String = when (d.status) {
