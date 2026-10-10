@@ -96,6 +96,8 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
             settings.allowFileAccess = false
             settings.allowContentAccess = false
             settings.mediaPlaybackRequiresUserGesture = true
+            // Los inicios de sesión de Instagram, X, etc. suelen necesitar cookies de terceros.
+            android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
         }
     }
     DisposableEffect(web) {

@@ -69,6 +69,13 @@ object VideoController {
     private val _autoSiguiente = MutableStateFlow(true)
     val autoSiguiente: StateFlow<Boolean> = _autoSiguiente.asStateFlow()
 
+    @Volatile private var segmentos: List<Segmento> = emptyList()
+    private val saltados = HashSet<Segmento>()
+    private val _aviso = MutableStateFlow<String?>(null)
+    /** Mensaje corto cuando se salta un tramo («Se saltó: Patrocinio»). */
+    val aviso: StateFlow<String?> = _aviso.asStateFlow()
+    private var avisoJob: Job? = null
+
     private val _estado = MutableStateFlow(EstadoReproduccion())
     val estado: StateFlow<EstadoReproduccion> = _estado.asStateFlow()
 
@@ -95,7 +102,30 @@ object VideoController {
                 publicar(); delay(400)
                 // Cada ~4 s de reproducción se guarda el punto donde vas (para retomar después).
                 if (++vueltas % 10 == 0 && player.isPlaying) guardarPosicionActual()
+                if (player.isPlaying) saltarSiCorresponde()
             }
+        }
+    }
+
+    private fun saltarSiCorresponde() {
+        val lista = segmentos
+        if (lista.isEmpty()) return
+        val pos = player.currentPosition
+        val s = lista.firstOrNull { pos >= it.inicioMs && pos < it.finMs - 400 && it !in saltados } ?: return
+        saltados.add(s)
+        player.seekTo(s.finMs)
+        avisoJob?.cancel()
+        _aviso.value = "Se saltó: " + (SponsorBlock.CATEGORIAS[s.categoria] ?: "un tramo")
+        avisoJob = scope.launch { delay(3000); _aviso.value = null }
+    }
+
+    private fun cargarSegmentos(url: String) {
+        segmentos = emptyList(); saltados.clear()
+        scope.launch {
+            val ajustes = Settings(app)
+            if (!ajustes.sponsorBlock.first()) return@launch
+            val lista = SponsorBlock.segmentos(url, ajustes.sbCategorias.first())
+            if (_video.value?.urlOriginal == url) segmentos = lista
         }
     }
 
@@ -171,6 +201,7 @@ object VideoController {
                         urlAutor = info.uploaderUrl, duracionSeg = info.duration,
                     ),
                 )
+                cargarSegmentos(url)
                 val alturas = StreamSelector.alturasDisponibles(info.videoStreams + info.videoOnlyStreams)
                 reproducir(info, calidad, alturas, desde)
                 player.setPlaybackSpeed(velocidad)

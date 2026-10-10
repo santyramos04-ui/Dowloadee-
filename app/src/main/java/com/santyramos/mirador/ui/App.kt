@@ -141,7 +141,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                 when (destino) {
                     is Destino.Canal -> ChannelScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
                     is Destino.Lista -> PlaylistScreen(destino.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
-                    Destino.Ajustes -> SettingsScreen(onAtras = { pila.removeLastOrNull() })
+                    Destino.Ajustes -> SettingsScreen(onAtras = { pila.removeLastOrNull() }, onAbrirNavegador = { pila.add(Destino.Navegador(it)) })
                     is Destino.Navegador -> com.santyramos.mirador.ui.screens.NavegadorScreen(destino.url, { pila.removeLastOrNull() }, { urlDescarga = it })
                     Destino.Historial -> com.santyramos.mirador.ui.screens.HistorialScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Guardados -> com.santyramos.mirador.ui.screens.GuardadosScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })

@@ -278,6 +278,14 @@ fun PlayerScreen(
                         }
                         IconButton(onClick = onEntrarPip) { Icon(Icons.Filled.PictureInPictureAlt, "Imagen en imagen", tint = Color.White) }
                     }
+                    // Aviso de SponsorBlock
+                    val aviso by VideoController.aviso.collectAsState()
+                    aviso?.let { a ->
+                        Text(
+                            a, color = Color.White, style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 56.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xCC000000)).padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                    }
                     // Centro
                     Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(28.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { VideoController.saltar(-10_000) }) { Icon(Icons.Filled.Replay10, "Atrasar 10 segundos", tint = Color.White, modifier = Modifier.size(40.dp)) }
