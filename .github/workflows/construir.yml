@@ -6,7 +6,7 @@ name: Construir y publicar
 on:
   push:
     branches: [main, 'ccr-**']
-    paths-ignore: ['**.md', 'tests/sitios/**', '.github/workflows/probe.yml', '.github/workflows/sitios.yml']
+    paths-ignore: ['**.md', 'tests/sitios/**', '.claude/**', '.github/workflows/probe.yml', '.github/workflows/sitios.yml']
   pull_request:
   workflow_dispatch:
 

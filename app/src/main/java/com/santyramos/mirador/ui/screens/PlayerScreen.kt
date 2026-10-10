@@ -163,8 +163,8 @@ fun PlayerScreen(
                         onDoubleTap = { o ->
                             val ancho = size.width
                             when {
-                                o.x < ancho / 3f -> { VideoController.saltar(-10_000); aviso = "⏪ 10 s" }
-                                o.x > ancho * 2f / 3f -> { VideoController.saltar(10_000); aviso = "10 s ⏩" }
+                                o.x < ancho / 3f -> { VideoController.saltar(-10_000); aviso = "−10 s" }
+                                o.x > ancho * 2f / 3f -> { VideoController.saltar(10_000); aviso = "+10 s" }
                                 else -> VideoController.alternar()
                             }
                         },
@@ -193,11 +193,11 @@ fun PlayerScreen(
                                 actividad?.window?.let { w ->
                                     val p = w.attributes; p.screenBrightness = nivel.coerceAtLeast(0.02f); w.attributes = p
                                 }
-                                aviso = "☀ Brillo ${(nivel * 100).toInt()}%"
+                                aviso = "Brillo ${(nivel * 100).toInt()}%"
                             } else {
                                 val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
                                 audio.setStreamVolume(AudioManager.STREAM_MUSIC, (nivel * max).toInt(), 0)
-                                aviso = "🔊 Volumen ${(nivel * 100).toInt()}%"
+                                aviso = "Volumen ${(nivel * 100).toInt()}%"
                             }
                         },
                     )

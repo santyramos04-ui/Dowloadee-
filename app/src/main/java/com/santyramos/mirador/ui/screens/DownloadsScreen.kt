@@ -279,8 +279,8 @@ private fun TarjetaDescarga(d: DownloadEntity) {
 
 @Composable
 private fun AccionIcono(icono: androidx.compose.ui.graphics.vector.ImageVector, descripcion: String, destacado: Boolean = false, onClick: () -> Unit) {
-    if (destacado) FilledTonalIconButton(onClick = onClick, modifier = Modifier.size(40.dp)) { Icon(icono, descripcion, Modifier.size(20.dp)) }
-    else IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) { Icon(icono, descripcion, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+    if (destacado) FilledTonalIconButton(onClick = onClick, modifier = Modifier.size(48.dp)) { Icon(icono, descripcion, Modifier.size(20.dp)) }
+    else IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) { Icon(icono, descripcion, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
 }
 
 private fun textoEstado(d: DownloadEntity): String = when (d.status) {

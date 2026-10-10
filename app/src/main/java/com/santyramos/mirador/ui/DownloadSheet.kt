@@ -1,6 +1,10 @@
 package com.santyramos.mirador.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -181,14 +185,17 @@ internal fun VideoSheetContent(
                     )
                 }
                 if (elegido == Preset.MAX_4K) {
-                    Text("⚠ Los archivos 4K pesan mucho y no todos los celulares los reproducen.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Filled.Warning, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
+                        Text("Los archivos 4K pesan mucho y no todos los celulares los reproducen.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                    }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(onClick = onCerrar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
                     Button(
                         onClick = { scope.launch { DownloadCenter.encolar(info, elegido, soloEste); onEncolada() } },
                         modifier = Modifier.weight(1f),
-                    ) { Text("⬇ Descargar") }
+                    ) { Icon(Icons.Filled.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Descargar") }
                 }
             }
         }

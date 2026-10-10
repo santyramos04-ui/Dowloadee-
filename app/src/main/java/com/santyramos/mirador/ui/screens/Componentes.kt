@@ -59,7 +59,7 @@ fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
         }
-        IconButton(onClick = onDescargar, modifier = Modifier.size(40.dp)) {
+        IconButton(onClick = onDescargar, modifier = Modifier.size(48.dp)) {
             Icon(Icons.Filled.Download, "Descargar", tint = MaterialTheme.colorScheme.primary)
         }
     }
@@ -95,7 +95,7 @@ fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
             }
-            androidx.compose.material3.FilledTonalIconButton(onClick = onDescargar, modifier = Modifier.padding(start = 8.dp).size(40.dp)) {
+            androidx.compose.material3.FilledTonalIconButton(onClick = onDescargar, modifier = Modifier.padding(start = 8.dp).size(48.dp)) {
                 Icon(Icons.Filled.Download, "Descargar", Modifier.size(20.dp))
             }
         }
@@ -126,7 +126,7 @@ fun FilaLista(l: Elemento.Lista, onClick: () -> Unit) {
         Box(Modifier.width(150.dp).height(84.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
             AsyncImage(model = l.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
             Text(
-                "☰ ${l.cantidad}", color = Color.White, style = MaterialTheme.typography.labelSmall,
+                "${l.cantidad} videos", color = Color.White, style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(4.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xCC000000)).padding(horizontal = 4.dp, vertical = 1.dp),
             )
         }

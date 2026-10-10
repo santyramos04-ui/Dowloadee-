@@ -2,6 +2,10 @@ package com.santyramos.mirador.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -104,10 +108,13 @@ fun ListaSheetContent(url: String, onCerrar: () -> Unit, onEncolada: () -> Unit)
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 SelectorFormato(elegido) { elegido = it }
-                if (l.entradas.size > 50) Text(
-                    "⚠ Son ${l.entradas.size} videos: tardará bastante y ocupará mucho espacio. Puedes pausar o cancelar desde Descargas.",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary,
-                )
+                if (l.entradas.size > 50) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Filled.Warning, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.tertiary)
+                    Text(
+                        "Son ${l.entradas.size} videos: tardará bastante y ocupará mucho espacio. Puedes pausar o cancelar desde Descargas.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary,
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(onClick = onCerrar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
                     Button(
@@ -116,12 +123,12 @@ fun ListaSheetContent(url: String, onCerrar: () -> Unit, onEncolada: () -> Unit)
                             trabajando = true
                             scope.launch {
                                 val n = DownloadCenter.encolarLista(l, elegido)
-                                Toast.makeText(contexto, "Se agregaron $n videos a la cola ⬇", Toast.LENGTH_LONG).show()
+                                Toast.makeText(contexto, "Se agregaron $n videos a la cola", Toast.LENGTH_LONG).show()
                                 onEncolada()
                             }
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text("⬇ Descargar ${l.entradas.size}") }
+                    ) { Icon(Icons.Filled.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Descargar ${l.entradas.size}") }
                 }
             }
         }
@@ -164,13 +171,17 @@ fun LoteSheetContent(urls: List<String>, onCerrar: () -> Unit, onEncolada: () ->
                     trabajando = true
                     scope.launch {
                         val r = DownloadCenter.encolarLote(urls, elegido, listasCompletas)
-                        val msg = "Se agregaron ${r.archivos} descargas a la cola ⬇" + if (r.listasConError.isNotEmpty()) " (alguna lista no se pudo leer)" else ""
+                        val msg = "Se agregaron ${r.archivos} descargas a la cola" + if (r.listasConError.isNotEmpty()) " (alguna lista no se pudo leer)" else ""
                         Toast.makeText(contexto, msg, Toast.LENGTH_LONG).show()
                         onEncolada()
                     }
                 },
                 modifier = Modifier.weight(1f),
-            ) { if (trabajando) CircularProgressIndicator(Modifier.size(18.dp)) else Text("⬇ Descargar todo") }
+            ) {
+                if (trabajando) CircularProgressIndicator(Modifier.size(18.dp)) else {
+                    Icon(Icons.Filled.Download, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Descargar todo")
+                }
+            }
         }
     }
 }

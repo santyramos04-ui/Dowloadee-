@@ -22,7 +22,7 @@ object Paleta {
     val Aviso = Color(0xFFFFC857)
     val Error = Color(0xFFFF8A80)
     val ExitoSuave = Color(0xFF1E3B2F)
-    val Fondo = Color(0xFF0B100E)
+    val Fondo = Color(0xFF000000)
 }
 
 private val Oscuro = darkColorScheme(
@@ -39,13 +39,13 @@ private val Oscuro = darkColorScheme(
     onBackground = Color(0xFFE3EBE6),
     surface = Paleta.Fondo,
     onSurface = Color(0xFFE3EBE6),
-    surfaceVariant = Color(0xFF1B2621),
+    surfaceVariant = Color(0xFF18201B),
     onSurfaceVariant = Color(0xFFA7B6AE),
-    surfaceContainerLowest = Color(0xFF080C0A),
-    surfaceContainerLow = Color(0xFF111915),
-    surfaceContainer = Color(0xFF151E19),
-    surfaceContainerHigh = Color(0xFF1B2620),
-    surfaceContainerHighest = Color(0xFF24312A),
+    surfaceContainerLowest = Color(0xFF000000),
+    surfaceContainerLow = Color(0xFF0C110E),
+    surfaceContainer = Color(0xFF111713),
+    surfaceContainerHigh = Color(0xFF18201B),
+    surfaceContainerHighest = Color(0xFF212B25),
     error = Paleta.Error,
     outline = Color(0xFF5C6E64),
     outlineVariant = Color(0xFF2B3932),
