@@ -288,7 +288,7 @@ private fun textoEstado(d: DownloadEntity): String = when (d.status) {
         }
     }
     DownloadStatus.PAUSED -> "En pausa · ${d.progreso.toInt()}%"
-    DownloadStatus.DONE -> "Lista · guardada en Descargas/Mirador"
+    DownloadStatus.DONE -> "Lista"
     DownloadStatus.ERROR -> d.error ?: "Error"
     DownloadStatus.CANCELED -> "Cancelada"
 }

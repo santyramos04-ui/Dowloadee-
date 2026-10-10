@@ -328,7 +328,7 @@ fun PlayerScreen(
                             Text(
                                 listOfNotNull(
                                     if (info.viewCount >= 0) "${Format.contar(info.viewCount)} vistas" else null,
-                                    info.textualUploadDate,
+                                    com.santyramos.mirador.extractor.fechaLegible(info.textualUploadDate),
                                 ).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -374,7 +374,7 @@ fun PlayerScreen(
                                 )
                             }
                             BotonSecundario("Ver comentarios", { verComentarios = true }, Modifier.fillMaxWidth(), icono = Icons.Outlined.ChatBubbleOutline)
-                            val desc = info.description?.content.orEmpty()
+                            val desc = Youtube.limpiarHtml(info.description?.content.orEmpty())
                             if (desc.isNotBlank()) {
                                 Text(
                                     desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -101,3 +101,23 @@ class FechaRelativaTest {
         assertEquals(0L, com.santyramos.mirador.extractor.FechaRelativa.aMs(null, ahora))
     }
 }
+
+class RecomendadorTest {
+    private fun v(id: String, autor: String) = com.santyramos.mirador.extractor.Elemento.Video(id, "u/$id", null, autor, null, 100, 0, null, false, false)
+
+    @Test fun ordenaPorRepeticionYCanales() {
+        val a = listOf(v("a", "X"), v("b", "Y"), v("visto", "Z"))
+        val b = listOf(v("b", "Y"), v("c", "W"))
+        val r = com.santyramos.mirador.data.lib.Recomendador.ordenar(
+            listOf(a, b), emptyList(), urlsVistas = setOf("u/visto"), autoresVistos = mapOf("Y" to 3), autoresSeguidos = setOf("W"),
+        )
+        assertTrue(r.none { it.url == "u/visto" })
+        assertEquals("u/b", r.first().url) // aparece en dos listas y es de un canal que ves
+        assertEquals(3, r.size)
+    }
+
+    @Test fun fechaLegible() {
+        assertEquals("8 feb 2013", com.santyramos.mirador.extractor.fechaLegible("2013-02-08T17:38:24-08:00"))
+        assertEquals("hace 3 días", com.santyramos.mirador.extractor.fechaLegible("hace 3 días"))
+    }
+}
