@@ -162,7 +162,7 @@ class FormatoTest {
     @Test fun formatos() {
         assertEquals("1:05", Format.duracion(65))
         assertEquals("1:01:01", Format.duracion(3661))
-        assertEquals("1.5 MB", Format.bytes(1_572_864))
+        assertEquals("1,5 MB", Format.bytes(1_572_864))
         assertEquals("—", Format.bytes(null))
     }
 }
