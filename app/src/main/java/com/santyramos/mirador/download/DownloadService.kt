@@ -41,21 +41,21 @@ class DownloadService : Service() {
         DownloadCenter.bombear()
         if (observador == null) {
             observador = scope.launch {
-                var vacioDesde = 0L
-                DownloadCenter.observarTodas().collectLatest { todas ->
-                    val activas = todas.filter { it.status == DownloadStatus.RUNNING }
-                    val enCola = todas.count { it.status == DownloadStatus.QUEUED }
-                    Notifications.actualizarServicio(this@DownloadService, activas, enCola)
-                    if (enCola > 0) DownloadCenter.bombear()
-                    if (activas.isEmpty() && enCola == 0 && !DownloadCenter.hayTrabajo()) {
-                        if (vacioDesde == 0L) vacioDesde = System.currentTimeMillis()
-                        delay(2500)
-                        if (System.currentTimeMillis() - vacioDesde >= 2400) {
+                kotlinx.coroutines.flow.combine(DownloadCenter.observarTodas(), DownloadCenter.trabajosActivos) { todas, n -> todas to n }
+                    .collectLatest { (todas, trabajosCorriendo) ->
+                        val activas = todas.filter { it.status == DownloadStatus.RUNNING }
+                        val enCola = todas.count { it.status == DownloadStatus.QUEUED }
+                        if (enCola > 0) DownloadCenter.bombear()
+                        if (activas.isEmpty() && enCola == 0 && trabajosCorriendo == 0) {
+                            // Ya no queda nada por hacer: se quita la notificación y se apaga el servicio.
+                            delay(1500)
                             ServiceCompat.stopForeground(this@DownloadService, ServiceCompat.STOP_FOREGROUND_REMOVE)
+                            androidx.core.app.NotificationManagerCompat.from(this@DownloadService).cancel(Notifications.ID_SERVICIO)
                             stopSelf()
+                        } else {
+                            Notifications.actualizarServicio(this@DownloadService, activas, enCola)
                         }
-                    } else vacioDesde = 0L
-                }
+                    }
             }
         }
         return START_STICKY

@@ -38,7 +38,10 @@ fun MiniReproductor(onAbrir: () -> Unit, modifier: Modifier = Modifier) {
     val video by VideoController.video.collectAsState()
     val estado by VideoController.estado.collectAsState()
     val v = video ?: return
-    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).clickable(onClick = onAbrir)) {
+    Column(
+        modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(18.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest).clickable(onClick = onAbrir),
+    ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = v.info?.thumbnails?.bestUrl(), contentDescription = null, contentScale = ContentScale.Crop,
@@ -48,10 +51,10 @@ fun MiniReproductor(onAbrir: () -> Unit, modifier: Modifier = Modifier) {
                 Text(v.info?.name ?: if (v.error != null) "No se pudo cargar" else "Cargando…", style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(v.info?.uploaderName.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            IconButton(onClick = { VideoController.alternar() }, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = { VideoController.alternar() }, modifier = Modifier.size(48.dp)) {
                 Icon(if (estado.reproduciendo) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (estado.reproduciendo) "Pausar" else "Reproducir")
             }
-            IconButton(onClick = { VideoController.cerrar() }, modifier = Modifier.size(40.dp)) { Icon(Icons.Filled.Close, "Cerrar") }
+            IconButton(onClick = { VideoController.cerrar() }, modifier = Modifier.size(48.dp)) { Icon(Icons.Filled.Close, "Cerrar") }
         }
         val dur = estado.duracionMs
         if (dur > 0) LinearProgressIndicator(progress = { (estado.posicionMs.toFloat() / dur).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth().height(2.dp))

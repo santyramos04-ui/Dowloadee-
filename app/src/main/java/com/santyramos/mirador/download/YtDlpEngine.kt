@@ -29,6 +29,17 @@ object YtDlpEngine {
 
     @Volatile var estado: Estado = Estado.SinIniciar
         private set
+    private var appCtx: Context? = null
+
+    /**
+     * Carpeta de caché de yt-dlp. Con ella, yt-dlp reutiliza el reproductor de YouTube ya analizado
+     * en vez de descargarlo y resolver el desafío de JavaScript en cada descarga (ahorra varios segundos).
+     */
+    private fun cacheYtdlp(): String? = appCtx?.let { java.io.File(it.noBackupFilesDir, "ytdlp-cache").apply { mkdirs() }.absolutePath }
+    private fun YoutubeDLRequest.conCache(): YoutubeDLRequest {
+        cacheYtdlp()?.let { addOption("--cache-dir", it) }
+        return this
+    }
     private val listo = CompletableDeferred<Unit>()
     private var iniciando = false
 
@@ -37,6 +48,7 @@ object YtDlpEngine {
     fun iniciar(context: Context) {
         if (estado is Estado.Listo || iniciando) return
         iniciando = true
+        appCtx = context.applicationContext
         try {
             sembrarYtdlpEmbebido(context.applicationContext)
             YoutubeDL.init(context.applicationContext)
@@ -99,6 +111,7 @@ object YtDlpEngine {
             r.addOption("--socket-timeout", 25)
             if (!soloEste) r.addOption("--flat-playlist")
             cookies?.let { r.addOption("--cookies", it.absolutePath) }
+            r.conCache()
             val resp = YoutubeDL.execute(r, null, null)
             MediaInfoParser.parsear(resp.out, url)
         }
@@ -113,20 +126,27 @@ object YtDlpEngine {
         r.addOption("--no-warnings")
         r.addOption("--socket-timeout", 25)
         cookies?.let { r.addOption("--cookies", it.absolutePath) }
+        r.conCache()
         MediaInfoParser.parsearLista(YoutubeDL.execute(r, null, null).out)
     }
 
     // ---------- Descarga ----------
 
-    fun construirPedido(job: DownloadEntity, dir: File, cookies: File?): YoutubeDLRequest {
+    /**
+     * @param infoJson datos del video ya extraídos en la vista previa. Con ellos yt-dlp se salta la
+     * extracción (la parte más lenta en YouTube) y empieza a bajar de inmediato.
+     */
+    fun construirPedido(job: DownloadEntity, dir: File, cookies: File?, infoJson: File? = null): YoutubeDLRequest {
         val preset = Preset.from(job.preset)
-        val r = YoutubeDLRequest(job.url)
+        val r = if (infoJson != null) YoutubeDLRequest(emptyList<String>()).also { it.addOption("--load-info-json", infoJson.absolutePath) }
+        else YoutubeDLRequest(job.url)
+        r.conCache()
         r.addOption("-o", File(dir, "%(playlist_index&{} - |)s%(title).110B.%(ext)s").absolutePath)
         r.addOption("--newline")
         r.addOption("--progress-template", ProgressParser.PLANTILLA)
         r.addOption("--no-mtime")
         r.addOption("--windows-filenames")
-        r.addOption("-N", 4)
+        r.addOption("-N", 6)
         r.addOption("--retries", 10)
         r.addOption("--fragment-retries", 10)
         r.addOption("--socket-timeout", 30)
@@ -148,7 +168,7 @@ object YtDlpEngine {
             else "res:${preset.altura},vcodec:h264,acodec:aac"
             r.addOption("-S", orden)
             r.addOption("--merge-output-format", "mp4")
-            r.addOption("--embed-metadata")
+            // Sin --embed-metadata en video: obligaba a reescribir todo el archivo con ffmpeg una vez más.
         }
         return r
     }
@@ -163,12 +183,13 @@ object YtDlpEngine {
         job: DownloadEntity,
         dir: File,
         cookies: File?,
+        infoJson: File? = null,
         alAvanzar: (Avance?, Boolean) -> Unit,
     ): List<File> = withContext(Dispatchers.IO) {
         esperarListo()
         dir.mkdirs()
-        val pedido = construirPedido(job, dir, cookies)
-        try {
+        fun ejecutar(info: File?) {
+            val pedido = construirPedido(job, dir, cookies, info)
             YoutubeDL.execute(pedido, procesoId(job.id)) { _, _, linea ->
                 val av = ProgressParser.parsear(linea)
                 when {
@@ -176,6 +197,22 @@ object YtDlpEngine {
                     ProgressParser.esProcesando(linea) -> alAvanzar(null, true)
                 }
             }
+        }
+        try {
+            if (infoJson != null && infoJson.exists()) {
+                try {
+                    ejecutar(infoJson)
+                } catch (e: YoutubeDL.CanceledException) {
+                    throw e
+                } catch (e: InterruptedException) {
+                    throw e
+                } catch (e: Exception) {
+                    // Los enlaces guardados caducan (unas horas): se vuelve a extraer desde cero.
+                    Log.w(TAG, "Falló con datos guardados, se extrae de nuevo", e)
+                    infoJson.delete()
+                    ejecutar(null)
+                }
+            } else ejecutar(null)
         } catch (e: YoutubeDL.CanceledException) {
             throw Cancelada()
         }

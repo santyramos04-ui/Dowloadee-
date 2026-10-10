@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -84,7 +87,10 @@ fun PlaylistScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> U
                         androidx.compose.material3.Button(
                             onClick = { descargarLista = true },
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                        ) { Text("⬇ Descargar toda la lista") }
+                        ) {
+                            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.Download, null, Modifier.size(18.dp))
+                            androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp)); Text("Descargar toda la lista")
+                        }
                     }
                     items(videos.filterIsInstance<Elemento.Video>(), key = { it.url }) { v ->
                         FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) })

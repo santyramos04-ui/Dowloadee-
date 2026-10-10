@@ -61,7 +61,7 @@ class ShareReceiverActivity : ComponentActivity() {
                         url = enlaces.first(),
                         onCerrar = { finish() },
                         onEncolada = {
-                            Toast.makeText(this@ShareReceiverActivity, "Descarga iniciada ⬇", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@ShareReceiverActivity, "Descarga iniciada", Toast.LENGTH_SHORT).show()
                             finish()
                         },
                     )

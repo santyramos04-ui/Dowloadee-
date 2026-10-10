@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="mirador_fondo">#0E1512</color>
+    <color name="mirador_fondo">#000000</color>
     <color name="mirador_acento">#3DDC97</color>
 </resources>
