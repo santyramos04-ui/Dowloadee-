@@ -1,7 +1,7 @@
 ---
 name: eval-rules
 description: "Audit Claude Code instruction rules in .claude/rules/ and ~/.claude/rules/: frontmatter, paths glob validity against real files, symlink load status, and day-to-day usefulness, then update rules with the user. Use for first-time rules setup, rules that apply too often or never, or periodic rules hygiene. Not for Codex .rules command-approval files."
-allowed-tools: Read Glob Bash Edit
+allowed-tools: Read Glob Bash(git ls-files *) Bash(git check-ignore *) Bash(python3 - *)
 effort: medium
 argument-hint: "[path to rules dir, default: .claude/rules/]"
 ---
