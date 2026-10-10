@@ -79,6 +79,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
     val estadoYt by YtdlpUpdater.estado.collectAsState()
     val versionYt by YtdlpUpdater.version.collectAsState()
     val estadoApp by AppUpdater.estado.collectAsState()
+    val tema by ajustes.tema.collectAsState(initial = com.santyramos.mirador.data.Tema.AUTO)
     val sb by ajustes.sponsorBlock.collectAsState(initial = true)
     val sbCats by ajustes.sbCategorias.collectAsState(initial = com.santyramos.mirador.data.SB_CATEGORIAS_INICIALES)
     var sesionActiva by remember { mutableStateOf(Cookies.activadas(contexto)) }
@@ -117,6 +118,13 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
             Text("Ajustes", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(start = 8.dp))
         }
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
+            Seccion("Apariencia") {
+                Text("Tema", style = MaterialTheme.typography.bodyMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    com.santyramos.mirador.data.Tema.entries.forEach { t -> Filtro(t.etiqueta, tema == t) { scope.launch { ajustes.setTema(t) } } }
+                }
+                Text("«Automático» sigue el modo claro u oscuro de tu celular.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             Seccion("Descargas") {
                 Text("Descargas simultáneas: $simultaneas", style = MaterialTheme.typography.bodyMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

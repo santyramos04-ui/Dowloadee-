@@ -24,6 +24,12 @@ enum class PlayerQuality(val etiqueta: String, val alturaMax: Int) {
     }
 }
 
+/** Apariencia: sigue al celular o se fuerza. */
+enum class Tema(val etiqueta: String) {
+    AUTO("Automático"), CLARO("Claro"), OSCURO("Oscuro");
+    companion object { fun from(name: String?) = entries.firstOrNull { it.name == name } ?: AUTO }
+}
+
 /** Canal de actualización de yt-dlp. */
 enum class YtdlpChannel(val etiqueta: String) {
     NIGHTLY("Nightly (se arregla antes cuando un sitio cambia)"),
@@ -54,6 +60,7 @@ class Settings(private val context: Context) {
         val portapapelesVisto = stringPreferencesKey("portapapeles_visto")
         val usarCookies = booleanPreferencesKey("usar_cookies")
         val autoSiguiente = booleanPreferencesKey("reproduccion_automatica")
+        val tema = stringPreferencesKey("tema")
     }
 
     val simultaneas: Flow<Int> = ds.data.map { it[K.simultaneas] ?: 2 }
@@ -65,6 +72,7 @@ class Settings(private val context: Context) {
     val ytdlpCanal: Flow<YtdlpChannel> = ds.data.map { YtdlpChannel.from(it[K.ytdlpCanal]) }
     val ytdlpVersion: Flow<String?> = ds.data.map { it[K.ytdlpVersion] }
     val autoSiguiente: Flow<Boolean> = ds.data.map { it[K.autoSiguiente] ?: true }
+    val tema: Flow<Tema> = ds.data.map { Tema.from(it[K.tema]) }
     val usarCookies: Flow<Boolean> = ds.data.map { it[K.usarCookies] ?: false }
 
     suspend fun setSimultaneas(n: Int) = ds.edit { it[K.simultaneas] = n.coerceIn(1, 5) }
@@ -76,6 +84,7 @@ class Settings(private val context: Context) {
     suspend fun setYtdlpCanal(c: YtdlpChannel) = ds.edit { it[K.ytdlpCanal] = c.name }
     suspend fun setYtdlpVersion(v: String?) = ds.edit { if (v == null) it.remove(K.ytdlpVersion) else it[K.ytdlpVersion] = v }
     suspend fun setAutoSiguiente(v: Boolean) = ds.edit { it[K.autoSiguiente] = v }
+    suspend fun setTema(t: Tema) = ds.edit { it[K.tema] = t.name }
     suspend fun setUsarCookies(v: Boolean) = ds.edit { it[K.usarCookies] = v }
 
     suspend fun ytdlpUltimoIntento(): Long = ds.data.first()[K.ytdlpUltimoIntento] ?: 0L
@@ -97,6 +106,7 @@ class Settings(private val context: Context) {
             p[K.autoSiguiente]?.let { put("autoSiguiente", it.toString()) }
             p[K.ytdlpAuto]?.let { put("ytdlpAuto", it.toString()) }
             p[K.ytdlpCanal]?.let { put("ytdlpCanal", it) }
+            p[K.tema]?.let { put("tema", it) }
         }
     }
 
@@ -109,6 +119,7 @@ class Settings(private val context: Context) {
         m["autoSiguiente"]?.let { p[K.autoSiguiente] = it == "true" }
         m["ytdlpAuto"]?.let { p[K.ytdlpAuto] = it == "true" }
         m["ytdlpCanal"]?.let { p[K.ytdlpCanal] = YtdlpChannel.from(it).name }
+        m["tema"]?.let { p[K.tema] = Tema.from(it).name }
     }
 
     @Suppress("unused")

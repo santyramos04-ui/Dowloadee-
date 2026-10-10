@@ -90,7 +90,7 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
     val web = remember {
         WebView(contexto).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(0xFF000000.toInt())
+            setBackgroundColor(android.graphics.Color.WHITE)
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
             settings.allowFileAccess = false

@@ -109,7 +109,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                         exit = slideOutVertically { it } + fadeOut(),
                     ) { MiniReproductor(onAbrir = { reproductorAbierto = true }) }
                     androidx.compose.material3.HorizontalDivider(color = com.santyramos.mirador.ui.theme.Paleta.Linea)
-                    NavigationBar(containerColor = androidx.compose.ui.graphics.Color.Black, tonalElevation = 0.dp) {
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
                         val items = listOf(
                             Triple("Inicio", Icons.Filled.Home to Icons.Outlined.Home, 0),
                             Triple("Suscripciones", Icons.Filled.Subscriptions to Icons.Outlined.Subscriptions, 1),
