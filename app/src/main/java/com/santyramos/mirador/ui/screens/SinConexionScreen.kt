@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.item
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -81,7 +80,7 @@ fun SinConexionScreen(onAtras: () -> Unit) {
                             "El reproductor usa solo lo que descargaste y no gasta datos",
                         )
                         Text(
-                            "Para tener una lista sin conexión: ábrela, toca «Descargar lista» y elige un formato de audio (para música) o de video. " +
+                            "Para tener una lista sin conexión: ábrela, toca «Descargar toda la lista» y elige un formato de audio (para música) o de video. " +
                                 "Cuando termine, aparece aquí.",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
