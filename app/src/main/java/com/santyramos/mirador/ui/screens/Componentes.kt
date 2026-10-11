@@ -17,8 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.santyramos.mirador.extractor.Elemento
 import com.santyramos.mirador.ui.BotonIcono
-import com.santyramos.mirador.ui.LocalGuardar
 import com.santyramos.mirador.ui.theme.Paleta
 import com.santyramos.mirador.util.Format
 
@@ -52,8 +50,8 @@ private fun Elemento.Video.datos(): String =
 @Composable
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
-    val guardar = LocalGuardar.current
-    Column(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClickLabel = "Guardar", onLongClick = { guardar(v) }).padding(horizontal = 20.dp, vertical = 8.dp)) {
+    val acciones = com.santyramos.mirador.ui.LocalAcciones.current
+    Column(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClickLabel = "Más opciones", onLongClick = { acciones(v) }).padding(horizontal = 20.dp, vertical = 8.dp)) {
         Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
             AsyncImage(model = v.miniatura, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
             val etiqueta = when {
@@ -71,8 +69,7 @@ fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit
                 val d = v.datos()
                 if (d.isNotEmpty()) Text(d, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 1.dp))
             }
-            BotonIcono(Icons.Outlined.BookmarkBorder, "Guardar", { guardar(v) }, Modifier.padding(start = 8.dp))
-            BotonIcono(Icons.Outlined.FileDownload, "Descargar", onDescargar, Modifier.padding(start = 4.dp), destacado = true)
+            BotonIcono(Icons.Outlined.MoreVert, "Más opciones", { acciones(v) }, Modifier.padding(start = 8.dp))
         }
     }
 }
@@ -81,9 +78,9 @@ fun TarjetaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit
 @Composable
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
-    val guardar = LocalGuardar.current
+    val acciones = com.santyramos.mirador.ui.LocalAcciones.current
     Row(
-        Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClickLabel = "Guardar", onLongClick = { guardar(v) }).padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+        Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClickLabel = "Más opciones", onLongClick = { acciones(v) }).padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(112.dp).height(63.dp).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
@@ -97,8 +94,7 @@ fun FilaVideo(v: Elemento.Video, onClick: () -> Unit, onDescargar: () -> Unit) {
             val d = v.datos()
             if (d.isNotEmpty()) Text(d, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        BotonIcono(Icons.Outlined.BookmarkBorder, "Guardar", { guardar(v) })
-        BotonIcono(Icons.Outlined.FileDownload, "Descargar", onDescargar, destacado = true)
+        BotonIcono(Icons.Outlined.MoreVert, "Más opciones", { acciones(v) })
     }
 }
 

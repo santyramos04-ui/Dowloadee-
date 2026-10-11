@@ -23,6 +23,13 @@ interface DownloadDao {
     @Query("SELECT COUNT(*) FROM descargas WHERE estado IN ('QUEUED','RUNNING')")
     fun observarActivas(): Flow<Int>
 
+    /** Descargas terminadas que se pueden reproducir dentro de la app (audio o video). */
+    @Query("SELECT * FROM descargas WHERE estado = 'DONE' AND archivoUri IS NOT NULL AND (archivoMime LIKE 'audio/%' OR archivoMime LIKE 'video/%') ORDER BY creadaEn ASC, id ASC")
+    fun observarReproducibles(): Flow<List<DownloadEntity>>
+
+    @Query("SELECT * FROM descargas WHERE url = :url AND estado = 'DONE' AND archivoUri IS NOT NULL AND (archivoMime LIKE 'audio/%' OR archivoMime LIKE 'video/%') ORDER BY id DESC LIMIT 1")
+    suspend fun archivoDe(url: String): DownloadEntity?
+
     @Insert
     suspend fun insertar(d: DownloadEntity): Long
 

@@ -96,6 +96,8 @@ private fun FilaBiblioteca(
         Box {
             BotonIcono(Icons.Outlined.MoreVert, "Más opciones", { menu = true })
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }, containerColor = Paleta.S2) {
+                DropdownMenuItem(text = { Text("Reproducir a continuación") }, onClick = { menu = false; com.santyramos.mirador.player.VideoController.reproducirDespues(com.santyramos.mirador.player.ElementoCola(v.url, v.titulo, v.autor, v.miniatura, v.duracionSeg)) })
+                DropdownMenuItem(text = { Text("Añadir a la cola") }, onClick = { menu = false; com.santyramos.mirador.player.VideoController.agregarACola(com.santyramos.mirador.player.ElementoCola(v.url, v.titulo, v.autor, v.miniatura, v.duracionSeg)) })
                 DropdownMenuItem(text = { Text("Descargar") }, onClick = { menu = false; onDescargar() })
                 DropdownMenuItem(text = { Text("Guardar en una lista") }, onClick = { menu = false; guardar(v) })
                 DropdownMenuItem(text = { Text(textoQuitar) }, onClick = { menu = false; onQuitar() })

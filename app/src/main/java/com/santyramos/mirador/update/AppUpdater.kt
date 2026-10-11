@@ -111,10 +111,22 @@ object AppUpdater {
                     }
                 }
             }
+            // Un archivo cortado o dañado hace que Android diga «paquete no válido»: mejor avisar aquí y no abrir el instalador.
+            if (!apkCompleto(destino, nueva.tamano)) {
+                destino.delete()
+                throw IllegalStateException("La descarga quedó incompleta. Revisa tu conexión e inténtalo de nuevo.")
+            }
             _estado.value = Estado.ListaParaInstalar(nueva, destino)
         } catch (e: Throwable) {
             _estado.value = Estado.Error(com.santyramos.mirador.download.ErrorMapper.mensaje(e))
         }
+    }
+
+    /** El APK bajó entero (tamaño esperado) y se puede abrir como archivo comprimido con su manifiesto. */
+    internal fun apkCompleto(archivo: File, tamanoEsperado: Long): Boolean {
+        if (!archivo.exists() || archivo.length() == 0L) return false
+        if (tamanoEsperado > 0 && archivo.length() != tamanoEsperado) return false
+        return runCatching { java.util.zip.ZipFile(archivo).use { it.getEntry("AndroidManifest.xml") != null } }.getOrDefault(false)
     }
 
     /** Abre el instalador de Android. La clave de firma es la misma, así que se instala encima. */

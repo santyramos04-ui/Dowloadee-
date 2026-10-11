@@ -51,6 +51,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import com.santyramos.mirador.player.aCola
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -98,7 +99,7 @@ private fun DownloadEntity.coincide(f: FiltroDescargas) = when (f) {
 
 /** Pestaña Descargas: pegar uno o varios enlaces + cola con pausa, reanudar, cancelar y reintentar. */
 @Composable
-fun DownloadsScreen(modifier: Modifier = Modifier) {
+fun DownloadsScreen(modifier: Modifier = Modifier, onSinConexion: () -> Unit = {}) {
     val contexto = LocalContext.current
     val scope = rememberCoroutineScope()
     val descargas by DownloadCenter.observarTodas().collectAsState(initial = emptyList())
@@ -184,7 +185,10 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
                 }
             }
             if (descargas.any { it.status in setOf(DownloadStatus.DONE, DownloadStatus.ERROR, DownloadStatus.CANCELED) }) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.End) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    if (descargas.any { it.status == DownloadStatus.DONE && it.esReproducible() }) {
+                        TextButton(onClick = onSinConexion) { Text("Escuchar sin conexión", color = MaterialTheme.colorScheme.primary) }
+                    } else androidx.compose.foundation.layout.Spacer(Modifier)
                     TextButton(onClick = {
                         val terminadas = descargas.filter { it.status in setOf(DownloadStatus.DONE, DownloadStatus.ERROR, DownloadStatus.CANCELED) }.map { it.id }
                         quitar(terminadas, "Se quitaron ${terminadas.size} de la lista")
@@ -291,7 +295,8 @@ private fun FilaDescarga(d: DownloadEntity, onQuitar: () -> Unit) {
                         BotonIcono(Icons.Outlined.Delete, "Quitar de la lista", onQuitar)
                     }
                     DownloadStatus.DONE -> {
-                        if (d.archivoUri != null) BotonIcono(Icons.Outlined.OpenInNew, "Abrir", { abrir(contexto, d) }, destacado = true)
+                        if (d.esReproducible()) BotonIcono(Icons.Outlined.PlayArrow, "Reproducir en la app", { com.santyramos.mirador.player.VideoController.abrirArchivo(d.aCola()) }, destacado = true)
+                        if (d.archivoUri != null) BotonIcono(Icons.Outlined.OpenInNew, "Abrir con otra app", { abrir(contexto, d) }, destacado = !d.esReproducible())
                         BotonIcono(Icons.Outlined.Delete, "Quitar de la lista", onQuitar)
                     }
                 }
@@ -317,6 +322,10 @@ private fun textoEstado(d: DownloadEntity): String = when (d.status) {
     DownloadStatus.ERROR -> d.error ?: "Error"
     DownloadStatus.CANCELED -> "Cancelada"
 }
+
+/** Audio o video ya guardado: se puede reproducir dentro de la app. */
+private fun DownloadEntity.esReproducible(): Boolean =
+    archivoUri != null && (archivoMime?.startsWith("audio/") == true || archivoMime?.startsWith("video/") == true)
 
 private fun abrir(contexto: Context, d: DownloadEntity) {
     val uri = Uri.parse(d.archivoUri ?: return)

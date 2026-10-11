@@ -156,8 +156,14 @@ jobs:
 
           Se instala encima de la versión normal (misma clave). Cuando salga la versión oficial, la app te avisará para pasarte a ella.
           NOTAS
-          gh release delete prueba --yes --cleanup-tag 2>/dev/null || true
-          gh release create prueba "salida/${{ steps.version.outputs.nombre }}-prueba.apk" --title "${{ steps.version.outputs.nombre }} $VER (prueba)" --notes-file notas.md --prerelease --target "$GITHUB_SHA"
+          # Si ya existe, solo se reemplaza el archivo (el enlace no desaparece mientras se publica).
+          if gh release view prueba > /dev/null 2>&1; then
+            git tag -f prueba "$GITHUB_SHA" && git push -f origin refs/tags/prueba
+            gh release upload prueba "salida/${{ steps.version.outputs.nombre }}-prueba.apk" --clobber
+            gh release edit prueba --title "${{ steps.version.outputs.nombre }} $VER (prueba)" --notes-file notas.md --prerelease
+          else
+            gh release create prueba "salida/${{ steps.version.outputs.nombre }}-prueba.apk" --title "${{ steps.version.outputs.nombre }} $VER (prueba)" --notes-file notas.md --prerelease --target "$GITHUB_SHA"
+          fi
           echo "### Versión de prueba lista: https://github.com/${GITHUB_REPOSITORY}/releases/download/prueba/${{ steps.version.outputs.nombre }}-prueba.apk" >> "$GITHUB_STEP_SUMMARY"
 
   # Pruebas que hablan con YouTube de verdad (parte VER). No bloquean la publicación porque

@@ -61,6 +61,8 @@ class Settings(private val context: Context) {
         val usarCookies = booleanPreferencesKey("usar_cookies")
         val autoSiguiente = booleanPreferencesKey("reproduccion_automatica")
         val tema = stringPreferencesKey("tema")
+        val sinConexion = booleanPreferencesKey("modo_sin_conexion")
+        val soloAudio = booleanPreferencesKey("solo_audio")
     }
 
     val simultaneas: Flow<Int> = ds.data.map { it[K.simultaneas] ?: 2 }
@@ -73,6 +75,9 @@ class Settings(private val context: Context) {
     val ytdlpVersion: Flow<String?> = ds.data.map { it[K.ytdlpVersion] }
     val autoSiguiente: Flow<Boolean> = ds.data.map { it[K.autoSiguiente] ?: true }
     val tema: Flow<Tema> = ds.data.map { Tema.from(it[K.tema]) }
+    /** Modo sin conexión: el reproductor usa solo lo descargado y no gasta datos. */
+    val sinConexion: Flow<Boolean> = ds.data.map { it[K.sinConexion] ?: false }
+    val soloAudio: Flow<Boolean> = ds.data.map { it[K.soloAudio] ?: false }
     val usarCookies: Flow<Boolean> = ds.data.map { it[K.usarCookies] ?: false }
 
     suspend fun setSimultaneas(n: Int) = ds.edit { it[K.simultaneas] = n.coerceIn(1, 5) }
@@ -85,6 +90,8 @@ class Settings(private val context: Context) {
     suspend fun setYtdlpVersion(v: String?) = ds.edit { if (v == null) it.remove(K.ytdlpVersion) else it[K.ytdlpVersion] = v }
     suspend fun setAutoSiguiente(v: Boolean) = ds.edit { it[K.autoSiguiente] = v }
     suspend fun setTema(t: Tema) = ds.edit { it[K.tema] = t.name }
+    suspend fun setSinConexion(v: Boolean) = ds.edit { it[K.sinConexion] = v }
+    suspend fun setSoloAudio(v: Boolean) = ds.edit { it[K.soloAudio] = v }
     suspend fun setUsarCookies(v: Boolean) = ds.edit { it[K.usarCookies] = v }
 
     suspend fun ytdlpUltimoIntento(): Long = ds.data.first()[K.ytdlpUltimoIntento] ?: 0L
@@ -107,6 +114,7 @@ class Settings(private val context: Context) {
             p[K.ytdlpAuto]?.let { put("ytdlpAuto", it.toString()) }
             p[K.ytdlpCanal]?.let { put("ytdlpCanal", it) }
             p[K.tema]?.let { put("tema", it) }
+            p[K.sinConexion]?.let { put("sinConexion", it.toString()) }
         }
     }
 
@@ -120,6 +128,7 @@ class Settings(private val context: Context) {
         m["ytdlpAuto"]?.let { p[K.ytdlpAuto] = it == "true" }
         m["ytdlpCanal"]?.let { p[K.ytdlpCanal] = YtdlpChannel.from(it).name }
         m["tema"]?.let { p[K.tema] = Tema.from(it).name }
+        m["sinConexion"]?.let { p[K.sinConexion] = it == "true" }
     }
 
     @Suppress("unused")

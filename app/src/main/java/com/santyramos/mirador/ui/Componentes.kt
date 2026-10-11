@@ -205,6 +205,25 @@ fun HojaMirador(onCerrar: () -> Unit, contenido: @androidx.compose.runtime.Compo
 }
 
 
+/** Quien quiera mostrar el menú ⋮ de un video llama a esto; la pantalla raíz abre la hoja de acciones. */
+val LocalAcciones = androidx.compose.runtime.staticCompositionLocalOf<(com.santyramos.mirador.extractor.Elemento.Video) -> Unit> { {} }
+
+/** Opción que se activa y desactiva (Solo audio, Repetir…): ícono + texto, resaltada cuando está activa. */
+@Composable
+fun ChipOpcion(icono: ImageVector, texto: String, activo: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        selected = activo, onClick = onClick, shape = RoundedCornerShape(14.dp), modifier = modifier.height(40.dp),
+        color = if (activo) Paleta.AcentoSuave else Paleta.S2,
+        border = BorderStroke(1.dp, if (activo) Paleta.AcentoBorde else Paleta.Linea),
+    ) {
+        Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icono, null, Modifier.size(18.dp), tint = if (activo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(6.dp))
+            Text(texto, style = MaterialTheme.typography.labelMedium, color = if (activo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+        }
+    }
+}
+
 /** Quien quiera guardar un video (ver más tarde / listas) llama a esto; la pantalla raíz abre la hoja. */
 val LocalGuardar = androidx.compose.runtime.staticCompositionLocalOf<(com.santyramos.mirador.extractor.Elemento.Video) -> Unit> { {} }
 
@@ -254,6 +273,21 @@ fun FilaInterruptor(titulo: String, valor: Boolean, onCambio: (Boolean) -> Unit,
                 checkedThumbColor = Paleta.SobreRelleno, checkedTrackColor = Paleta.Relleno, checkedBorderColor = Paleta.Relleno,
                 uncheckedThumbColor = Paleta.Texto2, uncheckedTrackColor = Paleta.S3, uncheckedBorderColor = Paleta.Linea,
             ),
+        )
+    }
+}
+
+/** Fila de opción en una hoja (temporizador y similares). [destacada] = acción para apagar o deshacer. */
+@Composable
+fun OpcionTemporizador(texto: String, destacada: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth(),
+        color = if (destacada) Paleta.AcentoSuave else Paleta.S2,
+        border = BorderStroke(1.dp, if (destacada) Paleta.AcentoBorde else Paleta.Linea),
+    ) {
+        Text(
+            texto, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            color = if (destacada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
     }
 }

@@ -53,6 +53,7 @@ fun GuardarSheetContent(video: Elemento.Video, onCerrar: () -> Unit) {
         Text("Guardar en…", style = MaterialTheme.typography.titleLarge)
         Text(video.titulo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
 
+
         FilaGuardar(Icons.Outlined.BookmarkBorder, "Ver más tarde", null, guardado > 0) {
             if (guardado > 0) Biblioteca.quitarGuardado(video.url) else Biblioteca.guardar(video)
         }

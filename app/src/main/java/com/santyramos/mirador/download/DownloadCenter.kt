@@ -55,6 +55,8 @@ object DownloadCenter {
     }
 
     fun observarTodas() = dao.observarTodas()
+    fun observarReproducibles() = dao.observarReproducibles()
+    suspend fun archivoDe(url: String) = dao.archivoDe(url)
 
     // ---------- Acciones del usuario ----------
 

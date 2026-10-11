@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.PlaylistPlay
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Settings
@@ -41,6 +42,7 @@ import com.santyramos.mirador.ui.theme.Paleta
 @Composable
 fun BibliotecaScreen(
     onAjustes: () -> Unit, onHistorial: () -> Unit, onGuardados: () -> Unit, onListas: () -> Unit,
+    onSinConexion: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dao = com.santyramos.mirador.data.lib.Biblioteca.dao
@@ -53,6 +55,8 @@ fun BibliotecaScreen(
             Fila(Icons.Outlined.History, "Historial", if (vistos.isEmpty()) "Seguir viendo donde te quedaste" else "${vistos.size} videos vistos", proximamente = false, onClick = onHistorial)
             Fila(Icons.Outlined.Schedule, "Ver más tarde", if (guardados.isEmpty()) "Tus videos guardados para después" else "${guardados.size} videos", proximamente = false, onClick = onGuardados)
             Fila(Icons.AutoMirrored.Outlined.PlaylistPlay, "Mis listas", if (listas.isEmpty()) "Listas propias, guardadas en el celular" else "${listas.size} listas", proximamente = false, onClick = onListas)
+            val sinConexion by com.santyramos.mirador.data.Settings(androidx.compose.ui.platform.LocalContext.current).sinConexion.collectAsState(initial = false)
+            Fila(Icons.Outlined.CloudOff, "Sin conexión", if (sinConexion) "Modo sin conexión activado" else "Escucha y mira lo descargado sin internet", proximamente = false, onClick = onSinConexion)
             Spacer(Modifier.padding(4.dp))
             Fila(Icons.Outlined.Settings, "Ajustes", "Descargas, motor yt-dlp, actualizaciones y batería", proximamente = false, onClick = onAjustes)
         }

@@ -66,6 +66,7 @@ sealed interface Destino {
     data object Guardados : Destino
     data object Listas : Destino
     data class ListaPropia(val id: Long) : Destino
+    data object SinConexion : Destino
 }
 
 /** Cosas que llegan desde fuera de la pantalla (otras apps, el portapapeles). */
@@ -88,6 +89,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     var urlsLote by remember { mutableStateOf<List<String>?>(null) }
     var listaADescargar by remember { mutableStateOf<com.santyramos.mirador.download.ListaInfo?>(null) }
     var videoAGuardar by remember { mutableStateOf<com.santyramos.mirador.extractor.Elemento.Video?>(null) }
+    var videoAcciones by remember { mutableStateOf<com.santyramos.mirador.extractor.Elemento.Video?>(null) }
     val video by VideoController.video.collectAsState()
     val actualizacion by AppUpdater.estado.collectAsState()
 
@@ -114,7 +116,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     Entrada.abrirLista?.let { u -> LaunchedEffect(u) { pila.add(Destino.Lista(u)); reproductorAbierto = false; Entrada.abrirLista = null } }
     Entrada.pestana?.let { p -> LaunchedEffect(p) { pestana = p; pila.clear(); Entrada.pestana = null } }
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalGuardar provides { v -> videoAGuardar = v }) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalGuardar provides { v -> videoAGuardar = v }, LocalAcciones provides { v -> videoAcciones = v }) {
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             // Cada pantalla ya respeta la barra de estado; sin esto el espacio de arriba se sumaba dos veces.
@@ -176,6 +178,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                     Destino.Historial -> com.santyramos.mirador.ui.screens.HistorialScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Guardados -> com.santyramos.mirador.ui.screens.GuardadosScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Listas -> com.santyramos.mirador.ui.screens.ListasScreen({ pila.removeLastOrNull() }, { pila.add(Destino.ListaPropia(it)) })
+                    Destino.SinConexion -> com.santyramos.mirador.ui.screens.SinConexionScreen { pila.removeLastOrNull() }
                     is Destino.ListaPropia -> com.santyramos.mirador.ui.screens.ListaPropiaScreen(
                         d.id, { pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it }, { listaADescargar = it },
                     )
@@ -185,15 +188,17 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
                                 onAbrirCanal = { pila.add(Destino.Canal(it)) }, onAbrirLista = { pila.add(Destino.Lista(it)) },
                                 onIrADescargas = { pestana = 2 }, onAbrirNavegador = { pila.add(Destino.Navegador(it)) },
+                                onSinConexion = { pila.add(Destino.SinConexion) },
                             )
                             1 -> SuscripcionesScreen(
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
                                 onAbrirCanal = { pila.add(Destino.Canal(it)) }, onBuscar = { pestana = 0 },
                             )
-                            2 -> DownloadsScreen()
+                            2 -> DownloadsScreen(onSinConexion = { pila.add(Destino.SinConexion) })
                             else -> BibliotecaScreen(
                                 onAjustes = { pila.add(Destino.Ajustes) }, onHistorial = { pila.add(Destino.Historial) },
                                 onGuardados = { pila.add(Destino.Guardados) }, onListas = { pila.add(Destino.Listas) },
+                                onSinConexion = { pila.add(Destino.SinConexion) },
                             )
                         }
                     }
@@ -231,6 +236,18 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
             }
         }
         if (reproductorAbierto && video == null) reproductorAbierto = false
+    }
+
+    videoAcciones?.let { v ->
+        com.santyramos.mirador.ui.HojaMirador(onCerrar = { videoAcciones = null }) {
+            AccionesSheetContent(
+                video = v, onCerrar = { videoAcciones = null },
+                onGuardar = { videoAGuardar = v },
+                onDescargar = { urlDescarga = v.url },
+                onSoloAudio = { VideoController.cambiarSoloAudio(true); abrirVideo(v.url) },
+                onCanal = v.urlAutor?.let { u -> { pila.add(Destino.Canal(u)); reproductorAbierto = false } },
+            )
+        }
     }
 
     videoAGuardar?.let { v ->
