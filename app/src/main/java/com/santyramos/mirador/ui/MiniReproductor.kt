@@ -46,12 +46,12 @@ fun MiniReproductor(onAbrir: () -> Unit, modifier: Modifier = Modifier) {
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
-                model = v.info?.thumbnails?.bestUrl(), contentDescription = null, contentScale = ContentScale.Crop,
+                model = v.miniatura, contentDescription = null, contentScale = ContentScale.Crop,
                 modifier = Modifier.width(64.dp).height(36.dp).clip(RoundedCornerShape(8.dp)).background(com.santyramos.mirador.ui.theme.Paleta.S3),
             )
             Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
-                Text(v.info?.name ?: if (v.error != null) "No se pudo cargar" else "Cargando…", style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(v.info?.uploaderName.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(v.titulo.ifBlank { if (v.error != null) "No se pudo cargar" else "Cargando…" }, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(v.autor.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             IconButton(onClick = { VideoController.alternar() }, modifier = Modifier.size(48.dp)) {
                 Icon(if (estado.reproduciendo) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (estado.reproduciendo) "Pausar" else "Reproducir")

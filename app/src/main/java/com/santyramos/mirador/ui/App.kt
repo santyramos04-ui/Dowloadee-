@@ -66,6 +66,7 @@ sealed interface Destino {
     data object Guardados : Destino
     data object Listas : Destino
     data class ListaPropia(val id: Long) : Destino
+    data object SinConexion : Destino
 }
 
 /** Cosas que llegan desde fuera de la pantalla (otras apps, el portapapeles). */
@@ -176,6 +177,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                     Destino.Historial -> com.santyramos.mirador.ui.screens.HistorialScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Guardados -> com.santyramos.mirador.ui.screens.GuardadosScreen({ pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it })
                     Destino.Listas -> com.santyramos.mirador.ui.screens.ListasScreen({ pila.removeLastOrNull() }, { pila.add(Destino.ListaPropia(it)) })
+                    Destino.SinConexion -> com.santyramos.mirador.ui.screens.SinConexionScreen { pila.removeLastOrNull() }
                     is Destino.ListaPropia -> com.santyramos.mirador.ui.screens.ListaPropiaScreen(
                         d.id, { pila.removeLastOrNull() }, ::abrirVideo, { urlDescarga = it }, { listaADescargar = it },
                     )
@@ -185,15 +187,17 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
                                 onAbrirCanal = { pila.add(Destino.Canal(it)) }, onAbrirLista = { pila.add(Destino.Lista(it)) },
                                 onIrADescargas = { pestana = 2 }, onAbrirNavegador = { pila.add(Destino.Navegador(it)) },
+                                onSinConexion = { pila.add(Destino.SinConexion) },
                             )
                             1 -> SuscripcionesScreen(
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
                                 onAbrirCanal = { pila.add(Destino.Canal(it)) }, onBuscar = { pestana = 0 },
                             )
-                            2 -> DownloadsScreen()
+                            2 -> DownloadsScreen(onSinConexion = { pila.add(Destino.SinConexion) })
                             else -> BibliotecaScreen(
                                 onAjustes = { pila.add(Destino.Ajustes) }, onHistorial = { pila.add(Destino.Historial) },
                                 onGuardados = { pila.add(Destino.Guardados) }, onListas = { pila.add(Destino.Listas) },
+                                onSinConexion = { pila.add(Destino.SinConexion) },
                             )
                         }
                     }

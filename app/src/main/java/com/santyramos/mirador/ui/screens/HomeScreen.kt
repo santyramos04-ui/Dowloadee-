@@ -26,6 +26,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.runtime.collectAsState
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Refresh
@@ -106,8 +108,11 @@ fun HomeScreen(
     onAbrirLista: (String) -> Unit,
     onIrADescargas: () -> Unit = {},
     onAbrirNavegador: (String?) -> Unit = {},
+    onSinConexion: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val contextoHome = androidx.compose.ui.platform.LocalContext.current
+    val modoSinConexion by remember { com.santyramos.mirador.data.Settings(contextoHome).sinConexion }.collectAsState(initial = false)
     val scope = rememberCoroutineScope()
     var consulta by rememberSaveable { mutableStateOf("") }
     var filtro by rememberSaveable { mutableStateOf(FiltroBusqueda.TODO) }
@@ -192,6 +197,22 @@ fun HomeScreen(
             Text(com.santyramos.mirador.util.Marca.NOMBRE.lowercase(), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(start = 10.dp).weight(1f))
             BotonIcono(Icons.Outlined.Public, "Navegador de ${com.santyramos.mirador.util.Marca.NOMBRE}", { onAbrirNavegador(null) }, bordeado = true)
             BotonIcono(Icons.Outlined.ContentPaste, "Pegar enlaces para descargar", onIrADescargas, Modifier.padding(start = 8.dp), bordeado = true)
+        }
+        // ---- Aviso del modo sin conexión ----
+        if (modoSinConexion) {
+            androidx.compose.material3.Surface(
+                onClick = onSinConexion, shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), color = Paleta.AcentoSuave,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Paleta.AcentoBorde),
+                modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp),
+            ) {
+                Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.CloudOff, null, tint = MaterialTheme.colorScheme.primary)
+                    Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                        Text("Modo sin conexión activado", style = MaterialTheme.typography.titleSmall)
+                        Text("Toca para ver y reproducir lo descargado", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
         }
         // ---- Buscador ----
         OutlinedTextField(

@@ -85,6 +85,9 @@ import com.santyramos.mirador.extractor.Elemento
 import com.santyramos.mirador.extractor.bestUrl
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.automirrored.outlined.QueueMusic
+import androidx.compose.material.icons.outlined.DownloadDone
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Share
 import com.santyramos.mirador.extractor.Youtube
@@ -123,6 +126,9 @@ fun PlayerScreen(
     var menuVelocidad by remember { mutableStateOf(false) }
     var arrastrando by remember { mutableStateOf(false) }
     var posArrastre by remember { mutableFloatStateOf(0f) }
+    var verCola by remember { mutableStateOf(false) }
+    val cola by VideoController.cola.collectAsState()
+    if (verCola) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verCola = false }) { com.santyramos.mirador.ui.ColaSheetContent { verCola = false } }
 
     // Al abrir el reproductor: se permite PiP; al cerrar, se restablece todo.
     DisposableEffect(Unit) {
@@ -229,6 +235,14 @@ fun PlayerScreen(
                 modifier = Modifier.fillMaxSize(),
             )
 
+            // Canciones descargadas: no hay imagen de video, se muestra la portada.
+            if (video?.local == true && video?.esAudio == true) {
+                Box(Modifier.fillMaxSize().background(Paleta.S2), contentAlignment = Alignment.Center) {
+                    if (video?.miniatura != null) coil3.compose.AsyncImage(
+                        model = video?.miniatura, contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize(),
+                    ) else Icon(Icons.Outlined.MusicNote, null, Modifier.size(64.dp), tint = Paleta.Texto3)
+                }
+            }
             if (video?.cargando == true || estado.almacenando) {
                 CircularProgressIndicator(Modifier.align(Alignment.Center).size(44.dp), color = MaterialTheme.colorScheme.primary)
             }
@@ -253,8 +267,8 @@ fun PlayerScreen(
                         IconButton(onClick = {
                             if (enHorizontal) actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else onMinimizar()
                         }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = Color.White) }
-                        Text(video?.info?.name.orEmpty(), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                        Box {
+                        Text(video?.titulo.orEmpty(), color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        if (video?.local != true) Box {
                             TextButton(onClick = { menuCalidad = true }) {
                                 val v = video
                                 val etq = if (v == null) "" else if (v.calidad == PlayerQuality.AUTO) "Auto" else v.calidad.etiqueta
@@ -307,7 +321,7 @@ fun PlayerScreen(
                             Icon(if (estado.reproduciendo) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (estado.reproduciendo) "Pausar" else "Reproducir", tint = Color.White, modifier = Modifier.size(40.dp))
                         }
                         IconButton(onClick = { VideoController.saltar(10_000) }) { Icon(Icons.Filled.Forward10, "Adelantar 10 segundos", tint = Color.White, modifier = Modifier.size(40.dp)) }
-                        if (video?.info != null && VideoController.haySiguiente()) {
+                        if (video?.listo == true && (cola.isNotEmpty() || VideoController.haySiguiente())) {
                             IconButton(onClick = { VideoController.siguiente() }) { Icon(Icons.Filled.SkipNext, "Siguiente video", tint = Color.White, modifier = Modifier.size(40.dp)) }
                         }
                     }
@@ -351,7 +365,22 @@ fun PlayerScreen(
         // ---------- Detalles (solo en vertical) ----------
         if (!enHorizontal && !PipState.activo) {
             val info = video?.info
-            if (info == null && video?.error == null) {
+            val v = video
+            if (v != null && v.local) {
+                // Archivo descargado: detalles mínimos (no hace falta internet).
+                Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(v.titulo, style = MaterialTheme.typography.titleLarge)
+                    if (!v.autor.isNullOrBlank()) Text(v.autor, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Icon(Icons.Outlined.DownloadDone, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                        Text("Desde tus descargas · sin conexión", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    }
+                    BotonSecundario(if (cola.isEmpty()) "Cola de reproducción" else "Cola de reproducción (${cola.size})", { verCola = true }, Modifier.fillMaxWidth(), icono = Icons.AutoMirrored.Outlined.QueueMusic)
+                    val auto by VideoController.autoSiguiente.collectAsState()
+                    com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con lo que hay en la cola")
+                    TextButton(onClick = { VideoController.cerrar(); onMinimizar() }) { Text("Cerrar reproductor", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+            } else if (info == null && video?.error == null) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Cargando video…", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             } else if (info != null) {
                 val relacionados = remember(info) { info.relatedItems.mapNotNull { Youtube.aElemento(it) }.filterIsInstance<Elemento.Video>() }
@@ -398,8 +427,9 @@ fun PlayerScreen(
                                     contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.url), "Compartir enlace"))
                                 }, Modifier.weight(1f), icono = Icons.Outlined.Share)
                             }
+                            BotonSecundario(if (cola.isEmpty()) "Cola de reproducción" else "Cola de reproducción (${cola.size})", { verCola = true }, Modifier.fillMaxWidth(), icono = Icons.AutoMirrored.Outlined.QueueMusic)
                             val auto by VideoController.autoSiguiente.collectAsState()
-                            com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con el siguiente video")
+                            com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con la cola o el siguiente video")
                             BotonSecundario("Ver comentarios", { verComentarios = true }, Modifier.fillMaxWidth(), icono = Icons.Outlined.ChatBubbleOutline)
                             val desc = Youtube.limpiarHtml(info.description?.content.orEmpty())
                             if (desc.isNotBlank()) {
