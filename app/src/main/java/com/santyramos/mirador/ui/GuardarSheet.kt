@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.PlaylistAdd
-import com.santyramos.mirador.player.aCola
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -40,7 +39,7 @@ import com.santyramos.mirador.data.lib.Biblioteca
 import com.santyramos.mirador.extractor.Elemento
 import com.santyramos.mirador.ui.theme.Paleta
 
-/** Hoja "Guardar en…": poner en la cola, Ver más tarde y tus listas (con casilla en las que ya lo tienen). */
+/** Hoja "Guardar en…": Ver más tarde y tus listas, con casilla en las que ya lo tienen. */
 @Composable
 fun GuardarSheetContent(video: Elemento.Video, onCerrar: () -> Unit) {
     val dao = Biblioteca.dao
@@ -54,20 +53,6 @@ fun GuardarSheetContent(video: Elemento.Video, onCerrar: () -> Unit) {
         Text("Guardar en…", style = MaterialTheme.typography.titleLarge)
         Text(video.titulo, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
 
-        // Cola de reproducción
-        val contexto = androidx.compose.ui.platform.LocalContext.current
-        val algoSuena = com.santyramos.mirador.player.VideoController.video.collectAsState().value != null
-        fun avisar(t: String) = android.widget.Toast.makeText(contexto, t, android.widget.Toast.LENGTH_SHORT).show()
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            BotonSecundario("A continuación", {
-                com.santyramos.mirador.player.VideoController.reproducirDespues(video.aCola())
-                avisar(if (algoSuena) "Sonará después del actual" else "Reproduciendo"); onCerrar()
-            }, Modifier.weight(1f))
-            BotonSecundario("A la cola", {
-                com.santyramos.mirador.player.VideoController.agregarACola(video.aCola())
-                avisar(if (algoSuena) "Se añadió a la cola" else "Reproduciendo"); onCerrar()
-            }, Modifier.weight(1f))
-        }
 
         FilaGuardar(Icons.Outlined.BookmarkBorder, "Ver más tarde", null, guardado > 0) {
             if (guardado > 0) Biblioteca.quitarGuardado(video.url) else Biblioteca.guardar(video)

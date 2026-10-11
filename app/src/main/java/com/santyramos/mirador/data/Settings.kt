@@ -62,6 +62,7 @@ class Settings(private val context: Context) {
         val autoSiguiente = booleanPreferencesKey("reproduccion_automatica")
         val tema = stringPreferencesKey("tema")
         val sinConexion = booleanPreferencesKey("modo_sin_conexion")
+        val soloAudio = booleanPreferencesKey("solo_audio")
     }
 
     val simultaneas: Flow<Int> = ds.data.map { it[K.simultaneas] ?: 2 }
@@ -76,6 +77,7 @@ class Settings(private val context: Context) {
     val tema: Flow<Tema> = ds.data.map { Tema.from(it[K.tema]) }
     /** Modo sin conexión: el reproductor usa solo lo descargado y no gasta datos. */
     val sinConexion: Flow<Boolean> = ds.data.map { it[K.sinConexion] ?: false }
+    val soloAudio: Flow<Boolean> = ds.data.map { it[K.soloAudio] ?: false }
     val usarCookies: Flow<Boolean> = ds.data.map { it[K.usarCookies] ?: false }
 
     suspend fun setSimultaneas(n: Int) = ds.edit { it[K.simultaneas] = n.coerceIn(1, 5) }
@@ -89,6 +91,7 @@ class Settings(private val context: Context) {
     suspend fun setAutoSiguiente(v: Boolean) = ds.edit { it[K.autoSiguiente] = v }
     suspend fun setTema(t: Tema) = ds.edit { it[K.tema] = t.name }
     suspend fun setSinConexion(v: Boolean) = ds.edit { it[K.sinConexion] = v }
+    suspend fun setSoloAudio(v: Boolean) = ds.edit { it[K.soloAudio] = v }
     suspend fun setUsarCookies(v: Boolean) = ds.edit { it[K.usarCookies] = v }
 
     suspend fun ytdlpUltimoIntento(): Long = ds.data.first()[K.ytdlpUltimoIntento] ?: 0L

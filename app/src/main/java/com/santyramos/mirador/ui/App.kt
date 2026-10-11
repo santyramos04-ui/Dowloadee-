@@ -89,6 +89,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     var urlsLote by remember { mutableStateOf<List<String>?>(null) }
     var listaADescargar by remember { mutableStateOf<com.santyramos.mirador.download.ListaInfo?>(null) }
     var videoAGuardar by remember { mutableStateOf<com.santyramos.mirador.extractor.Elemento.Video?>(null) }
+    var videoAcciones by remember { mutableStateOf<com.santyramos.mirador.extractor.Elemento.Video?>(null) }
     val video by VideoController.video.collectAsState()
     val actualizacion by AppUpdater.estado.collectAsState()
 
@@ -115,7 +116,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     Entrada.abrirLista?.let { u -> LaunchedEffect(u) { pila.add(Destino.Lista(u)); reproductorAbierto = false; Entrada.abrirLista = null } }
     Entrada.pestana?.let { p -> LaunchedEffect(p) { pestana = p; pila.clear(); Entrada.pestana = null } }
 
-    androidx.compose.runtime.CompositionLocalProvider(LocalGuardar provides { v -> videoAGuardar = v }) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalGuardar provides { v -> videoAGuardar = v }, LocalAcciones provides { v -> videoAcciones = v }) {
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             // Cada pantalla ya respeta la barra de estado; sin esto el espacio de arriba se sumaba dos veces.
@@ -235,6 +236,18 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
             }
         }
         if (reproductorAbierto && video == null) reproductorAbierto = false
+    }
+
+    videoAcciones?.let { v ->
+        com.santyramos.mirador.ui.HojaMirador(onCerrar = { videoAcciones = null }) {
+            AccionesSheetContent(
+                video = v, onCerrar = { videoAcciones = null },
+                onGuardar = { videoAGuardar = v },
+                onDescargar = { urlDescarga = v.url },
+                onSoloAudio = { VideoController.cambiarSoloAudio(true); abrirVideo(v.url) },
+                onCanal = v.urlAutor?.let { u -> { pila.add(Destino.Canal(u)); reproductorAbierto = false } },
+            )
+        }
     }
 
     videoAGuardar?.let { v ->

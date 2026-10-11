@@ -18,7 +18,7 @@ class PlaybackService : MediaSessionService() {
         setMediaNotificationProvider(
             DefaultMediaNotificationProvider.Builder(this).build().apply { setSmallIcon(R.drawable.ic_stat_mirador) },
         )
-        sesion = MediaSession.Builder(this, PlayerHolder.player(this)).build()
+        sesion = MediaSession.Builder(this, ControlesSesion(PlayerHolder.player(this))).build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = sesion

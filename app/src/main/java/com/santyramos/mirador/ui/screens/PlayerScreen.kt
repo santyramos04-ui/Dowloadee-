@@ -84,9 +84,16 @@ import com.santyramos.mirador.data.PlayerQuality
 import com.santyramos.mirador.extractor.Elemento
 import com.santyramos.mirador.extractor.bestUrl
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.automirrored.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.DownloadDone
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material.icons.outlined.RepeatOne
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Share
@@ -129,6 +136,8 @@ fun PlayerScreen(
     var verCola by remember { mutableStateOf(false) }
     val cola by VideoController.cola.collectAsState()
     if (verCola) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verCola = false }) { com.santyramos.mirador.ui.ColaSheetContent { verCola = false } }
+    var verTemporizador by remember { mutableStateOf(false) }
+    if (verTemporizador) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verTemporizador = false }) { TemporizadorSheetContent { verTemporizador = false } }
 
     // Al abrir el reproductor: se permite PiP; al cerrar, se restablece todo.
     DisposableEffect(Unit) {
@@ -236,7 +245,7 @@ fun PlayerScreen(
             )
 
             // Canciones descargadas: no hay imagen de video, se muestra la portada.
-            if (video?.local == true && video?.esAudio == true) {
+            if (video?.esAudio == true) {
                 Box(Modifier.fillMaxSize().background(Paleta.S2), contentAlignment = Alignment.Center) {
                     if (video?.miniatura != null) coil3.compose.AsyncImage(
                         model = video?.miniatura, contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize(),
@@ -315,14 +324,16 @@ fun PlayerScreen(
                         )
                     }
                     // Centro
-                    Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(28.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { VideoController.anterior() }) { Icon(Icons.Filled.SkipPrevious, "Anterior", tint = Color.White, modifier = Modifier.size(36.dp)) }
                         IconButton(onClick = { VideoController.saltar(-10_000) }) { Icon(Icons.Filled.Replay10, "Atrasar 10 segundos", tint = Color.White, modifier = Modifier.size(40.dp)) }
                         IconButton(onClick = { VideoController.alternar() }, modifier = Modifier.size(68.dp).clip(CircleShape).background(Color(0x99000000))) {
                             Icon(if (estado.reproduciendo) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (estado.reproduciendo) "Pausar" else "Reproducir", tint = Color.White, modifier = Modifier.size(40.dp))
                         }
                         IconButton(onClick = { VideoController.saltar(10_000) }) { Icon(Icons.Filled.Forward10, "Adelantar 10 segundos", tint = Color.White, modifier = Modifier.size(40.dp)) }
-                        if (video?.listo == true && (cola.isNotEmpty() || VideoController.haySiguiente())) {
-                            IconButton(onClick = { VideoController.siguiente() }) { Icon(Icons.Filled.SkipNext, "Siguiente video", tint = Color.White, modifier = Modifier.size(40.dp)) }
+                        val haySiguiente = video?.listo == true && (cola.isNotEmpty() || VideoController.haySiguiente())
+                        IconButton(onClick = { VideoController.siguiente() }, enabled = haySiguiente) {
+                            Icon(Icons.Filled.SkipNext, "Siguiente", tint = if (haySiguiente) Color.White else Color(0x66FFFFFF), modifier = Modifier.size(36.dp))
                         }
                     }
                     // Barra inferior
@@ -368,17 +379,22 @@ fun PlayerScreen(
             val v = video
             if (v != null && v.local) {
                 // Archivo descargado: detalles mínimos (no hace falta internet).
-                Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(v.titulo, style = MaterialTheme.typography.titleLarge)
-                    if (!v.autor.isNullOrBlank()) Text(v.autor, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(Icons.Outlined.DownloadDone, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                        Text("Desde tus descargas · sin conexión", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 24.dp)) {
+                    item {
+                        Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(v.titulo, style = MaterialTheme.typography.titleLarge)
+                            if (!v.autor.isNullOrBlank()) Text(v.autor, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Icon(Icons.Outlined.DownloadDone, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                                Text("Desde tus descargas · sin conexión", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                            FilaOpciones(local = true, onCola = { verCola = true }, onTemporizador = { verTemporizador = true })
+                            val auto by VideoController.autoSiguiente.collectAsState()
+                            com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con lo que hay en la cola")
+                            TextButton(onClick = { VideoController.cerrar(); onMinimizar() }) { Text("Cerrar reproductor", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        }
                     }
-                    BotonSecundario(if (cola.isEmpty()) "Cola de reproducción" else "Cola de reproducción (${cola.size})", { verCola = true }, Modifier.fillMaxWidth(), icono = Icons.AutoMirrored.Outlined.QueueMusic)
-                    val auto by VideoController.autoSiguiente.collectAsState()
-                    com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con lo que hay en la cola")
-                    TextButton(onClick = { VideoController.cerrar(); onMinimizar() }) { Text("Cerrar reproductor", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    aContinuacion(cola)
                 }
             } else if (info == null && video?.error == null) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Cargando video…", color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -427,7 +443,7 @@ fun PlayerScreen(
                                     contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.url), "Compartir enlace"))
                                 }, Modifier.weight(1f), icono = Icons.Outlined.Share)
                             }
-                            BotonSecundario(if (cola.isEmpty()) "Cola de reproducción" else "Cola de reproducción (${cola.size})", { verCola = true }, Modifier.fillMaxWidth(), icono = Icons.AutoMirrored.Outlined.QueueMusic)
+                            FilaOpciones(local = false, onCola = { verCola = true }, onTemporizador = { verTemporizador = true })
                             val auto by VideoController.autoSiguiente.collectAsState()
                             com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con la cola o el siguiente video")
                             BotonSecundario("Ver comentarios", { verComentarios = true }, Modifier.fillMaxWidth(), icono = Icons.Outlined.ChatBubbleOutline)
@@ -442,11 +458,66 @@ fun PlayerScreen(
                             TextButton(onClick = { VideoController.cerrar(); onMinimizar() }) { Text("Cerrar reproductor", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         }
                         HorizontalDivider(color = Paleta.Linea)
-                        if (relacionados.isNotEmpty()) Text("Videos relacionados", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp))
                     }
+                    aContinuacion(cola)
+                    if (relacionados.isNotEmpty()) item { Text("Videos relacionados", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) }
                     items(relacionados, key = { it.url }) { v -> FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
                 }
             }
         }
+    }
+}
+
+/** Lo que suena después (la cola), a la vista debajo del video. */
+private fun androidx.compose.foundation.lazy.LazyListScope.aContinuacion(cola: List<com.santyramos.mirador.player.ElementoCola>) {
+    if (cola.isEmpty()) return
+    item { Text("A continuación (${cola.size})", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 4.dp)) }
+    itemsIndexed(cola, key = { i, e -> "cola $i ${e.url}" }) { i, e ->
+        com.santyramos.mirador.ui.FilaElemento(e, { VideoController.reproducirDeCola(i) }) {
+            com.santyramos.mirador.ui.BotonIcono(Icons.Filled.Close, "Quitar de la cola", { VideoController.quitarDeCola(i) })
+        }
+    }
+}
+
+/** Solo audio, Repetir, Aleatorio, Temporizador y Cola. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun FilaOpciones(local: Boolean, onCola: () -> Unit, onTemporizador: () -> Unit) {
+    val soloAudio by VideoController.soloAudio.collectAsState()
+    val repetir by VideoController.repetir.collectAsState()
+    val aleatorio by VideoController.aleatorio.collectAsState()
+    val temporizador by VideoController.temporizador.collectAsState()
+    val cola by VideoController.cola.collectAsState()
+    // El tiempo que queda del temporizador se refresca cada 20 s.
+    var ahora by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(temporizador) { while (temporizador?.finMs != null) { ahora = System.currentTimeMillis(); delay(20_000) } }
+    val textoTemporizador = when {
+        temporizador?.alTerminar == true -> "Al terminar"
+        temporizador?.finMs != null -> "${((temporizador!!.finMs!! - ahora) / 60_000 + 1).coerceAtLeast(1)} min"
+        else -> "Temporizador"
+    }
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (!local) com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Headphones, "Solo audio", soloAudio, { VideoController.cambiarSoloAudio(!soloAudio) })
+        com.santyramos.mirador.ui.ChipOpcion(
+            if (repetir == com.santyramos.mirador.player.Repetir.UNA) Icons.Outlined.RepeatOne else Icons.Outlined.Repeat,
+            repetir.etiqueta, repetir != com.santyramos.mirador.player.Repetir.NO, { VideoController.cambiarRepetir() },
+        )
+        com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Shuffle, "Aleatorio", aleatorio, { VideoController.cambiarAleatorio() })
+        com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Timer, textoTemporizador, temporizador != null, onTemporizador)
+        com.santyramos.mirador.ui.ChipOpcion(Icons.AutoMirrored.Outlined.QueueMusic, if (cola.isEmpty()) "Cola" else "Cola (${cola.size})", false, onCola)
+    }
+}
+
+/** Temporizador para dormir: pausa sola después de un tiempo. */
+@Composable
+private fun TemporizadorSheetContent(onCerrar: () -> Unit) {
+    val actual by VideoController.temporizador.collectAsState()
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Temporizador", style = MaterialTheme.typography.titleLarge)
+        Text("La reproducción se pausa sola. Ideal para dormir.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        listOf("15 minutos" to 15, "30 minutos" to 30, "1 hora" to 60, "Al terminar lo que suena" to 0).forEach { (texto, min) ->
+            com.santyramos.mirador.ui.OpcionTemporizador(texto, false) { VideoController.programarTemporizador(min); onCerrar() }
+        }
+        if (actual != null) com.santyramos.mirador.ui.OpcionTemporizador("Apagar temporizador", true) { VideoController.programarTemporizador(null); onCerrar() }
     }
 }

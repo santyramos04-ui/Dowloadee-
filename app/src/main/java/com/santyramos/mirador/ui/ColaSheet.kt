@@ -90,7 +90,7 @@ fun ColaSheetContent(onCerrar: () -> Unit) {
         )
         if (cola.isEmpty()) {
             Text(
-                "La cola está vacía. Toca el ícono de guardar en un video y elige «Añadir a la cola». " +
+                "La cola está vacía. Toca ⋮ en un video y elige «Añadir a la cola». " +
                     "Cuando la cola se acaba, sigue la lista o los videos relacionados (si la reproducción automática está activada).",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),

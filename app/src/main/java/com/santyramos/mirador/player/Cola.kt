@@ -47,3 +47,19 @@ object ColaLogica {
     fun saltarA(cola: List<ElementoCola>, i: Int): Pair<ElementoCola, List<ElementoCola>>? =
         if (i in cola.indices) cola[i] to cola.drop(i + 1) else null
 }
+
+/** Repetir: nada, solo lo que suena, o toda la cola (lo que termina vuelve al final). */
+enum class Repetir(val etiqueta: String) { NO("Repetir"), UNA("Repetir una"), TODAS("Repetir todo") ;
+    fun siguiente(): Repetir = entries[(ordinal + 1) % entries.size]
+}
+
+/** Temporizador para dormir: a qué hora se pausa, o «al terminar lo que suena». */
+data class Temporizador(val finMs: Long? = null, val alTerminar: Boolean = false)
+
+/** Une el orden original con la cola actual al quitar el aleatorio: respeta el orden original y deja al final lo nuevo. */
+fun restaurarOrden(original: List<ElementoCola>, actual: List<ElementoCola>): List<ElementoCola> {
+    val enActual = actual.map { it.url }.toSet()
+    val base = original.filter { it.url in enActual }
+    val usados = base.map { it.url }.toSet()
+    return base + actual.filter { it.url !in usados }
+}

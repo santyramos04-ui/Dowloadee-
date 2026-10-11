@@ -76,6 +76,23 @@ object VideoController {
     private var contexto: List<String> = emptyList()
     private var indiceContexto = -1
 
+    /** Lo que sonó antes (para el botón «Anterior»). */
+    private val anteriores = ArrayDeque<ElementoCola>()
+    private var actualElemento: ElementoCola? = null
+    private var volviendo = false
+
+    private val _repetir = MutableStateFlow(Repetir.NO)
+    val repetir: StateFlow<Repetir> = _repetir.asStateFlow()
+    private val _aleatorio = MutableStateFlow(false)
+    val aleatorio: StateFlow<Boolean> = _aleatorio.asStateFlow()
+    private var ordenOriginal: List<ElementoCola> = emptyList()
+    private val _soloAudio = MutableStateFlow(false)
+    /** Solo audio: suena sin video (gasta muchos menos datos). */
+    val soloAudio: StateFlow<Boolean> = _soloAudio.asStateFlow()
+    private val _temporizador = MutableStateFlow<Temporizador?>(null)
+    val temporizador: StateFlow<Temporizador?> = _temporizador.asStateFlow()
+    private var trabajoTemporizador: Job? = null
+
     private val _cola = MutableStateFlow<List<ElementoCola>>(emptyList())
     /** La cola de reproducción: lo que tú añadiste para que suene a continuación. Va antes que la lista y los relacionados. */
     val cola: StateFlow<List<ElementoCola>> = _cola.asStateFlow()
@@ -97,12 +114,19 @@ object VideoController {
 
     fun init(context: Context) {
         app = context.applicationContext
-        scope.launch { _autoSiguiente.value = Settings(app).autoSiguiente.first() }
+        scope.launch {
+            val ajustes = Settings(app)
+            _autoSiguiente.value = ajustes.autoSiguiente.first()
+            _soloAudio.value = ajustes.soloAudio.first()
+        }
         PlayerHolder.conectarServicio(app)
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 publicar()
-                if (playbackState == Player.STATE_ENDED && _autoSiguiente.value && _video.value?.listo == true) siguiente()
+                if (playbackState == Player.STATE_ENDED && _video.value?.listo == true) {
+                    if (_temporizador.value?.alTerminar == true) { cancelarTemporizador(); return }
+                    if (_autoSiguiente.value || _cola.value.isNotEmpty() || _repetir.value == Repetir.TODAS) siguiente()
+                }
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) { publicar(); if (!isPlaying) guardarPosicionActual() }
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
@@ -182,6 +206,7 @@ object VideoController {
     fun agregarACola(e: ElementoCola) {
         if (_video.value == null) { abrirElemento(e); return }
         _cola.value = ColaLogica.agregar(_cola.value, e)
+        if (_aleatorio.value) ordenOriginal = ColaLogica.agregar(ordenOriginal, e)
     }
 
     /** Suena justo después del actual. */
@@ -224,6 +249,8 @@ object VideoController {
     fun haySiguiente(): Boolean = urlSiguiente() != null
 
     fun siguiente() {
+        // Repetir todo: lo que termina vuelve al final de la cola.
+        if (_repetir.value == Repetir.TODAS) actualElemento?.let { _cola.value = ColaLogica.agregar(_cola.value, it) }
         val primero = _cola.value.firstOrNull()
         if (primero != null) {
             _cola.value = _cola.value.drop(1)
@@ -238,8 +265,79 @@ object VideoController {
         if (e.esLocal) abrirArchivo(e, mantenerContexto) else abrir(e.url, previo = e, mantenerContexto = mantenerContexto)
     }
 
-    private fun prepararApertura(url: String, mantenerContexto: Boolean) {
+    /** Vuelve al inicio si ya avanzó unos segundos; si no, al anterior (lo actual queda primero en la cola). */
+    fun anterior() {
+        if (player.currentPosition > 4_000 || anteriores.isEmpty()) { player.seekTo(0); return }
+        val previo = anteriores.removeLast()
+        actualElemento?.let { _cola.value = ColaLogica.aContinuacion(_cola.value, it) }
+        volviendo = true
+        abrirElemento(previo, mantenerContexto = true)
+    }
+
+    fun hayAnterior(): Boolean = anteriores.isNotEmpty()
+
+    fun cambiarRepetir() {
+        _repetir.value = _repetir.value.siguiente()
+        player.repeatMode = if (_repetir.value == Repetir.UNA) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+    }
+
+    fun cambiarAleatorio() {
+        if (!_aleatorio.value) {
+            ordenOriginal = _cola.value
+            _cola.value = _cola.value.shuffled()
+        } else {
+            _cola.value = restaurarOrden(ordenOriginal, _cola.value)
+            ordenOriginal = emptyList()
+        }
+        _aleatorio.value = !_aleatorio.value
+    }
+
+    /** Pausa dentro de [minutos]; 0 = al terminar lo que suena; null = apagar. */
+    fun programarTemporizador(minutos: Int?) {
+        trabajoTemporizador?.cancel()
+        when (minutos) {
+            null -> _temporizador.value = null
+            0 -> _temporizador.value = Temporizador(alTerminar = true)
+            else -> {
+                val fin = System.currentTimeMillis() + minutos * 60_000L
+                _temporizador.value = Temporizador(finMs = fin)
+                trabajoTemporizador = scope.launch {
+                    delay(fin - System.currentTimeMillis())
+                    player.pause()
+                    _temporizador.value = null
+                }
+            }
+        }
+    }
+
+    private fun cancelarTemporizador() { trabajoTemporizador?.cancel(); _temporizador.value = null; player.pause() }
+
+    /** Activa o quita «solo audio» sin perder el punto en el que vas. */
+    fun cambiarSoloAudio(v: Boolean) {
+        if (_soloAudio.value == v) return
+        _soloAudio.value = v
+        scope.launch { Settings(app).setSoloAudio(v) }
+        val actual = _video.value ?: return
+        val info = actual.info ?: return
+        val pos = player.currentPosition
         trabajo?.cancel()
+        trabajo = scope.launch {
+            try { reproducir(info, actual.calidad, actual.alturas, pos) }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Throwable) { _video.value = _video.value?.copy(error = ErrorMapper.mensajeVer(e)) }
+        }
+    }
+
+    private fun prepararApertura(url: String, mantenerContexto: Boolean, nuevo: ElementoCola) {
+        trabajo?.cancel()
+        // Lo que sonaba pasa a «anteriores» (salvo si estamos volviendo atrás).
+        val previo = actualElemento
+        if (!volviendo && previo != null && previo.url != url) {
+            anteriores.addLast(previo)
+            if (anteriores.size > 50) anteriores.removeFirst()
+        }
+        volviendo = false
+        actualElemento = nuevo
         val i = contexto.indexOf(url)
         if (i >= 0) indiceContexto = i
         // Si el video no pertenece a la lista de origen, se descarta (y se vuelve a los relacionados).
@@ -252,7 +350,7 @@ object VideoController {
     /** Reproduce un archivo descargado, sin internet. */
     fun abrirArchivo(e: ElementoCola, mantenerContexto: Boolean = false) {
         val uri = e.archivoUri ?: return
-        prepararApertura(e.url, mantenerContexto)
+        prepararApertura(e.url, mantenerContexto, e)
         _video.value = VideoActual(
             urlOriginal = e.url, cargando = false, titulo = e.titulo, autor = e.autor, miniatura = e.miniatura,
             local = true, esAudio = e.esAudio,
@@ -278,7 +376,7 @@ object VideoController {
     fun abrir(url: String, posicionInicialMs: Long = 0, previo: ElementoCola? = null, mantenerContexto: Boolean = false) {
         val actual = _video.value
         if (actual != null && actual.urlOriginal == url && actual.listo && player.mediaItemCount > 0) return
-        prepararApertura(url, mantenerContexto)
+        prepararApertura(url, mantenerContexto, previo ?: ElementoCola(url, ""))
         _video.value = VideoActual(urlOriginal = url, titulo = previo?.titulo.orEmpty(), autor = previo?.autor, miniatura = previo?.miniatura)
         trabajo = scope.launch {
             try {
@@ -324,16 +422,23 @@ object VideoController {
     }
 
     private suspend fun reproducir(info: StreamInfo, calidad: PlayerQuality, alturas: List<Int>, posMs: Long) {
-        val seleccion = StreamSelector.seleccionar(info.videoStreams, info.videoOnlyStreams, info.audioStreams, calidad, conWifi())
-        val fuente = withContext(Dispatchers.IO) { PlayerSources.construir(info, seleccion) }
+        val audioSolo = if (_soloAudio.value) StreamSelector.elegirAudio(info.audioStreams) else null
+        val seleccion = if (audioSolo != null) null
+        else StreamSelector.seleccionar(info.videoStreams, info.videoOnlyStreams, info.audioStreams, calidad, conWifi())
+        val fuente = withContext(Dispatchers.IO) {
+            if (audioSolo != null) PlayerSources.construirSoloAudio(info, audioSolo) else PlayerSources.construir(info, seleccion)
+        }
         val p = player
         p.setMediaSource(fuente, posMs)
         p.prepare()
         p.playWhenReady = true
+        actualElemento?.takeIf { it.url == _video.value?.urlOriginal }?.let {
+            actualElemento = it.copy(titulo = info.name.orEmpty(), autor = info.uploaderName, miniatura = info.thumbnails.bestUrl(), duracionSeg = info.duration)
+        }
         _video.value = _video.value?.copy(
             info = info, cargando = false, error = null, alturas = alturas, calidad = calidad,
             alturaReproduciendo = seleccion?.altura ?: 0,
-            titulo = info.name.orEmpty(), autor = info.uploaderName, miniatura = info.thumbnails.bestUrl(), local = false, esAudio = false,
+            titulo = info.name.orEmpty(), autor = info.uploaderName, miniatura = info.thumbnails.bestUrl(), local = false, esAudio = audioSolo != null,
         )
     }
 
@@ -380,6 +485,8 @@ object VideoController {
         trabajo?.cancel()
         PlayerHolder.detener()
         _cola.value = emptyList()
+        anteriores.clear(); actualElemento = null
+        trabajoTemporizador?.cancel(); _temporizador.value = null
         _video.value = null
     }
 }

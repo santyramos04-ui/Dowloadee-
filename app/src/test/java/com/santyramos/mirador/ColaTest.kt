@@ -3,6 +3,8 @@ package com.santyramos.mirador
 import com.santyramos.mirador.data.db.DownloadEntity
 import com.santyramos.mirador.player.ColaLogica
 import com.santyramos.mirador.player.ElementoCola
+import com.santyramos.mirador.player.Repetir
+import com.santyramos.mirador.player.restaurarOrden
 import com.santyramos.mirador.ui.screens.agruparSinConexion
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -46,5 +48,17 @@ class ColaTest {
         assertEquals(listOf("Lista 7", "Descargas sueltas"), grupos.map { it.nombre })
         assertEquals(listOf("uno", "dos"), grupos[0].elementos.map { it.titulo }) // respeta el orden de la lista
         assertTrue(grupos[0].elementos.all { it.esLocal && it.esAudio })
+    }
+
+    @Test fun repetirDaLaVuelta() {
+        assertEquals(Repetir.UNA, Repetir.NO.siguiente())
+        assertEquals(Repetir.TODAS, Repetir.UNA.siguiente())
+        assertEquals(Repetir.NO, Repetir.TODAS.siguiente())
+    }
+
+    @Test fun quitarAleatorioRecuperaElOrden() {
+        val original = listOf(e("a"), e("b"), e("c"))
+        val mezclada = listOf(e("c"), e("a"), e("nuevo")) // «b» ya sonó y se añadió «nuevo»
+        assertEquals(listOf("a", "c", "nuevo"), restaurarOrden(original, mezclada).map { it.titulo })
     }
 }
