@@ -126,8 +126,22 @@ internal fun VideoSheetContent(
     var elegido by remember(url) { mutableStateOf(Preset.MEJOR) }
     var intento by remember(url) { mutableStateOf(0) }
 
+    // Datos completos de yt-dlp: se buscan en segundo plano; si llegan antes de tocar «Descargar»,
+    // la descarga empieza más rápido porque no repite la extracción.
+    var completa by remember(url) { mutableStateOf<MediaInfo?>(null) }
+
     LaunchedEffect(url, intento) {
         estado = Estado.Cargando
+        completa = null
+        // YouTube: las opciones salen en 1–2 s con el lector del reproductor, sin esperar a yt-dlp.
+        val rapida = if (soloEste) com.santyramos.mirador.download.PreviewRapido.youtube(url) else null
+        if (rapida != null) {
+            elegido = opcionesDisponibles(rapida).first()
+            estado = Estado.Listo(rapida)
+            completa = runCatching { PreviewLoader.cargar(url, Cookies.archivo(contexto), soloEste) }
+                .getOrNull()?.takeIf { it.directos.isEmpty() }
+            return@LaunchedEffect
+        }
         estado = try {
             val info = PreviewLoader.cargar(url, Cookies.archivo(contexto), soloEste)
             elegido = opcionesDisponibles(info).first()
@@ -209,7 +223,7 @@ internal fun VideoSheetContent(
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     BotonSecundario("Cancelar", onCerrar, Modifier.weight(1f))
                     BotonPrimario(
-                        "Descargar", { scope.launch { DownloadCenter.encolar(info, elegido, soloEste); onEncolada() } },
+                        "Descargar", { scope.launch { DownloadCenter.encolar(completa ?: info, elegido, soloEste); onEncolada() } },
                         Modifier.weight(1.5f), icono = Icons.Outlined.FileDownload,
                     )
                 }
