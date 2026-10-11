@@ -8,7 +8,7 @@ import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-class ActualizacionTest {
+class ApkCompletoTest {
     private fun apkFalso(): File = File.createTempFile("prueba", ".apk").apply {
         ZipOutputStream(outputStream()).use { z -> z.putNextEntry(ZipEntry("AndroidManifest.xml")); z.write(ByteArray(100)); z.closeEntry() }
         deleteOnExit()
