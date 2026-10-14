@@ -88,6 +88,10 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.automirrored.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.DownloadDone
+import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.Cast
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Shuffle
@@ -137,6 +141,11 @@ fun PlayerScreen(
     val cola by VideoController.cola.collectAsState()
     if (verCola) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verCola = false }) { com.santyramos.mirador.ui.ColaSheetContent { verCola = false } }
     var verTemporizador by remember { mutableStateOf(false) }
+    var verTv by remember { mutableStateOf(false) }
+    if (verTv) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verTv = false }) { com.santyramos.mirador.ui.TvSheetContent { verTv = false } }
+    val enTv by com.santyramos.mirador.tv.Tv.enTv.collectAsState()
+    // Candado: con la pantalla bloqueada, los toques no hacen nada (ni pausar, ni gestos, ni botones).
+    var bloqueado by remember { mutableStateOf(false) }
     if (verTemporizador) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verTemporizador = false }) { TemporizadorSheetContent { verTemporizador = false } }
 
     // Al abrir el reproductor: se permite PiP; al cerrar, se restablece todo.
@@ -176,9 +185,13 @@ fun PlayerScreen(
 
     BackHandler(enabled = enHorizontal) { actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
     BackHandler(enabled = !enHorizontal && !PipState.activo) { onMinimizar() }
+    BackHandler(enabled = bloqueado) {
+        android.widget.Toast.makeText(contexto, "Pantalla bloqueada: mantén presionado el candado para desbloquear", android.widget.Toast.LENGTH_SHORT).show()
+    }
 
     val audio = remember { contexto.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
 
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // ---------- Zona del video ----------
         val modificadorVideo = if (enHorizontal || PipState.activo) Modifier.fillMaxSize() else Modifier.fillMaxWidth().statusBarsPadding().aspectRatio(16f / 9f)
@@ -262,6 +275,14 @@ fun PlayerScreen(
                     Button(onClick = { VideoController.reintentar() }) { Text("Reintentar") }
                 }
             }
+            // El video está en el televisor: aquí solo se muestra a dónde se envió.
+            enTv?.let { e ->
+                Column(Modifier.align(Alignment.Center).clip(RoundedCornerShape(16.dp)).background(Color(0xCC000000)).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Outlined.Cast, null, tint = Color.White, modifier = Modifier.size(32.dp))
+                    Text("Reproduciendo en ${e.tv.nombre}", color = Color.White, style = MaterialTheme.typography.titleSmall)
+                    TextButton(onClick = { verTv = true }) { Text("Controles del televisor", color = com.santyramos.mirador.ui.theme.Acento) }
+                }
+            }
             aviso?.let {
                 Text(
                     it, color = Color.White, style = MaterialTheme.typography.titleMedium,
@@ -313,6 +334,8 @@ fun PlayerScreen(
                                 }
                             }
                         }
+                        IconButton(onClick = { verTv = true }) { Icon(Icons.Outlined.Cast, "Ver en el televisor", tint = if (enTv != null) com.santyramos.mirador.ui.theme.Acento else Color.White) }
+                        IconButton(onClick = { bloqueado = true; mostrarControles = false }) { Icon(Icons.Outlined.Lock, "Bloquear pantalla", tint = Color.White) }
                         IconButton(onClick = onEntrarPip) { Icon(Icons.Filled.PictureInPictureAlt, "Imagen en imagen", tint = Color.White) }
                     }
                     // Aviso de SponsorBlock
@@ -385,8 +408,8 @@ fun PlayerScreen(
                             Text(v.titulo, style = MaterialTheme.typography.titleLarge)
                             if (!v.autor.isNullOrBlank()) Text(v.autor, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Icon(Icons.Outlined.DownloadDone, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                                Text("Desde tus descargas · sin conexión", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                Icon(if (v.origen == null) Icons.Outlined.DownloadDone else Icons.Outlined.Movie, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                                Text(v.origen ?: "Desde tus descargas · sin conexión", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                             }
                             FilaOpciones(local = true, onCola = { verCola = true }, onTemporizador = { verTemporizador = true })
                             val auto by VideoController.autoSiguiente.collectAsState()
@@ -464,6 +487,46 @@ fun PlayerScreen(
                     items(relacionados, key = { it.url }) { v -> FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
                 }
             }
+        }
+    }
+    if (bloqueado) CapaBloqueo { bloqueado = false }
+    }
+}
+
+/**
+ * Capa encima de todo el reproductor que se traga los toques. Al tocar aparece el candado;
+ * se desbloquea manteniéndolo presionado (o con la acción «Desbloquear» de TalkBack).
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun CapaBloqueo(onDesbloquear: () -> Unit) {
+    var verCandado by remember { mutableStateOf(true) }
+    var toques by remember { mutableStateOf(0) }
+    LaunchedEffect(toques) { verCandado = true; delay(2500); verCandado = false }
+    Box(
+        Modifier.fillMaxSize().pointerInput(Unit) {
+            awaitPointerEventScope {
+                while (true) {
+                    val e = awaitPointerEvent()
+                    if (e.changes.any { it.pressed && !it.previousPressed }) toques++
+                    e.changes.forEach { it.consume() }
+                }
+            }
+        },
+    ) {
+        if (verCandado) {
+            androidx.compose.material3.Surface(
+                shape = CircleShape, color = Color(0xCC000000),
+                modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 24.dp).size(64.dp)
+                    .combinedClickable(
+                        onClickLabel = "Mantén presionado para desbloquear", onClick = { toques++ },
+                        onLongClickLabel = "Desbloquear", onLongClick = onDesbloquear,
+                    ),
+            ) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Lock, "Pantalla bloqueada", tint = Color.White, modifier = Modifier.size(30.dp)) } }
+            Text(
+                "Mantén presionado el candado para desbloquear", color = Color.White, style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 96.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xCC000000)).padding(horizontal = 12.dp, vertical = 6.dp),
+            )
         }
     }
 }

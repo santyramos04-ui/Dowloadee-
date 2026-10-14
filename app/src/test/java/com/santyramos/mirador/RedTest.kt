@@ -104,4 +104,21 @@ class RedTest {
             assumeTrue("YouTube bloqueó la IP del servidor", false)
         }
     }
+
+    @Test fun peliculasDeInternetArchive() = runBlocking {
+        requiere()
+        com.santyramos.mirador.peliculas.CategoriaPeli.entries.forEach { c ->
+            val lista = com.santyramos.mirador.peliculas.Archivo.buscar(c)
+            println("PRUEBA_VER archivo ${c.name}: ${lista.size} títulos; primero = ${lista.firstOrNull()?.titulo}")
+            assertTrue("Sin resultados en ${c.etiqueta}", lista.isNotEmpty())
+        }
+        val primera = com.santyramos.mirador.peliculas.Archivo.buscar(com.santyramos.mirador.peliculas.CategoriaPeli.POPULARES).first()
+        val url = com.santyramos.mirador.peliculas.Archivo.urlVideo(primera.id)
+        println("PRUEBA_VER archivo video: ${primera.titulo} -> $url")
+        assertTrue("No se encontró un MP4 para ${primera.id}", url != null)
+        Http.client.newCall(Request.Builder().url(url!!).header("Range", "bytes=0-2047").build()).execute().use { r ->
+            println("PRUEBA_VER archivo trozo: HTTP ${r.code}")
+            assertTrue("El video de Internet Archive respondió ${r.code}", r.isSuccessful)
+        }
+    }
 }

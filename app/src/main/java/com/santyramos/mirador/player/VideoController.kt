@@ -44,6 +44,11 @@ data class VideoActual(
     /** Suena un archivo descargado (sin conexión), no un video de internet. */
     val local: Boolean = false,
     val esAudio: Boolean = false,
+    /** Dirección del archivo que suena (descarga o directa) y su tipo, para enviarlo al televisor. */
+    val archivoUri: String? = null,
+    val archivoMime: String? = null,
+    /** Texto de origen cuando no es una descarga tuya (ej. «Internet Archive»). */
+    val origen: String? = null,
 ) {
     /** Ya está listo para sonar (cargado y sin error). */
     val listo: Boolean get() = !cargando && error == null && (info != null || local)
@@ -353,7 +358,7 @@ object VideoController {
         prepararApertura(e.url, mantenerContexto, e)
         _video.value = VideoActual(
             urlOriginal = e.url, cargando = false, titulo = e.titulo, autor = e.autor, miniatura = e.miniatura,
-            local = true, esAudio = e.esAudio,
+            local = true, esAudio = e.esAudio, archivoUri = uri, archivoMime = e.archivoMime, origen = e.origen,
         )
         segmentos = emptyList(); saltados.clear()
         trabajo = scope.launch {
