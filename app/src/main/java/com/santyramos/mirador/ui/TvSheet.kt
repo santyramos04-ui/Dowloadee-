@@ -70,6 +70,16 @@ fun TvSheetContent(onCerrar: () -> Unit) {
             "El televisor reproduce el video solo (debe estar en el mismo Wi-Fi). El celular queda libre y lo puedes bloquear.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        val alta by Tv.altaCalidad.collectAsState()
+        Text("Calidad para videos de YouTube", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Filtro("Alta (hasta 1080p)", alta) { Tv.cambiarCalidad(true) }
+            Filtro("Compatible (360p)", !alta) { Tv.cambiarCalidad(false) }
+        }
+        if (alta) Text(
+            "El celular une imagen y sonido para el televisor, así que debe seguir conectado al Wi-Fi. Si tu TV no lo reproduce, elige «Compatible».",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         televisores.forEach { t ->
             FilaTv(Icons.Outlined.Tv, t.nombre, if (enTv?.tv == t) "Conectado" else "Toca para enviar") { Tv.enviar(contexto, t) }
         }

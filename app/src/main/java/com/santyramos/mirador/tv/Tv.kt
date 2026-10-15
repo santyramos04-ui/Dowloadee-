@@ -33,6 +33,10 @@ object Tv {
     /** Último problema (para mostrarlo en la hoja). */
     val aviso: StateFlow<String?> = _aviso.asStateFlow()
     private var servidor: ServidorLocal? = null
+    private val _altaCalidad = MutableStateFlow(true)
+    /** YouTube en alta calidad (hasta 1080p, uniendo imagen y sonido en el celular) o compatible (360p, directo). */
+    val altaCalidad: StateFlow<Boolean> = _altaCalidad.asStateFlow()
+    fun cambiarCalidad(alta: Boolean) { _altaCalidad.value = alta }
 
     fun buscar(context: Context) {
         if (_buscando.value) return
@@ -60,24 +64,37 @@ object Tv {
         scope.launch {
             try {
                 cerrarServidor()
+                fun servidorListo(): ServidorLocal {
+                    val srv = ServidorLocal(context)
+                    srv.iniciar() ?: throw IllegalStateException("Conéctate a un Wi-Fi para enviar al televisor.")
+                    servidor = srv
+                    return srv
+                }
                 val (url, mime) = when {
                     v.archivoUri?.startsWith("http") == true -> v.archivoUri!! to (v.archivoMime ?: "video/mp4")
                     v.archivoUri != null -> {
-                        val s = ServidorLocal(context, Uri.parse(v.archivoUri), v.archivoMime ?: "video/mp4")
-                        val u = s.iniciar() ?: throw IllegalStateException("Conéctate a un Wi-Fi para enviar tus descargas al televisor.")
-                        servidor = s
-                        u to (v.archivoMime ?: "video/mp4")
+                        val m = v.archivoMime ?: "video/mp4"
+                        servidorListo().publicar("medio", Recurso.Archivo(Uri.parse(v.archivoUri), m)) to m
                     }
                     else -> {
                         val info = v.info ?: throw IllegalStateException("Espera a que el video cargue.")
-                        // Los televisores necesitan un archivo con imagen y sonido juntos (las versiones separadas no las entienden).
-                        val mezclado = info.videoStreams.filter { !it.isVideoOnly && it.isUrl }
-                            .sortedWith(compareByDescending<org.schabi.newpipe.extractor.stream.VideoStream> { it.height }.thenByDescending { it.format?.suffix == "mp4" })
-                            .firstOrNull()
-                        when {
-                            mezclado != null -> mezclado.content to (mezclado.format?.mimeType ?: "video/mp4")
-                            !info.hlsUrl.isNullOrEmpty() -> info.hlsUrl to "application/vnd.apple.mpegurl"
-                            else -> throw IllegalStateException("Este video no se puede enviar al televisor. Prueba duplicando la pantalla.")
+                        val alta = if (_altaCalidad.value) kotlinx.coroutines.withContext(Dispatchers.IO) { AltaCalidad.elegir(info) } else null
+                        val ff = Ffmpeg.preparar(context)
+                        if (alta != null && ff != null) {
+                            com.santyramos.mirador.download.YtDlpEngine.esperarListo() // ffmpeg ya descomprimido
+                            val (vid, aud) = alta
+                            val desde = VideoController.player.currentPosition / 1000 // sigue donde ibas
+                            servidorListo().publicarMezcla(vid, aud, desde) to "video/mp2t"
+                        } else {
+                            // Compatible: un archivo con imagen y sonido juntos (YouTube solo lo da en calidad media).
+                            val mezclado = info.videoStreams.filter { !it.isVideoOnly && it.isUrl }
+                                .sortedWith(compareByDescending<org.schabi.newpipe.extractor.stream.VideoStream> { it.height }.thenByDescending { it.format?.suffix == "mp4" })
+                                .firstOrNull()
+                            when {
+                                mezclado != null -> mezclado.content to (mezclado.format?.mimeType ?: "video/mp4")
+                                !info.hlsUrl.isNullOrEmpty() -> info.hlsUrl to "application/vnd.apple.mpegurl"
+                                else -> throw IllegalStateException("Este video no se puede enviar al televisor. Prueba duplicando la pantalla.")
+                            }
                         }
                     }
                 }
