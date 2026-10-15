@@ -37,6 +37,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.background
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -89,6 +92,10 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
     var progreso by remember { mutableFloatStateOf(0f) }
     var puedeVolver by remember { mutableStateOf(false) }
     var editando by remember { mutableStateOf(false) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val ajustes = remember { com.santyramos.mirador.data.Settings(contexto) }
+    val sitios by ajustes.sitios.collectAsState(initial = emptyList())
+    var remotas by remember { mutableStateOf<List<String>>(emptyList()) }
     val web = remember {
         WebView(contexto).apply {
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -110,7 +117,11 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
                 return esquema != "http" && esquema != "https"
             }
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) { actual = url; if (!editando) direccion = url }
-            override fun onPageFinished(view: WebView, url: String) { actual = url; puedeVolver = view.canGoBack(); if (!editando) direccion = url }
+            override fun onPageFinished(view: WebView, url: String) {
+                actual = url; puedeVolver = view.canGoBack(); if (!editando) direccion = url
+                // Historial del navegador (solo en este celular).
+                if (url.startsWith("http")) scope.launch { ajustes.agregarSitio(view.title.orEmpty(), url) }
+            }
         }
         web.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, newProgress: Int) { progreso = newProgress / 100f }
@@ -118,7 +129,17 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
         onDispose { web.stopLoading(); web.destroy() }
     }
     androidx.compose.runtime.LaunchedEffect(urlInicial) { urlInicial?.let { web.loadUrl(it) } }
-    BackHandler { if (web.canGoBack()) web.goBack() else onAtras() }
+    BackHandler { if (editando) foco.clearFocus() else if (web.canGoBack()) web.goBack() else onAtras() }
+
+    // Sugerencias: páginas que ya visitaste que coinciden y búsquedas que propone DuckDuckGo.
+    val textoEscrito = if (editando && direccion != actual) direccion else ""
+    androidx.compose.runtime.LaunchedEffect(textoEscrito) {
+        if (textoEscrito.isBlank() || textoEscrito.startsWith("http")) { remotas = emptyList(); return@LaunchedEffect }
+        kotlinx.coroutines.delay(220)
+        remotas = SugerenciasWeb.duckduckgo(textoEscrito)
+    }
+    val sugerencias = remember(textoEscrito, sitios, remotas) { SugerenciasWeb.combinar(textoEscrito, sitios, remotas) }
+    fun ir(texto: String) { foco.clearFocus(); if (texto.isNotBlank()) web.loadUrl(aDireccion(texto)) }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -134,7 +155,7 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
                         focusedBorderColor = Acento, unfocusedBorderColor = Paleta.Linea, cursorColor = Acento,
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go, keyboardType = KeyboardType.Uri),
-                    keyboardActions = KeyboardActions(onGo = { foco.clearFocus(); if (direccion.isNotBlank()) web.loadUrl(aDireccion(direccion)) }),
+                    keyboardActions = KeyboardActions(onGo = { ir(direccion) }),
                 )
                 BotonIcono(if (progreso in 0.01f..0.99f) Icons.Outlined.Close else Icons.Outlined.Refresh, "Recargar", { if (progreso in 0.01f..0.99f) web.stopLoading() else web.reload() })
             }
@@ -154,7 +175,23 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
                     }
                 }
             }
-            if (actual != null) AndroidView(factory = { web }, modifier = Modifier.fillMaxSize())
+            Box(Modifier.fillMaxSize()) {
+                if (actual != null) AndroidView(factory = { web }, modifier = Modifier.fillMaxSize())
+                if (editando && sugerencias.isNotEmpty()) {
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                    ) {
+                        com.santyramos.mirador.ui.listaSugerencias(
+                            sugerencias,
+                            onElegir = { ir(it.url ?: it.texto) },
+                            onCompletar = { direccion = (it.url ?: it.texto) },
+                            onQuitar = { s -> scope.launch { s.url?.let { ajustes.quitarSitio(it) } } },
+                            onBorrarTodo = { scope.launch { ajustes.borrarSitios() } },
+                        )
+                    }
+                }
+            }
         }
 
         val enlace = actual
@@ -166,5 +203,28 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
                 BotonPrimario("Descargar", { onDescargar(web.url ?: enlace) }, icono = Icons.Outlined.FileDownload)
             }
         }
+    }
+}
+
+/** Sugerencias del navegador: historial de páginas + autocompletado de DuckDuckGo (el buscador que ya usa). */
+internal object SugerenciasWeb {
+    fun combinar(texto: String, sitios: List<com.santyramos.mirador.data.SitioVisitado>, remotas: List<String>): List<com.santyramos.mirador.ui.Sugerencia> {
+        val t = texto.trim()
+        val coinciden = (if (t.isEmpty()) sitios.take(12) else sitios.filter { it.titulo.contains(t, true) || it.url.contains(t, true) }.take(4))
+            .map { com.santyramos.mirador.ui.Sugerencia(it.titulo, com.santyramos.mirador.ui.Sugerencia.Tipo.SITIO, detalle = it.url, url = it.url) }
+        if (t.isEmpty()) return coinciden
+        val vistas = coinciden.map { it.texto.lowercase() }.toMutableSet()
+        return coinciden + remotas.filter { vistas.add(it.lowercase()) }.take(8)
+            .map { com.santyramos.mirador.ui.Sugerencia(it, com.santyramos.mirador.ui.Sugerencia.Tipo.SUGERIDA) }
+    }
+
+    suspend fun duckduckgo(texto: String): List<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            val url = "https://duckduckgo.com/ac/?type=list&q=" + java.net.URLEncoder.encode(texto, "UTF-8")
+            com.santyramos.mirador.net.Http.client.newCall(okhttp3.Request.Builder().url(url).build()).execute().use { r ->
+                val arr = kotlinx.serialization.json.Json.parseToJsonElement(r.body.string()) as kotlinx.serialization.json.JsonArray
+                (arr.getOrNull(1) as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
+            }
+        }.getOrDefault(emptyList())
     }
 }

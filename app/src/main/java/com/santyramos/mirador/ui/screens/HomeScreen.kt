@@ -61,6 +61,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -112,7 +113,12 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val contextoHome = androidx.compose.ui.platform.LocalContext.current
-    val modoSinConexion by remember { com.santyramos.mirador.data.Settings(contextoHome).sinConexion }.collectAsState(initial = false)
+    val ajustesHome = remember { com.santyramos.mirador.data.Settings(contextoHome) }
+    val modoSinConexion by ajustesHome.sinConexion.collectAsState(initial = false)
+    // Sugerencias: tu historial de búsquedas y lo que propone YouTube mientras escribes.
+    val historialBusquedas by ajustesHome.busquedas.collectAsState(initial = emptyList())
+    var enfocado by remember { mutableStateOf(false) }
+    var remotas by remember { mutableStateOf<List<String>>(emptyList()) }
     val scope = rememberCoroutineScope()
     var consulta by rememberSaveable { mutableStateOf("") }
     var filtro by rememberSaveable { mutableStateOf(FiltroBusqueda.TODO) }
@@ -131,6 +137,7 @@ fun HomeScreen(
         val q = consulta.trim()
         if (q.isEmpty()) return
         foco.clearFocus()
+        scope.launch { ajustesHome.agregarBusqueda(q) }
         trabajo?.cancel()
         trabajo = scope.launch {
             cargando = true; error = null; resultados.clear(); siguiente = null
@@ -144,6 +151,16 @@ fun HomeScreen(
             } finally { cargando = false }
         }
     }
+
+    LaunchedEffect(consulta, enfocado) {
+        if (!enfocado || consulta.isBlank()) { remotas = emptyList(); return@LaunchedEffect }
+        kotlinx.coroutines.delay(220) // se espera a que dejes de escribir
+        remotas = runCatching { Youtube.sugerencias(consulta.trim()) }.getOrDefault(emptyList())
+    }
+    val sugerencias = remember(consulta, historialBusquedas, remotas) {
+        com.santyramos.mirador.ui.Sugerir.combinar(consulta, historialBusquedas, remotas)
+    }
+    androidx.activity.compose.BackHandler(enabled = enfocado) { foco.clearFocus() }
 
     // Búsquedas pedidas desde fuera (canción de Spotify → YouTube).
     val pedida = Entrada.buscar
@@ -217,7 +234,7 @@ fun HomeScreen(
         // ---- Buscador ----
         OutlinedTextField(
             value = consulta, onValueChange = { consulta = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp).focusRequester(pedirFoco).semantics { contentDescription = "Buscar en YouTube" },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp).focusRequester(pedirFoco).onFocusChanged { enfocado = it.isFocused }.semantics { contentDescription = "Buscar en YouTube" },
             placeholder = { Text("Buscar videos, canales o listas…", color = Paleta.Texto3) },
             leadingIcon = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             trailingIcon = { if (consulta.isNotEmpty()) IconButton(onClick = { consulta = "" }) { Icon(Icons.Filled.Clear, "Borrar") } },
@@ -243,6 +260,15 @@ fun HomeScreen(
         Box(Modifier.fillMaxSize()) {
             val visibles = resultados.filter { duracion.acepta(it) }
             when {
+                enfocado && sugerencias.isNotEmpty() -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
+                    com.santyramos.mirador.ui.listaSugerencias(
+                        sugerencias,
+                        onElegir = { consulta = it.texto; buscar() },
+                        onCompletar = { consulta = it.texto + " " },
+                        onQuitar = { s -> scope.launch { ajustesHome.quitarBusqueda(s.texto) } },
+                        onBorrarTodo = { scope.launch { ajustesHome.borrarBusquedas() } },
+                    )
+                }
                 error != null -> Column(Modifier.align(Alignment.Center).padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
                     BotonSecundario("Reintentar", { buscar() })

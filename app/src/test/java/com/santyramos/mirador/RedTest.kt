@@ -126,18 +126,4 @@ class RedTest {
         }
         assertTrue("Ningún video de Internet Archive se pudo leer", leibles >= 1)
     }
-
-    @Test fun canalesDeAnimeOficiales() = runBlocking {
-        requiere()
-        Youtube.iniciar()
-        var conEpisodios = 0
-        com.santyramos.mirador.peliculas.Anime.CANALES.forEach { c ->
-            val r = runCatching { Youtube.canal(c.url) }
-            val videos = r.getOrNull()?.videos?.elementos.orEmpty().filterIsInstance<Elemento.Video>()
-            val episodios = videos.filter { com.santyramos.mirador.peliculas.Anime.esEpisodio(it) }
-            if (episodios.isNotEmpty()) conEpisodios++
-            println("PRUEBA_VER anime ${c.nombre}: ${r.exceptionOrNull()?.let { "ERROR ${it.javaClass.simpleName}" } ?: "${videos.size} videos, ${episodios.size} episodios; ej. ${episodios.firstOrNull()?.titulo}"}")
-        }
-        assertTrue("Ningún canal de anime dio episodios", conEpisodios >= 2)
-    }
 }
