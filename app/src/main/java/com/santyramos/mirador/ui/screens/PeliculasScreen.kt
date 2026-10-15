@@ -83,10 +83,16 @@ import kotlinx.coroutines.launch
 private sealed interface FuentePeli {
     data class Archivo(val categoria: CategoriaPeli) : FuentePeli
     data object YouTube : FuentePeli
+    data object Anime : FuentePeli
 }
 
-private val FUENTES: List<FuentePeli> = CategoriaPeli.entries.map { FuentePeli.Archivo(it) } + FuentePeli.YouTube
-private fun FuentePeli.etiqueta() = when (this) { is FuentePeli.Archivo -> categoria.etiqueta; FuentePeli.YouTube -> "Gratis en YouTube" }
+private val FUENTES: List<FuentePeli> = listOf(FuentePeli.Archivo(CategoriaPeli.POPULARES), FuentePeli.Anime) +
+    CategoriaPeli.entries.drop(1).map { FuentePeli.Archivo(it) } + FuentePeli.YouTube
+private fun FuentePeli.etiqueta() = when (this) {
+    is FuentePeli.Archivo -> categoria.etiqueta
+    FuentePeli.YouTube -> "Gratis en YouTube"
+    FuentePeli.Anime -> "Anime"
+}
 
 /** Elemento que suena en el reproductor para una película de Internet Archive. */
 internal fun Pelicula.aCola(urlVideo: String) = ElementoCola(
@@ -125,6 +131,10 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
                     val nuevas = Archivo.buscar(fuente.categoria, pagina, buscada.ifBlank { null })
                     peliculas.addAll(nuevas.filter { n -> peliculas.none { it.id == n.id } })
                     hayMas = nuevas.size >= 40; pagina++
+                }
+                FuentePeli.Anime -> {
+                    videos.addAll(if (buscada.isBlank()) com.santyramos.mirador.peliculas.Anime.recientes() else com.santyramos.mirador.peliculas.Anime.buscar(buscada))
+                    hayMas = false
                 }
                 FuentePeli.YouTube -> {
                     val q = (buscada.ifBlank { "" } + " película completa en español").trim()
@@ -173,10 +183,15 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
                     BotonSecundario("Reintentar", { scope.launch { cargar(reiniciar = true) } })
                 }
             }
+            vacio && fuente == FuentePeli.Anime -> Column(Modifier.fillMaxSize()) {
+                AvisoAnime()
+                EstadoVacio(Icons.Outlined.Movie, "No encontré episodios", "Prueba buscando el nombre del anime.")
+            }
             vacio -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 EstadoVacio(Icons.Outlined.Movie, "No encontré películas", "Prueba con otra palabra o con otra categoría.")
             }
-            fuente == FuentePeli.YouTube -> androidx.compose.foundation.lazy.LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+            fuente == FuentePeli.YouTube || fuente == FuentePeli.Anime -> androidx.compose.foundation.lazy.LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+                if (fuente == FuentePeli.Anime) item { AvisoAnime() }
                 items(videos, key = { it.url }) { v -> FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
             }
             else -> LazyVerticalGrid(
@@ -257,5 +272,28 @@ private fun DetallePelicula(p: Pelicula, onCerrar: () -> Unit, onDescargar: () -
             BotonSecundario("Descargar", onDescargar, Modifier.weight(1f), icono = Icons.Outlined.FileDownload)
         }
         if (buscando) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.primary) }
+    }
+}
+
+/** Explica de dónde sale el anime y ofrece abrir Crunchyroll (su contenido está protegido y solo se ve en su app). */
+@Composable
+private fun AvisoAnime() {
+    val contexto = LocalContext.current
+    androidx.compose.material3.Surface(
+        shape = RoundedCornerShape(16.dp), color = Paleta.S1, border = androidx.compose.foundation.BorderStroke(1.dp, Paleta.Linea),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Episodios gratis de canales oficiales", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "Crunchyroll, Muse Asia, Gundam y otros estudios suben episodios completos a YouTube. Algunos solo se ven en ciertos países.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            androidx.compose.material3.TextButton(onClick = {
+                val app = contexto.packageManager.getLaunchIntentForPackage("com.crunchyroll.crunchyroid")
+                val i = app ?: android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://www.crunchyroll.com/es"))
+                runCatching { contexto.startActivity(i) }
+            }) { Text("¿Tienes Crunchyroll? Ábrelo aquí", color = MaterialTheme.colorScheme.primary) }
+        }
     }
 }
