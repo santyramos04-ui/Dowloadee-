@@ -27,7 +27,7 @@ object Anime {
 
     /** Programas que no son episodios aunque duren mucho (podcasts, radio, música, tráileres, entrevistas). */
     private val NO_EPISODIO = Regex(
-        "podcast|radio|m[uú]sica|music|soundtrack|\\bost\\b|tr[aá]iler|trailer|\\bpv\\b|punto fandom|entrevista|interview|reaction|reacci[oó]n|relax|estudiar|study",
+        "podcast|radio|m[uú]sica|music|soundtrack|\\bost\\b|tr[aá]iler|trailer|\\bpv\\b|punto fandom|entrevista|interview|reaction|reacci[oó]n|relax|estudiar|study|\\bchat\\b|recommendations|recomendaciones",
         RegexOption.IGNORE_CASE,
     )
 

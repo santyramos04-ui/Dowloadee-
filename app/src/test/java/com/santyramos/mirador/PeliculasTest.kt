@@ -45,5 +45,6 @@ class PeliculasTest {
         assertEquals(false, a.esEpisodio(video("Gundam SEED trailer", 2 * 60)))
         assertEquals(false, a.esEpisodio(video("Anime Fans Are Spoiled Now | Retrocrush Podcast Ep 90", 60 * 60)))
         assertEquals(false, a.esEpisodio(video("Música de Pokémon | 1 h para relajarse y estudiar", 60 * 60)))
+        assertEquals(false, a.esEpisodio(video("Deep Cut Anime Recommendations with A1 | RetroCrush Chat Ep 7", 50 * 60)))
     }
 }
