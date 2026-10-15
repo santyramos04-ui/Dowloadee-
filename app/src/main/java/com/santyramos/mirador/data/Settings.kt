@@ -12,6 +12,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 
 private val Context.dataStore by preferencesDataStore(name = "ajustes")
 
@@ -63,6 +65,8 @@ class Settings(private val context: Context) {
         val tema = stringPreferencesKey("tema")
         val sinConexion = booleanPreferencesKey("modo_sin_conexion")
         val soloAudio = booleanPreferencesKey("solo_audio")
+        val busquedas = stringPreferencesKey("historial_busquedas")
+        val sitios = stringPreferencesKey("historial_sitios")
     }
 
     val simultaneas: Flow<Int> = ds.data.map { it[K.simultaneas] ?: 2 }
@@ -92,6 +96,28 @@ class Settings(private val context: Context) {
     suspend fun setTema(t: Tema) = ds.edit { it[K.tema] = t.name }
     suspend fun setSinConexion(v: Boolean) = ds.edit { it[K.sinConexion] = v }
     suspend fun setSoloAudio(v: Boolean) = ds.edit { it[K.soloAudio] = v }
+
+    // ---------- Historial del buscador y del navegador (solo en este celular) ----------
+    private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+    private fun lista(t: String?): List<String> = t?.let { runCatching { json.decodeFromString<List<String>>(it) }.getOrNull() }.orEmpty()
+    private fun sitiosDe(t: String?): List<SitioVisitado> = t?.let { runCatching { json.decodeFromString<List<SitioVisitado>>(it) }.getOrNull() }.orEmpty()
+
+    /** Lo que buscaste en Inicio, lo más reciente primero. */
+    val busquedas: Flow<List<String>> = ds.data.map { lista(it[K.busquedas]) }
+    suspend fun agregarBusqueda(t: String) = ds.edit { p ->
+        p[K.busquedas] = json.encodeToString(Historial.agregar(lista(p[K.busquedas]), t, MAX_BUSQUEDAS))
+    }
+    suspend fun quitarBusqueda(t: String) = ds.edit { p -> p[K.busquedas] = json.encodeToString(lista(p[K.busquedas]).filterNot { it.equals(t, true) }) }
+    suspend fun borrarBusquedas() = ds.edit { it.remove(K.busquedas) }
+
+    /** Páginas que abriste en el navegador interno, la más reciente primero. */
+    val sitios: Flow<List<SitioVisitado>> = ds.data.map { sitiosDe(it[K.sitios]) }
+    suspend fun agregarSitio(titulo: String, url: String) = ds.edit { p ->
+        val nuevos = (listOf(SitioVisitado(titulo.ifBlank { url }, url)) + sitiosDe(p[K.sitios]).filterNot { it.url == url }).take(MAX_SITIOS)
+        p[K.sitios] = json.encodeToString(nuevos)
+    }
+    suspend fun quitarSitio(url: String) = ds.edit { p -> p[K.sitios] = json.encodeToString(sitiosDe(p[K.sitios]).filterNot { it.url == url }) }
+    suspend fun borrarSitios() = ds.edit { it.remove(K.sitios) }
     suspend fun setUsarCookies(v: Boolean) = ds.edit { it[K.usarCookies] = v }
 
     suspend fun ytdlpUltimoIntento(): Long = ds.data.first()[K.ytdlpUltimoIntento] ?: 0L
@@ -131,6 +157,24 @@ class Settings(private val context: Context) {
         m["sinConexion"]?.let { p[K.sinConexion] = it == "true" }
     }
 
+    companion object {
+        const val MAX_BUSQUEDAS = 30
+        const val MAX_SITIOS = 50
+    }
+
     @Suppress("unused")
     suspend fun todo(): Preferences = ds.data.first()
+}
+
+@kotlinx.serialization.Serializable
+data class SitioVisitado(val titulo: String, val url: String)
+
+/** Reglas del historial (sin estado, para poder probarlas). */
+object Historial {
+    /** Pone [t] de primero, sin repetir (sin importar mayúsculas) y con un máximo de [max]. */
+    fun agregar(lista: List<String>, t: String, max: Int): List<String> {
+        val limpio = t.trim()
+        if (limpio.isEmpty()) return lista
+        return (listOf(limpio) + lista.filterNot { it.equals(limpio, ignoreCase = true) }).take(max)
+    }
 }

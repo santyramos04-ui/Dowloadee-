@@ -61,7 +61,7 @@ fun FilaElemento(
                 color = if (sonando) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (e.esLocal) Icon(Icons.Outlined.DownloadDone, "Descargado", Modifier.size(14.dp), tint = Paleta.Texto3)
+                if (e.esDescarga) Icon(Icons.Outlined.DownloadDone, "Descargado", Modifier.size(14.dp), tint = Paleta.Texto3)
                 Text(e.autor.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }

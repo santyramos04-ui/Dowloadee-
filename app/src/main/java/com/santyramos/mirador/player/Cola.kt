@@ -12,8 +12,13 @@ data class ElementoCola(
     val duracionSeg: Long = -1,
     val archivoUri: String? = null,
     val archivoMime: String? = null,
+    /** De dónde viene si no es una descarga tuya (ej. «Internet Archive»); el archivo se reproduce directo de esa dirección. */
+    val origen: String? = null,
 ) {
+    /** Se reproduce desde [archivoUri] (descarga o dirección directa), no con el lector de YouTube. */
     val esLocal: Boolean get() = archivoUri != null
+    /** Es un archivo que descargaste (funciona sin internet). */
+    val esDescarga: Boolean get() = archivoUri != null && origen == null
     val esAudio: Boolean get() = archivoMime?.startsWith("audio/") == true
 }
 

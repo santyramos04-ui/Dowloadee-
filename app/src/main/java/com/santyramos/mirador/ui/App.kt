@@ -10,10 +10,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Subscriptions
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.animation.AnimatedVisibility
@@ -132,6 +134,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                     NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
                         val items = listOf(
                             Triple("Inicio", Icons.Filled.Home to Icons.Outlined.Home, 0),
+                            Triple("Películas", Icons.Filled.Movie to Icons.Outlined.Movie, 4),
                             Triple("Suscripciones", Icons.Filled.Subscriptions to Icons.Outlined.Subscriptions, 1),
                             Triple("Descargas", Icons.Outlined.Download to Icons.Outlined.Download, 2),
                             Triple("Biblioteca", Icons.Filled.VideoLibrary to Icons.Outlined.VideoLibrary, 3),
@@ -195,6 +198,10 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                                 onAbrirCanal = { pila.add(Destino.Canal(it)) }, onBuscar = { pestana = 0 },
                             )
                             2 -> DownloadsScreen(onSinConexion = { pila.add(Destino.SinConexion) })
+                            4 -> com.santyramos.mirador.ui.screens.PeliculasScreen(
+                                onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
+                                onAbrirReproductor = { reproductorAbierto = true },
+                            )
                             else -> BibliotecaScreen(
                                 onAjustes = { pila.add(Destino.Ajustes) }, onHistorial = { pila.add(Destino.Historial) },
                                 onGuardados = { pila.add(Destino.Guardados) }, onListas = { pila.add(Destino.Listas) },
