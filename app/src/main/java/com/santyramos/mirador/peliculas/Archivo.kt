@@ -69,7 +69,8 @@ object Archivo {
         val filtro = if (textoBusqueda.isNullOrBlank()) categoria.consulta
         else "(${textoBusqueda.replace("\"", "")}) AND collection:(feature_films OR classic_tv OR classic_cartoons OR SciFi_Horror)"
         val url = "https://archive.org/advancedsearch.php".toHttpUrl().newBuilder()
-            .addQueryParameter("q", "$filtro AND mediatype:(movies)")
+            // Solo lo que tiene un video MP4 (h.264/MPEG4): lo demás (Ogg, MPEG2, AVI) no se reproduce bien en el celular.
+            .addQueryParameter("q", "$filtro AND mediatype:(movies) AND format:(h.264 OR MPEG4 OR \"512Kb MPEG4\")")
             .addQueryParameter("fl[]", "identifier").addQueryParameter("fl[]", "title")
             .addQueryParameter("fl[]", "year").addQueryParameter("fl[]", "description")
             .addQueryParameter("sort[]", "downloads desc")
@@ -90,7 +91,7 @@ object Archivo {
             val nombre = texto(o["name"]) ?: return@mapNotNull null
             val formato = texto(o["format"]).orEmpty()
             F(nombre, formato, texto(o["size"])?.toLongOrNull() ?: 0L)
-        }.filter { it.nombre.endsWith(".mp4", true) && !it.formato.contains("Thumb", true) }
+        }.filter { (it.nombre.endsWith(".mp4", true) || it.nombre.endsWith(".m4v", true)) && !it.formato.contains("Thumb", true) }
         val elegido = candidatos.firstOrNull { it.formato.contains("h.264", true) && !it.formato.contains("HD", true) }
             ?: candidatos.firstOrNull { it.formato.contains("h.264", true) }
             ?: candidatos.maxByOrNull { it.tamano }
