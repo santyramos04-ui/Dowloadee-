@@ -289,6 +289,8 @@ object VideoController {
         player.repeatMode = if (_repetir.value == Repetir.UNA) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
     }
 
+    fun establecerRepetir(r: Repetir) { while (_repetir.value != r) cambiarRepetir() }
+
     fun cambiarAleatorio() {
         if (!_aleatorio.value) {
             ordenOriginal = _cola.value
@@ -308,7 +310,7 @@ object VideoController {
             0 -> _temporizador.value = Temporizador(alTerminar = true)
             else -> {
                 val fin = System.currentTimeMillis() + minutos * 60_000L
-                _temporizador.value = Temporizador(finMs = fin)
+                _temporizador.value = Temporizador(finMs = fin, minutos = minutos)
                 trabajoTemporizador = scope.launch {
                     delay(fin - System.currentTimeMillis())
                     player.pause()

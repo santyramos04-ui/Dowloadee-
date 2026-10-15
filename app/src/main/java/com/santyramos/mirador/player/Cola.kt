@@ -59,7 +59,7 @@ enum class Repetir(val etiqueta: String) { NO("Repetir"), UNA("Repetir una"), TO
 }
 
 /** Temporizador para dormir: a qué hora se pausa, o «al terminar lo que suena». */
-data class Temporizador(val finMs: Long? = null, val alTerminar: Boolean = false)
+data class Temporizador(val finMs: Long? = null, val alTerminar: Boolean = false, val minutos: Int = 0)
 
 /** Une el orden original con la cola actual al quitar el aleatorio: respeta el orden original y deja al final lo nuevo. */
 fun restaurarOrden(original: List<ElementoCola>, actual: List<ElementoCola>): List<ElementoCola> {

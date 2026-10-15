@@ -89,6 +89,8 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.automirrored.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.DownloadDone
 import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Cast
 import androidx.compose.material.icons.outlined.Lock
@@ -141,13 +143,13 @@ fun PlayerScreen(
     var verCola by remember { mutableStateOf(false) }
     val cola by VideoController.cola.collectAsState()
     if (verCola) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verCola = false }) { com.santyramos.mirador.ui.ColaSheetContent { verCola = false } }
-    var verTemporizador by remember { mutableStateOf(false) }
+    var verMas by remember { mutableStateOf(false) }
     var verTv by remember { mutableStateOf(false) }
     if (verTv) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verTv = false }) { com.santyramos.mirador.ui.TvSheetContent { verTv = false } }
     val enTv by com.santyramos.mirador.tv.Tv.enTv.collectAsState()
     // Candado: con la pantalla bloqueada, los toques no hacen nada (ni pausar, ni gestos, ni botones).
     var bloqueado by remember { mutableStateOf(false) }
-    if (verTemporizador) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verTemporizador = false }) { TemporizadorSheetContent { verTemporizador = false } }
+    if (verMas) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verMas = false }) { OpcionesSheetContent { verMas = false } }
 
     // Al abrir el reproductor: se permite PiP; al cerrar, se restablece todo.
     DisposableEffect(Unit) {
@@ -426,9 +428,7 @@ fun PlayerScreen(
                                 Icon(if (v.origen == null) Icons.Outlined.DownloadDone else Icons.Outlined.Movie, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                                 Text(v.origen ?: "Desde tus descargas · sin conexión", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                             }
-                            FilaOpciones(local = true, onCola = { verCola = true }, onTemporizador = { verTemporizador = true })
-                            val auto by VideoController.autoSiguiente.collectAsState()
-                            com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con lo que hay en la cola")
+                            BarraAcciones(local = true, onCola = { verCola = true }, onMas = { verMas = true })
                             TextButton(onClick = { VideoController.cerrar(); onMinimizar() }) { Text("Cerrar reproductor", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         }
                     }
@@ -470,21 +470,25 @@ fun PlayerScreen(
                                     )
                                 }
                             }
-                            // Acciones
-                            BotonPrimario("Descargar", { onDescargar(info.url) }, Modifier.fillMaxWidth(), icono = Icons.Outlined.FileDownload)
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                                val guardar = com.santyramos.mirador.ui.LocalGuardar.current
-                                BotonSecundario("Guardar", {
-                                    guardar(Elemento.Video(info.name.orEmpty(), info.url, info.thumbnails.bestUrl(), info.uploaderName, info.uploaderUrl, info.duration, info.viewCount, info.textualUploadDate, false, false))
-                                }, Modifier.weight(1f), icono = Icons.Outlined.BookmarkBorder)
-                                BotonSecundario("Compartir", {
-                                    contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.url), "Compartir enlace"))
-                                }, Modifier.weight(1f), icono = Icons.Outlined.Share)
+                            // Acciones: una sola fila (Descargar es la principal); lo de uso ocasional va en «Más».
+                            val guardar = com.santyramos.mirador.ui.LocalGuardar.current
+                            BarraAcciones(
+                                local = false,
+                                onDescargar = { onDescargar(info.url) },
+                                onGuardar = { guardar(Elemento.Video(info.name.orEmpty(), info.url, info.thumbnails.bestUrl(), info.uploaderName, info.uploaderUrl, info.duration, info.viewCount, info.textualUploadDate, false, false)) },
+                                onCompartir = { contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, info.url), "Compartir enlace")) },
+                                onCola = { verCola = true }, onMas = { verMas = true },
+                            )
+                            Surface(
+                                onClick = { verComentarios = true }, shape = RoundedCornerShape(14.dp), color = Paleta.S1,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Paleta.Linea), modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Outlined.ChatBubbleOutline, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Comentarios", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = Paleta.Texto3)
+                                }
                             }
-                            FilaOpciones(local = false, onCola = { verCola = true }, onTemporizador = { verTemporizador = true })
-                            val auto by VideoController.autoSiguiente.collectAsState()
-                            com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con la cola o el siguiente video")
-                            BotonSecundario("Ver comentarios", { verComentarios = true }, Modifier.fillMaxWidth(), icono = Icons.Outlined.ChatBubbleOutline)
                             val desc = Youtube.limpiarHtml(info.description?.content.orEmpty())
                             if (desc.isNotBlank()) {
                                 Text(
@@ -557,45 +561,80 @@ private fun androidx.compose.foundation.lazy.LazyListScope.aContinuacion(cola: L
     }
 }
 
-/** Solo audio, Repetir, Aleatorio, Temporizador y Cola. */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+/**
+ * Fila de acciones del reproductor (se desliza de lado si no cabe). Descargar es la acción principal;
+ * Repetir, Aleatorio, Temporizador y Reproducción automática viven en «Más» porque se usan poco.
+ */
 @Composable
-private fun FilaOpciones(local: Boolean, onCola: () -> Unit, onTemporizador: () -> Unit) {
+private fun BarraAcciones(
+    local: Boolean,
+    onCola: () -> Unit,
+    onMas: () -> Unit,
+    onDescargar: (() -> Unit)? = null,
+    onGuardar: (() -> Unit)? = null,
+    onCompartir: (() -> Unit)? = null,
+) {
     val soloAudio by VideoController.soloAudio.collectAsState()
+    val cola by VideoController.cola.collectAsState()
     val repetir by VideoController.repetir.collectAsState()
     val aleatorio by VideoController.aleatorio.collectAsState()
     val temporizador by VideoController.temporizador.collectAsState()
-    val cola by VideoController.cola.collectAsState()
-    // El tiempo que queda del temporizador se refresca cada 20 s.
-    var ahora by remember { mutableStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(temporizador) { while (temporizador?.finMs != null) { ahora = System.currentTimeMillis(); delay(20_000) } }
-    val textoTemporizador = when {
-        temporizador?.alTerminar == true -> "Al terminar"
-        temporizador?.finMs != null -> "${((temporizador!!.finMs!! - ahora) / 60_000 + 1).coerceAtLeast(1)} min"
-        else -> "Temporizador"
-    }
-    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (!local) com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Headphones, "Solo audio", soloAudio, { VideoController.cambiarSoloAudio(!soloAudio) })
-        com.santyramos.mirador.ui.ChipOpcion(
-            if (repetir == com.santyramos.mirador.player.Repetir.UNA) Icons.Outlined.RepeatOne else Icons.Outlined.Repeat,
-            repetir.etiqueta, repetir != com.santyramos.mirador.player.Repetir.NO, { VideoController.cambiarRepetir() },
-        )
-        com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Shuffle, "Aleatorio", aleatorio, { VideoController.cambiarAleatorio() })
-        com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Timer, textoTemporizador, temporizador != null, onTemporizador)
-        com.santyramos.mirador.ui.ChipOpcion(Icons.AutoMirrored.Outlined.QueueMusic, if (cola.isEmpty()) "Cola" else "Cola (${cola.size})", false, onCola)
+    val masActivo = repetir != com.santyramos.mirador.player.Repetir.NO || aleatorio || temporizador != null
+    androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (onDescargar != null) item {
+            Surface(onClick = onDescargar, shape = RoundedCornerShape(14.dp), color = Paleta.Relleno, modifier = Modifier.height(40.dp)) {
+                Row(Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.FileDownload, null, Modifier.size(18.dp), tint = Paleta.SobreRelleno)
+                    Text("Descargar", style = MaterialTheme.typography.labelMedium, color = Paleta.SobreRelleno, modifier = Modifier.padding(start = 6.dp))
+                }
+            }
+        }
+        if (onGuardar != null) item { com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.BookmarkBorder, "Guardar", false, onGuardar) }
+        if (onCompartir != null) item { com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Share, "Compartir", false, onCompartir) }
+        if (!local) item { com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Headphones, "Solo audio", soloAudio, { VideoController.cambiarSoloAudio(!soloAudio) }) }
+        item { com.santyramos.mirador.ui.ChipOpcion(Icons.AutoMirrored.Outlined.QueueMusic, if (cola.isEmpty()) "Cola" else "Cola (${cola.size})", false, onCola) }
+        item { com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.MoreHoriz, "Más", masActivo, onMas) }
     }
 }
 
-/** Temporizador para dormir: pausa sola después de un tiempo. */
+/** «Más»: Repetir, Aleatorio, Reproducción automática y Temporizador, todo en una hoja. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-private fun TemporizadorSheetContent(onCerrar: () -> Unit) {
-    val actual by VideoController.temporizador.collectAsState()
-    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Temporizador", style = MaterialTheme.typography.titleLarge)
-        Text("La reproducción se pausa sola. Ideal para dormir.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        listOf("15 minutos" to 15, "30 minutos" to 30, "1 hora" to 60, "Al terminar lo que suena" to 0).forEach { (texto, min) ->
-            com.santyramos.mirador.ui.OpcionTemporizador(texto, false) { VideoController.programarTemporizador(min); onCerrar() }
+private fun OpcionesSheetContent(onCerrar: () -> Unit) {
+    val repetir by VideoController.repetir.collectAsState()
+    val aleatorio by VideoController.aleatorio.collectAsState()
+    val auto by VideoController.autoSiguiente.collectAsState()
+    val temporizador by VideoController.temporizador.collectAsState()
+    // El tiempo que queda del temporizador se refresca cada 20 s.
+    var ahora by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(temporizador) { while (temporizador?.finMs != null) { ahora = System.currentTimeMillis(); delay(20_000) } }
+    Column(Modifier.fillMaxWidth().padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Opciones de reproducción", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+
+        Text("Repetir", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 20.dp, top = 10.dp))
+        Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.santyramos.mirador.ui.Filtro("No", repetir == com.santyramos.mirador.player.Repetir.NO) { VideoController.establecerRepetir(com.santyramos.mirador.player.Repetir.NO) }
+            com.santyramos.mirador.ui.Filtro("Este video", repetir == com.santyramos.mirador.player.Repetir.UNA) { VideoController.establecerRepetir(com.santyramos.mirador.player.Repetir.UNA) }
+            com.santyramos.mirador.ui.Filtro("Toda la cola", repetir == com.santyramos.mirador.player.Repetir.TODAS) { VideoController.establecerRepetir(com.santyramos.mirador.player.Repetir.TODAS) }
         }
-        if (actual != null) com.santyramos.mirador.ui.OpcionTemporizador("Apagar temporizador", true) { VideoController.programarTemporizador(null); onCerrar() }
+
+        com.santyramos.mirador.ui.FilaInterruptor("Aleatorio", aleatorio, { if (it != aleatorio) VideoController.cambiarAleatorio() }, "Mezcla el orden de la cola")
+        com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con la cola o el siguiente video")
+
+        Text("Temporizador para dormir", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 20.dp, top = 6.dp))
+        androidx.compose.foundation.layout.FlowRow(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.santyramos.mirador.ui.Filtro("Apagado", temporizador == null) { VideoController.programarTemporizador(null) }
+            listOf(15 to "15 min", 30 to "30 min", 60 to "1 hora").forEach { (m, t) ->
+                com.santyramos.mirador.ui.Filtro(t, temporizador?.minutos == m && temporizador?.finMs != null) { VideoController.programarTemporizador(m) }
+            }
+            com.santyramos.mirador.ui.Filtro("Al terminar este video", temporizador?.alTerminar == true) { VideoController.programarTemporizador(0) }
+        }
+        temporizador?.finMs?.let { fin ->
+            Text(
+                "Se pausa en ${((fin - ahora) / 60_000 + 1).coerceAtLeast(1)} min", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 20.dp),
+            )
+        }
+        BotonSecundario("Listo", onCerrar, Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp))
     }
 }
