@@ -34,4 +34,16 @@ class PeliculasTest {
         assertEquals(false, Archivo.esParaAdultos("His Girl Friday"))
         assertEquals(false, Archivo.esParaAdultos("Sussex Story")) // «sex» dentro de otra palabra no cuenta
     }
+
+    private fun video(titulo: String, seg: Long) = com.santyramos.mirador.extractor.Elemento.Video(
+        titulo, "https://youtu.be/x", null, "Gundam Info", null, seg, 0, null, false, false,
+    )
+
+    @Test fun animeSoloEpisodios() {
+        val a = com.santyramos.mirador.peliculas.Anime
+        assertEquals(true, a.esEpisodio(video("Mobile Suit Gundam SEED - Episode 26", 24 * 60)))
+        assertEquals(false, a.esEpisodio(video("Gundam SEED trailer", 2 * 60)))
+        assertEquals(false, a.esEpisodio(video("Anime Fans Are Spoiled Now | Retrocrush Podcast Ep 90", 60 * 60)))
+        assertEquals(false, a.esEpisodio(video("Música de Pokémon | 1 h para relajarse y estudiar", 60 * 60)))
+    }
 }
