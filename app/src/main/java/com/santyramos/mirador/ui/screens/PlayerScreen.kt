@@ -89,6 +89,8 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.automirrored.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.DownloadDone
 import androidx.compose.material.icons.outlined.Movie
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Cast
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.foundation.combinedClickable
@@ -565,6 +567,23 @@ private fun FilaOpciones(local: Boolean, onCola: () -> Unit, onTemporizador: () 
             if (repetir == com.santyramos.mirador.player.Repetir.UNA) Icons.Outlined.RepeatOne else Icons.Outlined.Repeat,
             repetir.etiqueta, repetir != com.santyramos.mirador.player.Repetir.NO, { VideoController.cambiarRepetir() },
         )
+        // Idioma del audio: solo si el video tiene varios (YouTube agrega doblajes automáticos).
+        val v by VideoController.video.collectAsState()
+        val pistas = v?.pistas.orEmpty()
+        if (pistas.size > 1) Box {
+            var menuIdioma by remember { mutableStateOf(false) }
+            val actual = pistas.firstOrNull { it.id == v?.pista } ?: pistas.firstOrNull { it.original } ?: pistas.first()
+            com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Translate, actual.nombre.substringBefore(" ("), v?.pista != null, { menuIdioma = true })
+            DropdownMenu(expanded = menuIdioma, onDismissRequest = { menuIdioma = false }) {
+                pistas.forEach { p ->
+                    DropdownMenuItem(
+                        text = { Text(p.nombre) },
+                        onClick = { menuIdioma = false; VideoController.cambiarPista(p.id) },
+                        trailingIcon = { if (p.id == actual.id) Icon(Icons.Filled.Check, null) },
+                    )
+                }
+            }
+        }
         com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Shuffle, "Aleatorio", aleatorio, { VideoController.cambiarAleatorio() })
         com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Timer, textoTemporizador, temporizador != null, onTemporizador)
         com.santyramos.mirador.ui.ChipOpcion(Icons.AutoMirrored.Outlined.QueueMusic, if (cola.isEmpty()) "Cola" else "Cola (${cola.size})", false, onCola)
