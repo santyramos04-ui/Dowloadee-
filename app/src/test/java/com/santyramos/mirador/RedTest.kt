@@ -140,4 +140,20 @@ class RedTest {
         }
         assertTrue("Ningún canal de anime dio episodios", conEpisodios >= 2)
     }
+
+    /** Exploración temporal: qué otros canales oficiales tienen episodios completos visibles. */
+    @Test fun candidatosAnime() = runBlocking {
+        requiere()
+        Youtube.iniciar()
+        listOf(
+            "@RetroCrush", "@CrunchyrollDubs", "@TOHOanimation", "@TMSAnime", "@ToeiAnimationLatam", "@ToeiAnimationOfficial",
+            "@YuGiOhOfficial", "@PokemonLatAm", "@Pokemon", "@CrunchyrollLA", "@crunchyroll_es", "@AnimeOnegaiOficial",
+            "@VIZMedia", "@DiscotekMedia", "@SentaiFilmworks", "@NetflixAnime", "@AniplexUSA", "@Doraemon", "@KadokawaAnime",
+        ).forEach { h ->
+            val r = runCatching { Youtube.canal("https://www.youtube.com/$h") }
+            val v = r.getOrNull()?.videos?.elementos.orEmpty().filterIsInstance<Elemento.Video>()
+            val ep = v.filter { com.santyramos.mirador.peliculas.Anime.esEpisodio(it) }
+            println("PRUEBA_VER candidato $h: ${r.exceptionOrNull()?.javaClass?.simpleName ?: "${r.getOrNull()?.info?.name} ${v.size} videos, ${ep.size} episodios; ej. ${ep.firstOrNull()?.titulo}"}")
+        }
+    }
 }
