@@ -27,4 +27,11 @@ class PeliculasTest {
         assertEquals("https://archive.org/download/peli/peli_512kb.mp4", Archivo.elegirVideo("peli", cuerpo))
         assertNull(Archivo.elegirVideo("x", """{"files":[{"name":"a.ogv","format":"Ogg Video"}]}"""))
     }
+
+    @Test fun omiteTitulosParaAdultos() {
+        assertEquals(true, Archivo.esParaAdultos("Sex Madness"))
+        assertEquals(true, Archivo.esParaAdultos("Dr. Sex."))
+        assertEquals(false, Archivo.esParaAdultos("His Girl Friday"))
+        assertEquals(false, Archivo.esParaAdultos("Sussex Story")) // «sex» dentro de otra palabra no cuenta
+    }
 }

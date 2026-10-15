@@ -61,8 +61,12 @@ object Archivo {
             val o = d as? JsonObject ?: return@mapNotNull null
             val id = texto(o["identifier"]) ?: return@mapNotNull null
             Pelicula(id, texto(o["title"]) ?: id, texto(o["year"]), limpiar(texto(o["description"])))
-        }
+        }.filterNot { esParaAdultos(it.titulo) }
     }
+
+    /** La app la usan familias: se omiten títulos de temática sexual (hay algunos en las colecciones antiguas). */
+    internal fun esParaAdultos(titulo: String): Boolean =
+        Regex("\\b(sex|sexo|sexual|porn|porno|nude|nudist|erotic|er[oó]tic[ao]|xxx|burlesque|striptease)", RegexOption.IGNORE_CASE).containsMatchIn(titulo)
 
     /** Busca por categoría (y opcionalmente por texto). [pagina] empieza en 1. */
     suspend fun buscar(categoria: CategoriaPeli, pagina: Int = 1, textoBusqueda: String? = null): List<Pelicula> = withContext(Dispatchers.IO) {
