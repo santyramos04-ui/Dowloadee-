@@ -1,5 +1,6 @@
 package com.santyramos.mirador.ui.screens
 
+import com.santyramos.mirador.ui.listaSugerencias
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -261,7 +262,7 @@ fun HomeScreen(
             val visibles = resultados.filter { duracion.acepta(it) }
             when {
                 enfocado && sugerencias.isNotEmpty() -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
-                    com.santyramos.mirador.ui.listaSugerencias(
+                    listaSugerencias(
                         sugerencias,
                         onElegir = { consulta = it.texto; buscar() },
                         onCompletar = { consulta = it.texto + " " },

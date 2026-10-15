@@ -1,5 +1,6 @@
 package com.santyramos.mirador.ui.screens
 
+import com.santyramos.mirador.ui.listaSugerencias
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.view.ViewGroup
@@ -182,7 +183,7 @@ fun NavegadorScreen(urlInicial: String?, onAtras: () -> Unit, onDescargar: (Stri
                         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
                         contentPadding = PaddingValues(bottom = 16.dp),
                     ) {
-                        com.santyramos.mirador.ui.listaSugerencias(
+                        listaSugerencias(
                             sugerencias,
                             onElegir = { ir(it.url ?: it.texto) },
                             onCompletar = { direccion = (it.url ?: it.texto) },
