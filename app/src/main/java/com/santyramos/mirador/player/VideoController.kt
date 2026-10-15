@@ -49,6 +49,9 @@ data class VideoActual(
     val archivoMime: String? = null,
     /** Texto de origen cuando no es una descarga tuya (ej. «Internet Archive»). */
     val origen: String? = null,
+    /** Idiomas de audio del video (vacío si tiene uno solo) y el que suena (null = el original). */
+    val pistas: List<com.santyramos.mirador.extractor.PistaAudio> = emptyList(),
+    val pista: String? = null,
 ) {
     /** Ya está listo para sonar (cargado y sin error). */
     val listo: Boolean get() = !cargando && error == null && (info != null || local)
@@ -286,6 +289,8 @@ object VideoController {
         player.repeatMode = if (_repetir.value == Repetir.UNA) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
     }
 
+    fun establecerRepetir(r: Repetir) { while (_repetir.value != r) cambiarRepetir() }
+
     fun cambiarAleatorio() {
         if (!_aleatorio.value) {
             ordenOriginal = _cola.value
@@ -305,7 +310,7 @@ object VideoController {
             0 -> _temporizador.value = Temporizador(alTerminar = true)
             else -> {
                 val fin = System.currentTimeMillis() + minutos * 60_000L
-                _temporizador.value = Temporizador(finMs = fin)
+                _temporizador.value = Temporizador(finMs = fin, minutos = minutos)
                 trabajoTemporizador = scope.launch {
                     delay(fin - System.currentTimeMillis())
                     player.pause()
@@ -427,9 +432,10 @@ object VideoController {
     }
 
     private suspend fun reproducir(info: StreamInfo, calidad: PlayerQuality, alturas: List<Int>, posMs: Long) {
-        val audioSolo = if (_soloAudio.value) StreamSelector.elegirAudio(info.audioStreams) else null
+        val pista = _video.value?.pista
+        val audioSolo = if (_soloAudio.value) StreamSelector.elegirAudio(info.audioStreams, pista) else null
         val seleccion = if (audioSolo != null) null
-        else StreamSelector.seleccionar(info.videoStreams, info.videoOnlyStreams, info.audioStreams, calidad, conWifi())
+        else StreamSelector.seleccionar(info.videoStreams, info.videoOnlyStreams, info.audioStreams, calidad, conWifi(), pista)
         val fuente = withContext(Dispatchers.IO) {
             if (audioSolo != null) PlayerSources.construirSoloAudio(info, audioSolo) else PlayerSources.construir(info, seleccion)
         }
@@ -444,6 +450,7 @@ object VideoController {
             info = info, cargando = false, error = null, alturas = alturas, calidad = calidad,
             alturaReproduciendo = seleccion?.altura ?: 0,
             titulo = info.name.orEmpty(), autor = info.uploaderName, miniatura = info.thumbnails.bestUrl(), local = false, esAudio = audioSolo != null,
+            pistas = StreamSelector.pistas(info.audioStreams),
         )
     }
 
@@ -462,6 +469,20 @@ object VideoController {
             } catch (e: Throwable) {
                 _video.value = _video.value?.copy(error = ErrorMapper.mensajeVer(e))
             }
+        }
+    }
+
+    /** Cambia el idioma del audio sin perder el punto en el que vas. */
+    fun cambiarPista(id: String) {
+        val v = _video.value ?: return
+        val info = v.info ?: return
+        val pos = player.currentPosition
+        _video.value = v.copy(pista = id)
+        trabajo?.cancel()
+        trabajo = scope.launch {
+            try { reproducir(info, v.calidad, v.alturas, pos) }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Throwable) { _video.value = _video.value?.copy(error = ErrorMapper.mensajeVer(e)) }
         }
     }
 

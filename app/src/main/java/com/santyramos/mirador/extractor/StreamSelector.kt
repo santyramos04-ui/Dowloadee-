@@ -3,7 +3,11 @@ package com.santyramos.mirador.extractor
 import com.santyramos.mirador.data.PlayerQuality
 import org.schabi.newpipe.extractor.MediaFormat
 import org.schabi.newpipe.extractor.stream.AudioStream
+import org.schabi.newpipe.extractor.stream.AudioTrackType
 import org.schabi.newpipe.extractor.stream.VideoStream
+
+/** Un idioma de audio del video. */
+data class PistaAudio(val id: String, val nombre: String, val original: Boolean)
 
 /** Resultado: o un video con audio ya mezclado, o video + audio por separado. */
 data class SeleccionStreams(val video: VideoStream, val audio: AudioStream?) {
@@ -45,12 +49,45 @@ object StreamSelector {
         ).first()
     }
 
-    fun elegirAudio(audios: List<AudioStream>): AudioStream? {
+    /**
+     * YouTube agrega pistas dobladas automáticamente (con IA) a muchos videos. Se prefiere siempre la
+     * ORIGINAL; si el video tiene una sola pista (sin marca) también vale; doblajes y audiodescripción, al final.
+     */
+    internal fun rangoPista(a: AudioStream): Int = when (a.audioTrackType) {
+        AudioTrackType.ORIGINAL -> 3
+        null -> 2
+        AudioTrackType.SECONDARY -> 1
+        AudioTrackType.DUBBED -> 0
+        AudioTrackType.DESCRIPTIVE -> -1
+    }
+
+    /** Mejor audio: la pista pedida (si la hay) o la original; dentro de ella, M4A y mayor calidad. */
+    fun elegirAudio(audios: List<AudioStream>, pistaId: String? = null): AudioStream? {
         if (audios.isEmpty()) return null
-        return audios.sortedWith(
-            compareByDescending<AudioStream> { it.format == MediaFormat.M4A }
+        val base = pistaId?.let { id -> audios.filter { it.audioTrackId == id } }?.takeIf { it.isNotEmpty() } ?: audios
+        return base.sortedWith(
+            compareByDescending<AudioStream> { rangoPista(it) }
+                .thenByDescending { it.format == MediaFormat.M4A }
                 .thenByDescending { it.averageBitrate },
         ).first()
+    }
+
+    /** Idiomas de audio que tiene el video (vacío si tiene uno solo). */
+    fun pistas(audios: List<AudioStream>): List<PistaAudio> {
+        val porId = audios.filter { it.audioTrackId != null }.groupBy { it.audioTrackId!! }
+        if (porId.size < 2) return emptyList()
+        return porId.map { (id, lista) ->
+            val a = lista.first()
+            val idioma = a.audioTrackName?.takeIf { it.isNotBlank() }
+                ?: a.audioLocale?.getDisplayName(java.util.Locale("es"))?.replaceFirstChar { it.uppercase() } ?: id
+            val tipo = when (a.audioTrackType) {
+                AudioTrackType.ORIGINAL -> " (original)"
+                AudioTrackType.DUBBED -> " (doblado)"
+                AudioTrackType.DESCRIPTIVE -> " (audiodescripción)"
+                else -> ""
+            }
+            PistaAudio(id, idioma + tipo, a.audioTrackType == AudioTrackType.ORIGINAL)
+        }.sortedWith(compareByDescending<PistaAudio> { it.original }.thenBy { it.nombre })
     }
 
     fun seleccionar(
@@ -59,11 +96,12 @@ object StreamSelector {
         audios: List<AudioStream>,
         calidad: PlayerQuality,
         conWifi: Boolean,
+        pistaId: String? = null,
     ): SeleccionStreams? {
         val tope = topeAltura(calidad, conWifi)
         val todos = videoMezclado + videoSolo
         val v = elegirVideo(todos, tope) ?: return null
-        return if (v.isVideoOnly) SeleccionStreams(v, elegirAudio(audios)) else SeleccionStreams(v, null)
+        return if (v.isVideoOnly) SeleccionStreams(v, elegirAudio(audios, pistaId)) else SeleccionStreams(v, null)
     }
 
     /** Calidades disponibles para el menú del reproductor (solo las que existen de verdad). */

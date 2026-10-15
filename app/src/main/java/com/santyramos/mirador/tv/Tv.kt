@@ -78,7 +78,7 @@ object Tv {
                     }
                     else -> {
                         val info = v.info ?: throw IllegalStateException("Espera a que el video cargue.")
-                        val alta = if (_altaCalidad.value) kotlinx.coroutines.withContext(Dispatchers.IO) { AltaCalidad.elegir(info) } else null
+                        val alta = if (_altaCalidad.value) kotlinx.coroutines.withContext(Dispatchers.IO) { AltaCalidad.elegir(info, v.pista) } else null
                         val ff = Ffmpeg.preparar(context)
                         if (alta != null && ff != null) {
                             com.santyramos.mirador.download.YtDlpEngine.esperarListo() // ffmpeg ya descomprimido

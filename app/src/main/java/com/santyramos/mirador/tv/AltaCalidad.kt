@@ -23,9 +23,10 @@ object AltaCalidad {
         .filter { (it.codec ?: "").startsWith("avc1") && it.height in 1..ALTURA_MAX }
         .maxWithOrNull(compareBy<VideoStream> { it.height }.thenBy { it.fps }.thenBy { it.bitrate })
 
-    internal fun elegirAudio(audios: List<AudioStream>): AudioStream? = audios
+    internal fun elegirAudio(audios: List<AudioStream>, pistaId: String? = null): AudioStream? = audios
         .filter { it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP && it.format == MediaFormat.M4A }
-        .maxByOrNull { it.averageBitrate }
+        .filter { pistaId == null || it.audioTrackId == pistaId }
+        .maxWithOrNull(compareBy<AudioStream> { com.santyramos.mirador.extractor.StreamSelector.rangoPista(it) }.thenBy { it.averageBitrate })
 
     private fun agente(url: String) = if (url.contains("c=VISIONOS")) YoutubeParsingHelper.getVisionOsUserAgent(null) else NewPipeDownloader.USER_AGENT
 
@@ -40,9 +41,9 @@ object AltaCalidad {
     }
 
     /** Imagen y sonido listos para el servidor del celular, o null si este video no los tiene (se usa el modo compatible). */
-    fun elegir(info: StreamInfo): Pair<Recurso.Remoto, Recurso.Remoto>? {
+    fun elegir(info: StreamInfo, pistaId: String? = null): Pair<Recurso.Remoto, Recurso.Remoto>? {
         val v = elegirVideo(info.videoOnlyStreams) ?: return null
-        val a = elegirAudio(info.audioStreams) ?: return null
+        val a = elegirAudio(info.audioStreams, pistaId) ?: elegirAudio(info.audioStreams) ?: return null
         val tv = runCatching { total(v) }.getOrDefault(-1L)
         val ta = runCatching { total(a) }.getOrDefault(-1L)
         if (tv <= 0 || ta <= 0) return null
