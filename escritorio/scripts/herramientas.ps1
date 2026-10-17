@@ -12,11 +12,12 @@ Write-Host 'yt-dlp…'
 Invoke-WebRequest 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' -OutFile (Join-Path $destino 'yt-dlp.exe')
 
 Write-Host 'ffmpeg…'
-Invoke-WebRequest 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip' -OutFile "$tmp\ffmpeg.zip"
+# Versión «lgpl-shared»: ffmpeg y ffprobe comparten las mismas librerías (pesa mucho menos que dos programas completos).
+Invoke-WebRequest 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-lgpl-shared.zip' -OutFile "$tmp\ffmpeg.zip"
 Expand-Archive "$tmp\ffmpeg.zip" "$tmp\ffmpeg" -Force
-foreach ($b in 'ffmpeg.exe', 'ffprobe.exe') {
-  Copy-Item (Get-ChildItem "$tmp\ffmpeg" -Recurse -Filter $b | Select-Object -First 1).FullName $destino
-}
+$binFf = (Get-ChildItem "$tmp\ffmpeg" -Recurse -Filter ffmpeg.exe | Select-Object -First 1).DirectoryName
+foreach ($b in 'ffmpeg.exe', 'ffprobe.exe') { Copy-Item (Join-Path $binFf $b) $destino }
+Get-ChildItem $binFf -Filter *.dll | ForEach-Object { Copy-Item $_.FullName $destino }
 
 Write-Host 'mpv…'
 $rel = Invoke-RestMethod -Headers $cab 'https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest'

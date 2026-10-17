@@ -35,7 +35,13 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 
-fun main() = application {
+fun main(args: Array<String>) {
+    // Prueba automática del CI sobre la app ya empaquetada (no abre ventanas).
+    args.firstOrNull { it.startsWith("--autoprueba=") }?.let { kotlin.system.exitProcess(Autoprueba.correr(java.io.File(it.substringAfter('=')))) }
+    ventana()
+}
+
+private fun ventana() = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = App.nombre,

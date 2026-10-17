@@ -188,7 +188,7 @@ jobs:
       - name: Compilar, probar y crear el instalador
         run: |
           set +e
-          ./gradlew --no-daemon --console=plain -p escritorio -PversionName="${{ needs.construir.outputs.version }}" test packageExe > escritorio.log 2>&1
+          ./gradlew --no-daemon --console=plain -p escritorio -PversionName="${{ needs.construir.outputs.version }}" test createDistributable packageExe > escritorio.log 2>&1
           CODIGO=$?
           if [ $CODIGO -ne 0 ]; then
             echo "=============== ERRORES (resumen) ==============="
@@ -197,6 +197,12 @@ jobs:
             exit $CODIGO
           fi
           tail -5 escritorio.log
+          # La app empaquetada se prueba a sí misma (herramientas, ffmpeg, búsqueda) sin abrir ventanas.
+          APP=$(ls escritorio/build/compose/binaries/main/app/*/*.exe | head -1)
+          "$APP" --autoprueba="$PWD/autoprueba.txt" || PRUEBA=$?
+          cat autoprueba.txt || echo "La app no escribió el informe"
+          { echo '### Autoprueba de la app de Windows'; echo '```'; cat autoprueba.txt 2>/dev/null; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          [ -z "$PRUEBA" ] || exit 1
           EXE=$(ls escritorio/build/compose/binaries/main/exe/*.exe | head -1)
           mkdir -p salida
           cp "$EXE" "salida/${{ needs.construir.outputs.nombre }}-${{ needs.construir.outputs.version }}-Windows.exe"
