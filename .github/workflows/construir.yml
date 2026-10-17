@@ -22,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      nombre: ${{ steps.version.outputs.nombre }}
+      firmado: ${{ steps.clave.outputs.firmado }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -165,6 +167,59 @@ jobs:
             gh release create prueba "salida/${{ steps.version.outputs.nombre }}-prueba.apk" --title "${{ steps.version.outputs.nombre }} $VER (prueba)" --notes-file notas.md --prerelease --target "$GITHUB_SHA"
           fi
           echo "### Versión de prueba lista: https://github.com/${GITHUB_REPOSITORY}/releases/download/prueba/${{ steps.version.outputs.nombre }}-prueba.apk" >> "$GITHUB_STEP_SUMMARY"
+
+  # Mirador para Windows: se arma en una máquina Windows con sus herramientas (yt-dlp, ffmpeg, mpv,
+  # QuickJS) y se publica como instalador .exe junto al APK (en la versión oficial o en la de prueba).
+  windows:
+    needs: construir
+    runs-on: windows-latest
+    defaults: { run: { shell: bash } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Herramientas de Windows (yt-dlp, ffmpeg, mpv, QuickJS)
+        shell: pwsh
+        env: { GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+        run: ./escritorio/scripts/herramientas.ps1
+
+      - name: Compilar, probar y crear el instalador
+        run: |
+          set +e
+          ./gradlew --no-daemon --console=plain -p escritorio -PversionName="${{ needs.construir.outputs.version }}" test packageExe > escritorio.log 2>&1
+          CODIGO=$?
+          if [ $CODIGO -ne 0 ]; then
+            echo "=============== ERRORES (resumen) ==============="
+            grep -E "^e: |error:|FAILED|What went wrong|Execution failed|Caused by|AssertionError|expected:" -A3 escritorio.log | grep -v "^\s*at " | head -150
+            echo "=============== FIN DEL RESUMEN ==============="
+            exit $CODIGO
+          fi
+          tail -5 escritorio.log
+          EXE=$(ls escritorio/build/compose/binaries/main/exe/*.exe | head -1)
+          mkdir -p salida
+          cp "$EXE" "salida/${{ needs.construir.outputs.nombre }}-${{ needs.construir.outputs.version }}-Windows.exe"
+          ls -la salida
+          echo "### Instalador de Windows: $(ls salida) ($(du -h salida/*.exe | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.construir.outputs.nombre }}-${{ needs.construir.outputs.version }}-Windows
+          path: salida/*.exe
+          retention-days: 14
+
+      - name: Publicar el instalador
+        if: github.event_name == 'push' && needs.construir.outputs.firmado == 'si'
+        env: { GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+        run: |
+          NOMBRE="${{ needs.construir.outputs.nombre }}"; VER="${{ needs.construir.outputs.version }}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            gh release upload "v$VER" "salida/$NOMBRE-$VER-Windows.exe" --clobber
+          else
+            cp "salida/$NOMBRE-$VER-Windows.exe" "salida/$NOMBRE-prueba-Windows.exe"
+            gh release upload prueba "salida/$NOMBRE-prueba-Windows.exe" --clobber
+          fi
 
   # Pruebas que hablan con YouTube de verdad (parte VER). No bloquean la publicación porque
   # YouTube puede bloquear las IP de los servidores de GitHub aunque la app funcione bien.

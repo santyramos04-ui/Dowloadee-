@@ -15,3 +15,9 @@ secrets/
 # yt-dlp embebido: lo descarga el CI al compilar (scripts/descargar-ytdlp.sh); no se sube al repositorio
 app/src/main/assets/ytdlp/
 __pycache__/
+
+# Binarios de Windows que descarga el CI
+escritorio/recursos/windows/*.exe
+escritorio/recursos/windows/*.dll
+escritorio/build/
+escritorio/.gradle/

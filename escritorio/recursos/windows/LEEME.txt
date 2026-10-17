@@ -1,0 +1,2 @@
+Aquí el CI pone yt-dlp.exe, ffmpeg.exe, ffprobe.exe, mpv.exe y qjs.exe antes de empaquetar
+(ver escritorio/scripts/herramientas.ps1). No se guardan en el repositorio.
