@@ -114,9 +114,6 @@ import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.Surface
 import com.santyramos.mirador.util.Format
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.runtime.rememberCoroutineScope
 
 private fun Context.activity(): Activity? {
     var c = this
@@ -197,8 +194,7 @@ fun PlayerScreen(
 
     val audio = remember { contexto.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     val gestosBrilloVolumen by remember { com.santyramos.mirador.data.Settings(contexto).gestosBrilloVolumen }.collectAsState(initial = false)
-    val desplazamiento = remember { androidx.compose.animation.core.Animatable(0f) }
-    val alcance = rememberCoroutineScope()
+    var pistaGesto by remember { mutableStateOf<String?>(null) }
 
     Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -220,7 +216,6 @@ fun PlayerScreen(
                         },
                     )
                 }
-                .graphicsLayer { translationY = desplazamiento.value }
                 .pointerInput(gestosBrilloVolumen, enHorizontal) {
                     if (!gestosBrilloVolumen) {
                         // Predeterminado: deslizar hacia abajo minimiza; hacia arriba, pantalla completa.
@@ -231,16 +226,20 @@ fun PlayerScreen(
                             onVerticalDrag = { cambio, dy ->
                                 cambio.consume()
                                 total += dy
-                                // El video acompaña un poco al dedo para que se note el gesto.
-                                alcance.launch { desplazamiento.snapTo((total * 0.35f).coerceIn(-umbral, umbral * 1.5f)) }
+                                // El video no se mueve (se encimaría con el texto); un aviso dice qué pasará al soltar.
+                                pistaGesto = when {
+                                    total > umbral -> if (enHorizontal) "Suelta para salir de pantalla completa" else "Suelta para minimizar"
+                                    total < -umbral && !enHorizontal -> "Suelta para pantalla completa"
+                                    else -> null
+                                }
                             },
-                            onDragCancel = { alcance.launch { desplazamiento.animateTo(0f) } },
+                            onDragCancel = { pistaGesto = null },
                             onDragEnd = {
+                                pistaGesto = null
                                 when {
                                     total > umbral -> if (enHorizontal) actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else onMinimizar()
                                     total < -umbral && !enHorizontal -> actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                                 }
-                                alcance.launch { desplazamiento.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 500f)) }
                             },
                         )
                         return@pointerInput
@@ -316,7 +315,7 @@ fun PlayerScreen(
                     TextButton(onClick = { verTv = true }) { Text("Controles del televisor", color = com.santyramos.mirador.ui.theme.Acento) }
                 }
             }
-            aviso?.let {
+            (pistaGesto ?: aviso)?.let {
                 Text(
                     it, color = Color.White, style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.align(Alignment.Center).clip(RoundedCornerShape(12.dp)).background(Color(0xAA000000)).padding(horizontal = 16.dp, vertical = 8.dp),
