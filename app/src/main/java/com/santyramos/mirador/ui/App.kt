@@ -118,6 +118,8 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     Entrada.abrirLista?.let { u -> LaunchedEffect(u) { pila.add(Destino.Lista(u)); reproductorAbierto = false; Entrada.abrirLista = null } }
     Entrada.pestana?.let { p -> LaunchedEffect(p) { pestana = p; pila.clear(); Entrada.pestana = null } }
 
+    // Cada toque en «Inicio» estando ya en Inicio: primero sube al principio y luego vuelve a la portada.
+    var toqueInicio by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     androidx.compose.runtime.CompositionLocalProvider(LocalGuardar provides { v -> videoAGuardar = v }, LocalAcciones provides { v -> videoAcciones = v }) {
     Box(Modifier.fillMaxSize()) {
         Scaffold(
@@ -143,7 +145,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                             val activo = pestana == i && pila.isEmpty()
                             NavigationBarItem(
                                 selected = activo,
-                                onClick = { pestana = i; pila.clear() },
+                                onClick = { if (activo && i == 0) toqueInicio++; pestana = i; pila.clear() },
                                 icon = { Icon(if (activo) iconos.first else iconos.second, nombre) },
                                 label = { Text(nombre, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                 colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
@@ -192,6 +194,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                                 onAbrirCanal = { pila.add(Destino.Canal(it)) }, onAbrirLista = { pila.add(Destino.Lista(it)) },
                                 onIrADescargas = { pestana = 2 }, onAbrirNavegador = { pila.add(Destino.Navegador(it)) },
                                 onSinConexion = { pila.add(Destino.SinConexion) },
+                                toqueInicio = toqueInicio,
                             )
                             1 -> SuscripcionesScreen(
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },

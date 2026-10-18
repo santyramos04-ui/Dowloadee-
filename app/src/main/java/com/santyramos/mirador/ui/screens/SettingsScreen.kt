@@ -82,6 +82,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
     val estadoApp by AppUpdater.estado.collectAsState()
     val tema by ajustes.tema.collectAsState(initial = com.santyramos.mirador.data.Tema.AUTO)
     val sb by ajustes.sponsorBlock.collectAsState(initial = true)
+    val gestos by ajustes.gestosBrilloVolumen.collectAsState(initial = false)
     val sbCats by ajustes.sbCategorias.collectAsState(initial = com.santyramos.mirador.data.SB_CATEGORIAS_INICIALES)
     var sesionActiva by remember { mutableStateOf(Cookies.activadas(contexto)) }
     var conSesion by remember { mutableStateOf(emptyList<String>()) }
@@ -139,6 +140,11 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                     PlayerQuality.entries.forEach { q -> Filtro(q.etiqueta, calidad == q) { scope.launch { ajustes.setCalidad(q) } } }
                 }
                 Text("«Auto» usa hasta 1080p con Wi‑Fi y 720p con datos móviles.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                com.santyramos.mirador.ui.FilaInterruptor(
+                    "Brillo y volumen deslizando", gestos, { v -> scope.launch { ajustes.setGestosBrilloVolumen(v) } },
+                    if (gestos) "Desliza a la izquierda del video para el brillo y a la derecha para el volumen."
+                    else "Apagado: desliza el video hacia abajo para minimizarlo y hacia arriba para pantalla completa.",
+                )
                 com.santyramos.mirador.ui.FilaInterruptor(
                     "Saltar patrocinios (SponsorBlock)", sb, { v -> scope.launch { ajustes.setSponsorBlock(v) } },
                     "Usa la base de datos de la comunidad (sponsor.ajay.app). Se consulta con un código parcial del video, nunca con tus datos.",

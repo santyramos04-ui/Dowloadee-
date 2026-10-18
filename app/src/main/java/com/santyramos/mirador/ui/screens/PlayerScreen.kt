@@ -114,6 +114,9 @@ import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.Surface
 import com.santyramos.mirador.util.Format
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.rememberCoroutineScope
 
 private fun Context.activity(): Activity? {
     var c = this
@@ -193,6 +196,9 @@ fun PlayerScreen(
     }
 
     val audio = remember { contexto.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+    val gestosBrilloVolumen by remember { com.santyramos.mirador.data.Settings(contexto).gestosBrilloVolumen }.collectAsState(initial = false)
+    val desplazamiento = remember { androidx.compose.animation.core.Animatable(0f) }
+    val alcance = rememberCoroutineScope()
 
     Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -214,8 +220,32 @@ fun PlayerScreen(
                         },
                     )
                 }
-                .pointerInput(Unit) {
-                    // Gestos verticales: izquierda = brillo, derecha = volumen.
+                .graphicsLayer { translationY = desplazamiento.value }
+                .pointerInput(gestosBrilloVolumen, enHorizontal) {
+                    if (!gestosBrilloVolumen) {
+                        // Predeterminado: deslizar hacia abajo minimiza; hacia arriba, pantalla completa.
+                        val umbral = 72.dp.toPx()
+                        var total = 0f
+                        detectVerticalDragGestures(
+                            onDragStart = { total = 0f },
+                            onVerticalDrag = { cambio, dy ->
+                                cambio.consume()
+                                total += dy
+                                // El video acompaña un poco al dedo para que se note el gesto.
+                                alcance.launch { desplazamiento.snapTo((total * 0.35f).coerceIn(-umbral, umbral * 1.5f)) }
+                            },
+                            onDragCancel = { alcance.launch { desplazamiento.animateTo(0f) } },
+                            onDragEnd = {
+                                when {
+                                    total > umbral -> if (enHorizontal) actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else onMinimizar()
+                                    total < -umbral && !enHorizontal -> actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                                }
+                                alcance.launch { desplazamiento.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 500f)) }
+                            },
+                        )
+                        return@pointerInput
+                    }
+                    // Opcional (Ajustes): izquierda = brillo, derecha = volumen.
                     var ladoIzquierdo = true
                     var tamano = IntSize.Zero
                     var nivel = 0f

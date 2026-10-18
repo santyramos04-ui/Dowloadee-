@@ -65,6 +65,7 @@ class Settings(private val context: Context) {
         val tema = stringPreferencesKey("tema")
         val sinConexion = booleanPreferencesKey("modo_sin_conexion")
         val soloAudio = booleanPreferencesKey("solo_audio")
+        val gestosBrilloVolumen = booleanPreferencesKey("gestos_brillo_volumen")
         val busquedas = stringPreferencesKey("historial_busquedas")
         val sitios = stringPreferencesKey("historial_sitios")
     }
@@ -82,6 +83,8 @@ class Settings(private val context: Context) {
     /** Modo sin conexión: el reproductor usa solo lo descargado y no gasta datos. */
     val sinConexion: Flow<Boolean> = ds.data.map { it[K.sinConexion] ?: false }
     val soloAudio: Flow<Boolean> = ds.data.map { it[K.soloAudio] ?: false }
+    /** Deslizar en el video cambia brillo y volumen. Apagado: abajo minimiza y arriba es pantalla completa. */
+    val gestosBrilloVolumen: Flow<Boolean> = ds.data.map { it[K.gestosBrilloVolumen] ?: false }
     val usarCookies: Flow<Boolean> = ds.data.map { it[K.usarCookies] ?: false }
 
     suspend fun setSimultaneas(n: Int) = ds.edit { it[K.simultaneas] = n.coerceIn(1, 5) }
@@ -96,6 +99,7 @@ class Settings(private val context: Context) {
     suspend fun setTema(t: Tema) = ds.edit { it[K.tema] = t.name }
     suspend fun setSinConexion(v: Boolean) = ds.edit { it[K.sinConexion] = v }
     suspend fun setSoloAudio(v: Boolean) = ds.edit { it[K.soloAudio] = v }
+    suspend fun setGestosBrilloVolumen(v: Boolean) = ds.edit { it[K.gestosBrilloVolumen] = v }
 
     // ---------- Historial del buscador y del navegador (solo en este celular) ----------
     private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
@@ -141,6 +145,7 @@ class Settings(private val context: Context) {
             p[K.ytdlpCanal]?.let { put("ytdlpCanal", it) }
             p[K.tema]?.let { put("tema", it) }
             p[K.sinConexion]?.let { put("sinConexion", it.toString()) }
+            p[K.gestosBrilloVolumen]?.let { put("gestosBrilloVolumen", it.toString()) }
         }
     }
 
@@ -155,6 +160,7 @@ class Settings(private val context: Context) {
         m["ytdlpCanal"]?.let { p[K.ytdlpCanal] = YtdlpChannel.from(it).name }
         m["tema"]?.let { p[K.tema] = Tema.from(it).name }
         m["sinConexion"]?.let { p[K.sinConexion] = it == "true" }
+        m["gestosBrilloVolumen"]?.let { p[K.gestosBrilloVolumen] = it == "true" }
     }
 
     companion object {
