@@ -235,7 +235,8 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
             enter = androidx.compose.animation.slideInVertically(androidx.compose.animation.core.tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it / 3 } + androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(240)),
             exit = androidx.compose.animation.slideOutVertically(androidx.compose.animation.core.tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it / 3 } + androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(200)),
         ) {
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            // Transparente: al arrastrar el reproductor hacia abajo se ve la app detrás (el fondo lo pone PlayerScreen).
+            Surface(Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground) {
                 PlayerScreen(
                     onMinimizar = { reproductorAbierto = false },
                     onDescargar = { urlDescarga = it },

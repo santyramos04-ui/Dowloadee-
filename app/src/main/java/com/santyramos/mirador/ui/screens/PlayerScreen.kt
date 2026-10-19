@@ -114,6 +114,11 @@ import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.Surface
 import com.santyramos.mirador.util.Format
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.rememberCoroutineScope
 
 private fun Context.activity(): Activity? {
     var c = this
@@ -195,8 +200,80 @@ fun PlayerScreen(
     val audio = remember { contexto.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     val gestosBrilloVolumen by remember { com.santyramos.mirador.data.Settings(contexto).gestosBrilloVolumen }.collectAsState(initial = false)
     var pistaGesto by remember { mutableStateOf<String?>(null) }
+    // Respuesta del video al dedo cuando no se minimiza (hacia arriba o en pantalla completa).
+    val empujeVideo = remember { androidx.compose.animation.core.Animatable(0f) }
+    val alcance = rememberCoroutineScope()
+    // Cuánto bajó el reproductor con el dedo (0 = en su sitio).
+    val arrastre = remember { androidx.compose.animation.core.Animatable(0f) }
+    var bordeVideo by remember { mutableFloatStateOf(0f) }
+    val altoPantalla = with(androidx.compose.ui.platform.LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier.fillMaxSize()
+            // El gesto se detecta aquí, fuera de la capa que se mueve, para que siga al dedo sin saltos.
+            .pointerInput(gestosBrilloVolumen, enHorizontal) {
+                if (gestosBrilloVolumen) return@pointerInput
+                // Predeterminado (como YouTube): hacia abajo el reproductor baja con el dedo y se minimiza;
+                // hacia arriba, pantalla completa.
+                val umbral = 72.dp.toPx()
+                var total = 0f
+                val velocidad = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                val conMovimiento = !enHorizontal
+                var desdeVideo = false
+                detectVerticalDragGestures(
+                    onDragStart = { o -> total = 0f; velocidad.resetTracking(); desdeVideo = enHorizontal || o.y <= bordeVideo },
+                    onVerticalDrag = { cambio, dy ->
+                        if (!desdeVideo) return@detectVerticalDragGestures
+                        cambio.consume()
+                        total += dy
+                        velocidad.addPosition(cambio.uptimeMillis, androidx.compose.ui.geometry.Offset(0f, total))
+                        alcance.launch {
+                            if (conMovimiento && total > 0f) { arrastre.snapTo(total); empujeVideo.snapTo(0f) }
+                            else { arrastre.snapTo(0f); empujeVideo.snapTo(total * 0.4f) }
+                        }
+                        pistaGesto = when {
+                            total > umbral && enHorizontal -> "Suelta para salir de pantalla completa"
+                            total < -umbral && !enHorizontal -> "Suelta para pantalla completa"
+                            else -> null
+                        }
+                    },
+                    onDragCancel = {
+                        pistaGesto = null
+                        alcance.launch { arrastre.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = 0.85f, stiffness = 400f)) }
+                        alcance.launch { empujeVideo.animateTo(0f) }
+                    },
+                    onDragEnd = {
+                        if (!desdeVideo) return@detectVerticalDragGestures
+                        pistaGesto = null
+                        val v = velocidad.calculateVelocity().y
+                        val resorte = androidx.compose.animation.core.spring<Float>(dampingRatio = 0.85f, stiffness = 400f)
+                        alcance.launch { empujeVideo.animateTo(0f, resorte) }
+                        when {
+                            enHorizontal -> if (total > umbral) actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                            total < -umbral -> actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                            total > altoPantalla * 0.22f || (total > umbral / 2 && v > 1200f) -> alcance.launch {
+                                // Termina de bajar con suavidad y queda en el mini reproductor.
+                                if (conMovimiento) arrastre.animateTo(altoPantalla, androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing), initialVelocity = v.coerceAtLeast(0f))
+                                onMinimizar()
+                            }
+                            else -> alcance.launch { arrastre.animateTo(0f, resorte) }
+                        }
+                    },
+                )
+            }
+            .graphicsLayer {
+                // Como YouTube: baja con el dedo, se achica un poco y se redondea.
+                val d = arrastre.value
+                val f = (d / size.height).coerceIn(0f, 1f)
+                translationY = d
+                val escala = 1f - 0.12f * f
+                scaleX = escala; scaleY = escala
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
+                shape = RoundedCornerShape((24f * (f * 4f).coerceAtMost(1f)).dp)
+                clip = d > 0f
+                alpha = 1f - 0.35f * f
+            },
+    ) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // ---------- Zona del video ----------
         val modificadorVideo = if (enHorizontal || PipState.activo) Modifier.fillMaxSize() else Modifier.fillMaxWidth().statusBarsPadding().aspectRatio(16f / 9f)
@@ -216,34 +293,15 @@ fun PlayerScreen(
                         },
                     )
                 }
+                .onGloballyPositioned { if (arrastre.value == 0f) bordeVideo = it.boundsInRoot().bottom }
+                .graphicsLayer {
+                    // Hacia arriba el video crece un poco; en pantalla completa baja con el dedo.
+                    val e = empujeVideo.value
+                    if (enHorizontal) translationY = e.coerceAtLeast(0f)
+                    else { val f = 1f + (-e).coerceAtLeast(0f) / size.height * 0.25f; scaleX = f; scaleY = f }
+                }
                 .pointerInput(gestosBrilloVolumen, enHorizontal) {
-                    if (!gestosBrilloVolumen) {
-                        // Predeterminado: deslizar hacia abajo minimiza; hacia arriba, pantalla completa.
-                        val umbral = 72.dp.toPx()
-                        var total = 0f
-                        detectVerticalDragGestures(
-                            onDragStart = { total = 0f },
-                            onVerticalDrag = { cambio, dy ->
-                                cambio.consume()
-                                total += dy
-                                // El video no se mueve (se encimaría con el texto); un aviso dice qué pasará al soltar.
-                                pistaGesto = when {
-                                    total > umbral -> if (enHorizontal) "Suelta para salir de pantalla completa" else "Suelta para minimizar"
-                                    total < -umbral && !enHorizontal -> "Suelta para pantalla completa"
-                                    else -> null
-                                }
-                            },
-                            onDragCancel = { pistaGesto = null },
-                            onDragEnd = {
-                                pistaGesto = null
-                                when {
-                                    total > umbral -> if (enHorizontal) actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else onMinimizar()
-                                    total < -umbral && !enHorizontal -> actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                                }
-                            },
-                        )
-                        return@pointerInput
-                    }
+                    if (!gestosBrilloVolumen) return@pointerInput
                     // Opcional (Ajustes): izquierda = brillo, derecha = volumen.
                     var ladoIzquierdo = true
                     var tamano = IntSize.Zero
@@ -278,7 +336,7 @@ fun PlayerScreen(
         ) {
             AndroidView(
                 factory = { c ->
-                    PlayerView(c).apply {
+                    (android.view.LayoutInflater.from(c).inflate(com.santyramos.mirador.R.layout.vista_video, null) as PlayerView).apply {
                         useController = false
                         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                         player = VideoController.player
