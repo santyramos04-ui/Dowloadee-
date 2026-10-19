@@ -77,16 +77,23 @@ import com.santyramos.mirador.ui.EstadoVacio
 import com.santyramos.mirador.ui.Filtro
 import com.santyramos.mirador.ui.HojaMirador
 import com.santyramos.mirador.ui.theme.Paleta
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /** Lo que se muestra: una colección de Internet Archive o películas gratis de YouTube. */
 private sealed interface FuentePeli {
+    /** Tu servidor Jellyfin (mini PC en casa). */
+    data object Servidor : FuentePeli
     data class Archivo(val categoria: CategoriaPeli) : FuentePeli
     data object YouTube : FuentePeli
 }
 
-private val FUENTES: List<FuentePeli> = CategoriaPeli.entries.map { FuentePeli.Archivo(it) } + FuentePeli.YouTube
-private fun FuentePeli.etiqueta() = when (this) { is FuentePeli.Archivo -> categoria.etiqueta; FuentePeli.YouTube -> "Gratis en YouTube" }
+private val FUENTES: List<FuentePeli> = listOf(FuentePeli.Servidor) + CategoriaPeli.entries.map { FuentePeli.Archivo(it) } + FuentePeli.YouTube
+private fun FuentePeli.etiqueta() = when (this) {
+    FuentePeli.Servidor -> "Mi servidor"
+    is FuentePeli.Archivo -> categoria.etiqueta
+    FuentePeli.YouTube -> "Gratis en YouTube"
+}
 
 /** Elemento que suena en el reproductor para una película de Internet Archive. */
 internal fun Pelicula.aCola(urlVideo: String) = ElementoCola(
@@ -102,8 +109,13 @@ internal fun Pelicula.aCola(urlVideo: String) = ElementoCola(
 fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Unit, onAbrirReproductor: () -> Unit) {
     val scope = rememberCoroutineScope()
     val foco = LocalFocusManager.current
-    var fuenteIndice by rememberSaveable { mutableIntStateOf(0) }
-    val fuente = FUENTES[fuenteIndice]
+    // Si ya conectaste tu servidor, Películas abre en «Mi servidor»; si no, en «Populares».
+    val contextoPeli = LocalContext.current
+    var fuenteIndice by rememberSaveable { mutableIntStateOf(-1) }
+    LaunchedEffect(Unit) {
+        if (fuenteIndice < 0) fuenteIndice = if (com.santyramos.mirador.data.Settings(contextoPeli).servidor.first() != null) 0 else 1
+    }
+    val fuente = FUENTES[fuenteIndice.coerceAtLeast(0)]
     var consulta by rememberSaveable { mutableStateOf("") }
     var buscada by rememberSaveable { mutableStateOf("") }
     val peliculas = remember { mutableStateListOf<Pelicula>() }
@@ -121,6 +133,7 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
         try {
             if (reiniciar) { peliculas.clear(); videos.clear(); pagina = 1; hayMas = true }
             when (fuente) {
+                FuentePeli.Servidor -> {}
                 is FuentePeli.Archivo -> {
                     val nuevas = Archivo.buscar(fuente.categoria, pagina, buscada.ifBlank { null })
                     peliculas.addAll(nuevas.filter { n -> peliculas.none { it.id == n.id } })
@@ -141,16 +154,16 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
         } finally { cargando = false }
     }
 
-    LaunchedEffect(fuenteIndice, buscada) { cargar(reiniciar = true) }
+    LaunchedEffect(fuenteIndice, buscada) { if (fuenteIndice >= 0 && fuente != FuentePeli.Servidor) cargar(reiniciar = true) }
     val alFinal by remember { derivedStateOf { (grilla.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= grilla.layoutInfo.totalItemsCount - 6 } }
     LaunchedEffect(alFinal) { if (alFinal && hayMas && !cargando && peliculas.isNotEmpty()) cargar(reiniciar = false) }
 
     Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        Encabezado("Películas", "Gratis y legales: cine de dominio público y estrenos que sus dueños comparten")
+        Encabezado("Películas", if (fuente == FuentePeli.Servidor) "Tus películas, series y videos desde tu mini PC" else "Gratis y legales: cine de dominio público y estrenos que sus dueños comparten")
         OutlinedTextField(
             value = consulta, onValueChange = { consulta = it }, singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).semantics { contentDescription = "Buscar películas" },
-            placeholder = { Text("Buscar una película…", color = Paleta.Texto3) },
+            placeholder = { Text(if (fuente == FuentePeli.Servidor) "Buscar en mi servidor…" else "Buscar una película…", color = Paleta.Texto3) },
             leadingIcon = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { foco.clearFocus(); buscada = consulta.trim() }),
@@ -166,6 +179,8 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
 
         val vacio = peliculas.isEmpty() && videos.isEmpty()
         when {
+            fuenteIndice < 0 -> Box(Modifier.fillMaxSize())
+            fuente == FuentePeli.Servidor -> MiServidor(buscada, onAbrirReproductor)
             vacio && cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) }
             vacio && error != null -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {

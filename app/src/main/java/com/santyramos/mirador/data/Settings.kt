@@ -66,6 +66,9 @@ class Settings(private val context: Context) {
         val sinConexion = booleanPreferencesKey("modo_sin_conexion")
         val soloAudio = booleanPreferencesKey("solo_audio")
         val gestosBrilloVolumen = booleanPreferencesKey("gestos_brillo_volumen")
+        val servidor = stringPreferencesKey("servidor_jellyfin")
+        val dispositivo = stringPreferencesKey("id_dispositivo")
+        val servidorAhorro = booleanPreferencesKey("servidor_ahorro_datos")
         val busquedas = stringPreferencesKey("historial_busquedas")
         val sitios = stringPreferencesKey("historial_sitios")
     }
@@ -100,6 +103,20 @@ class Settings(private val context: Context) {
     suspend fun setSinConexion(v: Boolean) = ds.edit { it[K.sinConexion] = v }
     suspend fun setSoloAudio(v: Boolean) = ds.edit { it[K.soloAudio] = v }
     suspend fun setGestosBrilloVolumen(v: Boolean) = ds.edit { it[K.gestosBrilloVolumen] = v }
+
+    // ---------- Tu servidor (Jellyfin en la mini PC). La sesión solo vive en este celular: no va en los respaldos. ----------
+    val servidor: Flow<com.santyramos.mirador.servidor.ServidorJf?> = ds.data.map { p -> p[K.servidor]?.let { com.santyramos.mirador.servidor.ServidorJf.deTexto(it) } }
+    suspend fun setServidor(s: com.santyramos.mirador.servidor.ServidorJf?) = ds.edit { if (s == null) it.remove(K.servidor) else it[K.servidor] = s.aTexto() }
+    /** Ahorro de datos: el servidor convierte a 720p (útil fuera de casa con poca señal). */
+    val servidorAhorro: Flow<Boolean> = ds.data.map { it[K.servidorAhorro] ?: false }
+    suspend fun setServidorAhorro(v: Boolean) = ds.edit { it[K.servidorAhorro] = v }
+    /** Identificador fijo de este celular para el servidor (se crea la primera vez). */
+    suspend fun dispositivo(): String {
+        ds.data.first()[K.dispositivo]?.let { return it }
+        val nuevo = java.util.UUID.randomUUID().toString()
+        ds.edit { it[K.dispositivo] = nuevo }
+        return nuevo
+    }
 
     // ---------- Historial del buscador y del navegador (solo en este celular) ----------
     private val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
