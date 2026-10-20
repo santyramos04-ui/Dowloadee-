@@ -88,7 +88,10 @@ private sealed interface FuentePeli {
     data object YouTube : FuentePeli
 }
 
-private val FUENTES: List<FuentePeli> = listOf(FuentePeli.Servidor) + CategoriaPeli.entries.map { FuentePeli.Archivo(it) } + FuentePeli.YouTube
+/** «Mi servidor» (Jellyfin en la mini PC) queda escondido hasta que el servidor esté listo: cambiar a true para mostrarlo. */
+private const val MOSTRAR_SERVIDOR = false
+
+private val FUENTES: List<FuentePeli> = (if (MOSTRAR_SERVIDOR) listOf(FuentePeli.Servidor) else emptyList()) + CategoriaPeli.entries.map { FuentePeli.Archivo(it) } + FuentePeli.YouTube
 private fun FuentePeli.etiqueta() = when (this) {
     FuentePeli.Servidor -> "Mi servidor"
     is FuentePeli.Archivo -> categoria.etiqueta
@@ -113,7 +116,7 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
     val contextoPeli = LocalContext.current
     var fuenteIndice by rememberSaveable { mutableIntStateOf(-1) }
     LaunchedEffect(Unit) {
-        if (fuenteIndice < 0) fuenteIndice = if (com.santyramos.mirador.data.Settings(contextoPeli).servidor.first() != null) 0 else 1
+        if (fuenteIndice < 0) fuenteIndice = if (!MOSTRAR_SERVIDOR) 0 else if (com.santyramos.mirador.data.Settings(contextoPeli).servidor.first() != null) 0 else 1
     }
     val fuente = FUENTES[fuenteIndice.coerceAtLeast(0)]
     var consulta by rememberSaveable { mutableStateOf("") }
