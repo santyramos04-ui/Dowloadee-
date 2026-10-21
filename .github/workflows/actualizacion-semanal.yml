@@ -20,7 +20,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { ref: main, fetch-depth: 0 }
 
       - name: Buscar versiones nuevas de las librerías

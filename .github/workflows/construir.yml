@@ -25,7 +25,7 @@ jobs:
       nombre: ${{ steps.version.outputs.nombre }}
       firmado: ${{ steps.clave.outputs.firmado }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
 
       - uses: actions/setup-java@v4
@@ -233,7 +233,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '21' }
@@ -259,7 +259,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: '3.13' }
       - run: pip install -U "yt-dlp[default]"
