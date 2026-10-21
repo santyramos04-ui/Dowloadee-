@@ -14,6 +14,10 @@ data class ElementoCola(
     val archivoMime: String? = null,
     /** De dónde viene si no es una descarga tuya (ej. «Internet Archive»); el archivo se reproduce directo de esa dirección. */
     val origen: String? = null,
+    /** Dónde empezar (ms); 0 = donde lo dejaste en este celular. */
+    val inicioMs: Long = 0,
+    /** Otra dirección por si el celular no puede leer [archivoUri] (ej. tu servidor convirtiendo el video). */
+    val respaldoUri: String? = null,
 ) {
     /** Se reproduce desde [archivoUri] (descarga o dirección directa), no con el lector de YouTube. */
     val esLocal: Boolean get() = archivoUri != null

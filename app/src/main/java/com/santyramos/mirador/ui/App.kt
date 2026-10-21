@@ -118,6 +118,8 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     Entrada.abrirLista?.let { u -> LaunchedEffect(u) { pila.add(Destino.Lista(u)); reproductorAbierto = false; Entrada.abrirLista = null } }
     Entrada.pestana?.let { p -> LaunchedEffect(p) { pestana = p; pila.clear(); Entrada.pestana = null } }
 
+    // Cada toque en «Inicio» estando ya en Inicio: primero sube al principio y luego vuelve a la portada.
+    var toqueInicio by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     androidx.compose.runtime.CompositionLocalProvider(LocalGuardar provides { v -> videoAGuardar = v }, LocalAcciones provides { v -> videoAcciones = v }) {
     Box(Modifier.fillMaxSize()) {
         Scaffold(
@@ -143,7 +145,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                             val activo = pestana == i && pila.isEmpty()
                             NavigationBarItem(
                                 selected = activo,
-                                onClick = { pestana = i; pila.clear() },
+                                onClick = { if (activo && i == 0) toqueInicio++; pestana = i; pila.clear() },
                                 icon = { Icon(if (activo) iconos.first else iconos.second, nombre) },
                                 label = { Text(nombre, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                                 colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
@@ -192,6 +194,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                                 onAbrirCanal = { pila.add(Destino.Canal(it)) }, onAbrirLista = { pila.add(Destino.Lista(it)) },
                                 onIrADescargas = { pestana = 2 }, onAbrirNavegador = { pila.add(Destino.Navegador(it)) },
                                 onSinConexion = { pila.add(Destino.SinConexion) },
+                                toqueInicio = toqueInicio,
                             )
                             1 -> SuscripcionesScreen(
                                 onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it },
@@ -232,7 +235,8 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
             enter = androidx.compose.animation.slideInVertically(androidx.compose.animation.core.tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it / 3 } + androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(240)),
             exit = androidx.compose.animation.slideOutVertically(androidx.compose.animation.core.tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it / 3 } + androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(200)),
         ) {
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            // Transparente: al arrastrar el reproductor hacia abajo se ve la app detrás (el fondo lo pone PlayerScreen).
+            Surface(Modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground) {
                 PlayerScreen(
                     onMinimizar = { reproductorAbierto = false },
                     onDescargar = { urlDescarga = it },

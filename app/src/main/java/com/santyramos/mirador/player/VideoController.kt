@@ -49,6 +49,8 @@ data class VideoActual(
     val archivoMime: String? = null,
     /** Texto de origen cuando no es una descarga tuya (ej. «Internet Archive»). */
     val origen: String? = null,
+    /** Dirección alternativa si la principal falla (formato que el celular no lee). */
+    val respaldoUri: String? = null,
     /** Idiomas de audio del video (vacío si tiene uno solo) y el que suena (null = el original). */
     val pistas: List<com.santyramos.mirador.extractor.PistaAudio> = emptyList(),
     val pista: String? = null,
@@ -138,7 +140,19 @@ object VideoController {
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) { publicar(); if (!isPlaying) guardarPosicionActual() }
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                _video.value = _video.value?.copy(cargando = false, error = ErrorMapper.mensajeReproduccion(error))
+                val v = _video.value
+                val respaldo = v?.respaldoUri
+                if (v != null && respaldo != null) {
+                    // El original no se pudo leer: se pide la versión convertida, desde el mismo punto.
+                    val pos = player.currentPosition.coerceAtLeast(0)
+                    val mime = androidx.media3.common.MimeTypes.APPLICATION_M3U8
+                    _video.value = v.copy(archivoUri = respaldo, archivoMime = mime, respaldoUri = null)
+                    val item = androidx.media3.common.MediaItem.Builder().setUri(android.net.Uri.parse(respaldo)).setMimeType(mime)
+                        .setMediaMetadata(player.currentMediaItem?.mediaMetadata ?: androidx.media3.common.MediaMetadata.EMPTY).build()
+                    player.setMediaItem(item, pos); player.prepare(); player.playWhenReady = true
+                    return
+                }
+                _video.value = v?.copy(cargando = false, error = ErrorMapper.mensajeReproduccion(error))
             }
         })
         sondeo?.cancel()
@@ -364,10 +378,11 @@ object VideoController {
         _video.value = VideoActual(
             urlOriginal = e.url, cargando = false, titulo = e.titulo, autor = e.autor, miniatura = e.miniatura,
             local = true, esAudio = e.esAudio, archivoUri = uri, archivoMime = e.archivoMime, origen = e.origen,
+            respaldoUri = e.respaldoUri,
         )
         segmentos = emptyList(); saltados.clear()
         trabajo = scope.launch {
-            val desde = Biblioteca.posicionParaRetomar(e.url)
+            val desde = if (e.inicioMs > 0) e.inicioMs else Biblioteca.posicionParaRetomar(e.url)
             val meta = androidx.media3.common.MediaMetadata.Builder()
                 .setTitle(e.titulo).setArtist(e.autor)
                 .setArtworkUri(e.miniatura?.let(android.net.Uri::parse))

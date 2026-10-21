@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Tu servidor Jellyfin en la mini PC habla «http://» (sin candado) dentro de tu casa o por Tailscale,
+  que ya va cifrado. Por eso se permite http; todo lo demás de la app sigue usando https.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

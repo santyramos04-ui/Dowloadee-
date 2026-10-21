@@ -38,6 +38,13 @@ import com.santyramos.mirador.ui.BotonPrimario
 import com.santyramos.mirador.ui.Entrada
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
+import kotlin.math.roundToInt
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -111,6 +118,7 @@ fun HomeScreen(
     onIrADescargas: () -> Unit = {},
     onAbrirNavegador: (String?) -> Unit = {},
     onSinConexion: () -> Unit = {},
+    toqueInicio: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val contextoHome = androidx.compose.ui.platform.LocalContext.current
@@ -186,29 +194,91 @@ fun HomeScreen(
         }
     }
 
-    // La cabecera (marca, buscador y filtros) se esconde al bajar y reaparece al subir, para dar espacio a los videos.
-    var mostrarCabecera by remember { mutableStateOf(true) }
-    LaunchedEffect(lista) {
-        var ultimoIndice = 0
-        var ultimoDesfase = 0
-        androidx.compose.runtime.snapshotFlow { lista.firstVisibleItemIndex to lista.firstVisibleItemScrollOffset }.collect { (i, o) ->
-            val baja = i > ultimoIndice || (i == ultimoIndice && o > ultimoDesfase + 24)
-            val sube = i < ultimoIndice || (i == ultimoIndice && o < ultimoDesfase - 24)
-            if (i == 0 && o < 24) mostrarCabecera = true
-            else if (baja) mostrarCabecera = false
-            else if (sube) mostrarCabecera = true
-            if (baja || sube) { ultimoIndice = i; ultimoDesfase = o }
+    // La cabecera (marca y buscador) acompaña al dedo: se esconde al bajar y reaparece al subir, sin saltos.
+    var altoCabecera by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var desfase by remember { androidx.compose.runtime.mutableFloatStateOf(0f) } // 0 = visible, -alto = escondida
+    var animandoCabecera by remember { mutableStateOf<Job?>(null) }
+    fun moverCabecera(destino: Float) {
+        animandoCabecera?.cancel()
+        animandoCabecera = scope.launch {
+            androidx.compose.animation.core.animate(desfase, destino, animationSpec = androidx.compose.animation.core.tween(220, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { v, _ -> desfase = v }
         }
     }
-    LaunchedEffect(buscado) { mostrarCabecera = true }
+    val conexionScroll = remember {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            override fun onPreScroll(available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): androidx.compose.ui.geometry.Offset {
+                if (enfocado || altoCabecera == 0) return androidx.compose.ui.geometry.Offset.Zero
+                animandoCabecera?.cancel()
+                val nuevo = (desfase + available.y).coerceIn(-altoCabecera.toFloat(), 0f)
+                val usado = nuevo - desfase
+                desfase = nuevo
+                return androidx.compose.ui.geometry.Offset(0f, usado)
+            }
+            override suspend fun onPostFling(consumed: androidx.compose.ui.unit.Velocity, available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
+                // Al soltar, la cabecera termina de abrirse o de esconderse (nunca queda a medias).
+                val alto = altoCabecera.toFloat()
+                if (desfase != 0f && desfase != -alto) {
+                    val arriba = lista.firstVisibleItemIndex == 0 && lista.firstVisibleItemScrollOffset == 0
+                    moverCabecera(if (arriba || desfase > -alto / 2) 0f else -alto)
+                }
+                return androidx.compose.ui.unit.Velocity.Zero
+            }
+        }
+    }
+    LaunchedEffect(buscado) { moverCabecera(0f) }
+    LaunchedEffect(enfocado) { if (enfocado) moverCabecera(0f) }
 
-    Column(modifier.fillMaxSize().statusBarsPadding()) {
-      androidx.compose.animation.AnimatedVisibility(
-        visible = mostrarCabecera,
-        enter = androidx.compose.animation.expandVertically(androidx.compose.animation.core.tween(240)) + androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(200)),
-        exit = androidx.compose.animation.shrinkVertically(androidx.compose.animation.core.tween(220)) + androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(140)),
+    // Tocar «Inicio» otra vez: si no estás arriba, sube; si ya estás arriba, vuelve a la portada (recomendados).
+    val toqueAlEntrar = remember { toqueInicio }
+    LaunchedEffect(toqueInicio) {
+        if (toqueInicio == toqueAlEntrar) return@LaunchedEffect
+        val arriba = lista.firstVisibleItemIndex == 0 && lista.firstVisibleItemScrollOffset == 0
+        if (!arriba) {
+            moverCabecera(0f)
+            if (lista.firstVisibleItemIndex > 12) lista.scrollToItem(6)
+            lista.animateScrollToItem(0)
+        } else if (buscado != null || consulta.isNotEmpty() || enfocado) {
+            trabajo?.cancel(); foco.clearFocus()
+            consulta = ""; buscado = null; error = null; resultados.clear(); siguiente = null; cargando = false
+            moverCabecera(0f)
+        }
+    }
+
+    // Filtros en un menú aparte, para que la cabecera quede limpia.
+    var verFiltros by remember { mutableStateOf(false) }
+    val conFiltros = filtro != FiltroBusqueda.TODO || duracion != FiltroDuracion.CUALQUIERA
+    if (verFiltros) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verFiltros = false }) {
+        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Filtrar", style = MaterialTheme.typography.titleLarge)
+            Text("Mostrar", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FiltroBusqueda.entries.forEach { f -> Filtro(f.etiqueta, filtro == f) { filtro = f } }
+            }
+            if (filtro == FiltroBusqueda.TODO || filtro == FiltroBusqueda.VIDEOS) {
+                Text("Duración", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FiltroDuracion.entries.forEach { d -> Filtro(d.etiqueta, duracion == d) { duracion = d } }
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (conFiltros) BotonSecundario("Quitar filtros", { filtro = FiltroBusqueda.TODO; duracion = FiltroDuracion.CUALQUIERA }, Modifier.weight(1f))
+                com.santyramos.mirador.ui.BotonPrimario("Listo", { verFiltros = false }, Modifier.weight(1f))
+            }
+        }
+    }
+
+    Column(modifier.fillMaxSize().statusBarsPadding().nestedScroll(conexionScroll)) {
+      // La cabecera se dibuja corrida hacia arriba según «desfase»; solo cambia la posición, no se recompone.
+      Box(
+        Modifier.fillMaxWidth().clipToBounds().layout { medible, limites ->
+            val p = medible.measure(limites.copy(minHeight = 0, maxHeight = androidx.compose.ui.unit.Constraints.Infinity))
+            val d = desfase.roundToInt().coerceIn(-p.height, 0)
+            layout(p.width, p.height + d) { p.placeRelative(0, d) }
+        },
       ) {
-       Column {
+       Column(Modifier.onSizeChanged { altoCabecera = it.height }.graphicsLayer {
+           alpha = if (altoCabecera == 0) 1f else (1f + desfase / altoCabecera * 1.4f).coerceIn(0f, 1f)
+       }) {
         // ---- Marca + atajo para pegar ----
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(painterResource(R.drawable.ic_mark), contentDescription = null, modifier = Modifier.size(30.dp))
@@ -232,29 +302,34 @@ fun HomeScreen(
                 }
             }
         }
-        // ---- Buscador ----
-        OutlinedTextField(
-            value = consulta, onValueChange = { consulta = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp).focusRequester(pedirFoco).onFocusChanged { enfocado = it.isFocused }.semantics { contentDescription = "Buscar en YouTube" },
-            placeholder = { Text("Buscar videos, canales o listas…", color = Paleta.Texto3) },
-            leadingIcon = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-            trailingIcon = { if (consulta.isNotEmpty()) IconButton(onClick = { consulta = "" }) { Icon(Icons.Filled.Clear, "Borrar") } },
-            singleLine = true, shape = RoundedCornerShape(18.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Paleta.S2, unfocusedContainerColor = Paleta.S2,
-                focusedBorderColor = Acento, unfocusedBorderColor = Paleta.Linea, cursorColor = Acento,
-            ),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { buscar() }),
-        )
-        // ---- Filtros ----
-        LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(FiltroBusqueda.entries) { f -> Filtro(f.etiqueta, filtro == f) { filtro = f } }
-        }
-        if (buscado != null && (filtro == FiltroBusqueda.TODO || filtro == FiltroBusqueda.VIDEOS)) {
-            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(FiltroDuracion.entries) { d -> Filtro(d.etiqueta, duracion == d) { duracion = d } }
+        // ---- Buscador + Filtrar ----
+        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = consulta, onValueChange = { consulta = it },
+                modifier = Modifier.weight(1f).focusRequester(pedirFoco).onFocusChanged { enfocado = it.isFocused }.semantics { contentDescription = "Buscar en YouTube" },
+                placeholder = { Text("Buscar videos, canales o listas…", color = Paleta.Texto3, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                leadingIcon = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                trailingIcon = { if (consulta.isNotEmpty()) IconButton(onClick = { consulta = "" }) { Icon(Icons.Filled.Clear, "Borrar") } },
+                singleLine = true, shape = RoundedCornerShape(18.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Paleta.S2, unfocusedContainerColor = Paleta.S2,
+                    focusedBorderColor = Acento, unfocusedBorderColor = Paleta.Linea, cursorColor = Acento,
+                ),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { buscar() }),
+            )
+            Box(Modifier.padding(start = 8.dp)) {
+                BotonIcono(Icons.Outlined.Tune, if (conFiltros) "Filtrar (hay filtros activos)" else "Filtrar", { foco.clearFocus(); verFiltros = true }, bordeado = true, destacado = conFiltros)
+                if (conFiltros) Box(Modifier.align(Alignment.TopEnd).padding(6.dp).size(8.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Acento))
             }
+        }
+        // Filtros activos: una línea discreta para recordar qué se está filtrando.
+        if (conFiltros) {
+            val partes = listOfNotNull(filtro.takeIf { it != FiltroBusqueda.TODO }?.etiqueta, duracion.takeIf { it != FiltroDuracion.CUALQUIERA }?.etiqueta)
+            Text(
+                "Filtrando: " + partes.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 24.dp, end = 20.dp, bottom = 6.dp),
+            )
         }
        }
       }
