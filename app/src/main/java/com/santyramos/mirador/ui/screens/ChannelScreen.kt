@@ -53,6 +53,9 @@ fun ChannelScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> Un
     var siguiente by remember(url) { mutableStateOf<Page?>(null) }
     var cargandoMas by remember(url) { mutableStateOf(false) }
     val lista = rememberLazyListState()
+    // Pestaña: los videos del canal o sus transmisiones en vivo.
+    var enVivo by remember(url) { mutableStateOf(false) }
+    var cambiando by remember(url) { mutableStateOf(false) }
 
     LaunchedEffect(url, intento) {
         error = null
@@ -61,13 +64,24 @@ fun ChannelScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> Un
             datos = d; videos.clear(); videos.addAll(d.videos.elementos); siguiente = d.videos.siguiente
         } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { error = ErrorMapper.mensajeVer(e) }
     }
+    var primeraVez by remember(url) { mutableStateOf(true) }
+    LaunchedEffect(enVivo) {
+        val d = datos ?: return@LaunchedEffect
+        if (primeraVez) { primeraVez = false; if (!enVivo) return@LaunchedEffect }
+        cambiando = true
+        try {
+            val p = Youtube.pestanaCanal(d.info, if (enVivo) org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.LIVESTREAMS else org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS)
+            videos.clear(); videos.addAll(p.elementos); siguiente = p.siguiente
+            lista.scrollToItem(0)
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { videos.clear(); siguiente = null } finally { cambiando = false }
+    }
     val alFinal by remember { derivedStateOf { val u = lista.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0; u >= videos.size - 3 && videos.isNotEmpty() } }
     LaunchedEffect(alFinal, siguiente) {
         val s = siguiente; val d = datos
         if (alFinal && s != null && d != null && !cargandoMas) {
             cargandoMas = true
             try {
-                val p = Youtube.masVideosCanal(d.info, s)
+                val p = Youtube.masVideosCanal(d.info, s, if (enVivo) org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.LIVESTREAMS else org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS)
                 videos.addAll(p.elementos); siguiente = p.siguiente
             } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { siguiente = null } finally { cargandoMas = false }
         }
@@ -100,9 +114,16 @@ fun ChannelScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> Un
                                 )
                             }
                         }
-                        if (videos.isEmpty()) Text("Este canal no tiene videos visibles.", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (Youtube.tieneEnVivo(d.info)) Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            com.santyramos.mirador.ui.Filtro("Videos", !enVivo) { enVivo = false }
+                            com.santyramos.mirador.ui.Filtro("En vivo", enVivo) { enVivo = true }
+                        }
+                        if (cambiando) Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                        else if (videos.isEmpty()) Text(if (enVivo) "Este canal no tiene transmisiones en vivo." else "Este canal no tiene videos visibles.", Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    items(videos.filterIsInstance<Elemento.Video>(), key = { it.url }) { v ->
+                    // En vivo: primero lo que está transmitiendo ahora.
+                    val mostrados = videos.filterIsInstance<Elemento.Video>().let { l -> if (enVivo) l.sortedByDescending { it.esDirecto } else l }
+                    if (!cambiando) items(mostrados, key = { it.url }) { v ->
                         FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) })
                     }
                     if (cargandoMas) item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }

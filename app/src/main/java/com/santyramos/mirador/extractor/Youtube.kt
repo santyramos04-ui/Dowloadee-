@@ -82,6 +82,8 @@ enum class FiltroBusqueda(val etiqueta: String, val clave: String) {
     VIDEOS("Videos", YoutubeSearchQueryHandlerFactory.VIDEOS),
     CANALES("Canales", YoutubeSearchQueryHandlerFactory.CHANNELS),
     LISTAS("Listas", YoutubeSearchQueryHandlerFactory.PLAYLISTS),
+    /** Solo transmisiones en vivo (se buscan videos y se dejan los que están en directo). */
+    EN_VIVO("En vivo", YoutubeSearchQueryHandlerFactory.VIDEOS),
 }
 
 /** Acceso a YouTube a través de NewPipeExtractor (sin cuenta de Google, sin anuncios). */
@@ -114,6 +116,7 @@ object Youtube {
     suspend fun buscar(consulta: String, filtro: FiltroBusqueda = FiltroBusqueda.TODO): Pagina<Elemento> =
         withContext(Dispatchers.IO) {
             iniciar()
+            if (filtro == FiltroBusqueda.EN_VIVO) return@withContext buscarEnVivo(consulta, null)
             val qh = servicio.searchQHFactory.fromQuery(consulta, listOf(filtro.clave), "")
             val info = SearchInfo.getInfo(servicio, qh)
             Pagina(info.relatedItems.mapNotNull(::aElemento), info.nextPage)
@@ -122,10 +125,31 @@ object Youtube {
     suspend fun masBusqueda(consulta: String, filtro: FiltroBusqueda, pagina: Page): Pagina<Elemento> =
         withContext(Dispatchers.IO) {
             iniciar()
+            if (filtro == FiltroBusqueda.EN_VIVO) return@withContext buscarEnVivo(consulta, pagina)
             val qh = servicio.searchQHFactory.fromQuery(consulta, listOf(filtro.clave), "")
             val p = SearchInfo.getMoreItems(servicio, qh, pagina)
             Pagina(p.items.mapNotNull(::aElemento), p.nextPage)
         }
+
+    /**
+     * YouTube no deja pedir «solo en vivo» por esta vía: se buscan videos (agregando «en vivo» a la búsqueda)
+     * y se dejan los que están transmitiendo, leyendo varias páginas hasta juntar unos cuantos.
+     */
+    private fun buscarEnVivo(consulta: String, desde: Page?): Pagina<Elemento> {
+        val q = if (Regex("\\b(en vivo|live|directo)\\b", RegexOption.IGNORE_CASE).containsMatchIn(consulta)) consulta else "$consulta en vivo"
+        val qh = servicio.searchQHFactory.fromQuery(q.trim(), listOf(YoutubeSearchQueryHandlerFactory.VIDEOS), "")
+        val encontrados = mutableListOf<Elemento>()
+        var pagina: Page? = desde
+        var vueltas = 0
+        do {
+            val (items, sig) = if (pagina == null && vueltas == 0) SearchInfo.getInfo(servicio, qh).let { it.relatedItems to it.nextPage }
+            else SearchInfo.getMoreItems(servicio, qh, pagina!!).let { it.items to it.nextPage }
+            encontrados += items.mapNotNull(::aElemento).filter { it is Elemento.Video && it.esDirecto }
+            pagina = sig
+            vueltas++
+        } while (encontrados.size < 8 && pagina != null && vueltas < 4)
+        return Pagina(encontrados, pagina)
+    }
 
     suspend fun sugerencias(consulta: String): List<String> = withContext(Dispatchers.IO) {
         iniciar()
@@ -150,9 +174,20 @@ object Youtube {
         DatosCanal(info, videos)
     }
 
-    suspend fun masVideosCanal(info: ChannelInfo, pagina: Page): Pagina<Elemento> = withContext(Dispatchers.IO) {
+    /** El canal tiene pestaña de transmisiones en vivo (actuales y pasadas). */
+    fun tieneEnVivo(info: ChannelInfo): Boolean = info.tabs.any { it.contentFilters.contains(ChannelTabs.LIVESTREAMS) }
+
+    /** Primera página de una pestaña del canal ([ChannelTabs.VIDEOS] o [ChannelTabs.LIVESTREAMS]). */
+    suspend fun pestanaCanal(info: ChannelInfo, pestana: String): Pagina<Elemento> = withContext(Dispatchers.IO) {
         iniciar()
-        val tab = info.tabs.firstOrNull { it.contentFilters.contains(ChannelTabs.VIDEOS) }
+        val tab = info.tabs.firstOrNull { it.contentFilters.contains(pestana) } ?: return@withContext Pagina(emptyList(), null)
+        val t = ChannelTabInfo.getInfo(servicio, tab)
+        Pagina(t.relatedItems.mapNotNull(::aElemento), t.nextPage)
+    }
+
+    suspend fun masVideosCanal(info: ChannelInfo, pagina: Page, pestana: String = ChannelTabs.VIDEOS): Pagina<Elemento> = withContext(Dispatchers.IO) {
+        iniciar()
+        val tab = info.tabs.firstOrNull { it.contentFilters.contains(pestana) }
             ?: return@withContext Pagina(emptyList(), null)
         val p = ChannelTabInfo.getMoreItems(servicio, tab, pagina)
         Pagina(p.items.mapNotNull(::aElemento), p.nextPage)

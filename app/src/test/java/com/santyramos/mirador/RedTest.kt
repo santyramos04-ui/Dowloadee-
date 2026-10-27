@@ -60,6 +60,25 @@ class RedTest {
         }
     }
 
+    @Test fun reproduceUnaTransmisionEnVivo() = runBlocking {
+        requiere()
+        Youtube.iniciar()
+        // Lofi Girl transmite en vivo las 24 horas.
+        val info = try {
+            Youtube.video("https://www.youtube.com/watch?v=jfKfPfyJRdk")
+        } catch (e: org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException) {
+            println("PRUEBA_VER en vivo: NO CONCLUYENTE — YouTube bloqueó la IP del servidor.")
+            assumeTrue("YouTube bloqueó la IP del servidor", false)
+            return@runBlocking
+        }
+        val enVivo = com.santyramos.mirador.player.PlayerSources.esEnVivo(info)
+        println("PRUEBA_VER en vivo: «${info.name}» tipo=${info.streamType} hls=${!info.hlsUrl.isNullOrEmpty()} dash=${!info.dashMpdUrl.isNullOrEmpty()} streams=${info.videoStreams.size}+${info.videoOnlyStreams.size}")
+        assumeTrue("La transmisión no está en vivo en este momento", enVivo)
+        assertTrue("El directo no trae HLS ni DASH", !info.hlsUrl.isNullOrEmpty() || !info.dashMpdUrl.isNullOrEmpty())
+        val busqueda = Youtube.buscar("música", FiltroBusqueda.EN_VIVO)
+        println("PRUEBA_VER búsqueda en vivo: ${busqueda.elementos.size} directos; primero = ${busqueda.elementos.firstOrNull()?.titulo}")
+    }
+
     @Test fun cargaLosVideosDeUnCanal() = runBlocking {
         requiere()
         Youtube.iniciar()
