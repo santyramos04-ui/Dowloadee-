@@ -9,6 +9,10 @@ El dueño no programa: explicar todo en español sencillo y paso a paso.
 - Si la rama de trabajo ya se fusionó, recrearla desde `origin/main` antes de seguir.
 - Nunca subir claves: la clave de firma vive en GitHub Secrets; `secrets/` está en `.gitignore`.
 
+## En pausa
+- **Windows (`escritorio/`)**: olvidado hasta que el dueño lo pida expresamente. No proponerlo, no modificarlo; el job `windows` del CI está apagado (`if: false`).
+- **«Mi servidor» (Jellyfin)**: escondido con `MOSTRAR_SERVIDOR = false` en `PeliculasScreen.kt` hasta que lo pida.
+
 ## Código
 - Interfaz en español. Paquete `com.santyramos.mirador`.
 - Diseño: tokens en `app/src/main/java/com/santyramos/mirador/ui/theme/Theme.kt` (`Paleta`, `Acento`, tema claro/oscuro). Usarlos en vez de colores fijos. Fuentes estáticas en `res/font` (no variables): Bricolage Grotesque para títulos y Atkinson Hyperlegible Next para el texto.

@@ -9,6 +9,9 @@ Todo queda en tu celular. No hay cuentas, ni servidores, ni publicidad. Es softw
 
 > Este documento está escrito para alguien que **no programa** y tiene un **Xiaomi con HyperOS**. Si un paso no se entiende, avísame y lo reescribo.
 
+> **Versión para Windows: en pausa.** El código está guardado en la carpeta `escritorio/`, pero no se
+> compila, no se publica y no se trabaja en ella **hasta que el dueño lo pida expresamente**.
+
 ---
 
 ## Índice
