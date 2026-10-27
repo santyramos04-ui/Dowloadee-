@@ -170,7 +170,9 @@ jobs:
 
   # Mirador para Windows: se arma en una máquina Windows con sus herramientas (yt-dlp, ffmpeg, mpv,
   # QuickJS) y se publica como instalador .exe junto al APK (en la versión oficial o en la de prueba).
+  # EN PAUSA: no se compila ni se publica hasta que el dueño lo pida (quitar el «if: false» para volver).
   windows:
+    if: false
     needs: construir
     runs-on: windows-latest
     defaults: { run: { shell: bash } }
