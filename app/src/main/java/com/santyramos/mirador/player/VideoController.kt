@@ -54,6 +54,8 @@ data class VideoActual(
     /** Idiomas de audio del video (vacío si tiene uno solo) y el que suena (null = el original). */
     val pistas: List<com.santyramos.mirador.extractor.PistaAudio> = emptyList(),
     val pista: String? = null,
+    /** Transmisión en vivo en curso: no hay duración fija ni «retomar donde ibas». */
+    val enVivo: Boolean = false,
 ) {
     /** Ya está listo para sonar (cargado y sin error). */
     val listo: Boolean get() = !cargando && error == null && (info != null || local)
@@ -191,7 +193,7 @@ object VideoController {
 
     private fun guardarPosicionActual() {
         val v = _video.value ?: return
-        if (!v.listo) return
+        if (!v.listo || v.enVivo) return
         Biblioteca.guardarPosicion(v.urlOriginal, player.currentPosition.coerceAtLeast(0))
     }
 
@@ -455,7 +457,9 @@ object VideoController {
             if (audioSolo != null) PlayerSources.construirSoloAudio(info, audioSolo) else PlayerSources.construir(info, seleccion)
         }
         val p = player
-        p.setMediaSource(fuente, posMs)
+        val enVivo = PlayerSources.esEnVivo(info)
+        // En vivo se entra en el momento actual de la transmisión, no en un punto guardado.
+        if (enVivo) p.setMediaSource(fuente) else p.setMediaSource(fuente, posMs)
         p.prepare()
         p.playWhenReady = true
         actualElemento?.takeIf { it.url == _video.value?.urlOriginal }?.let {
@@ -465,8 +469,19 @@ object VideoController {
             info = info, cargando = false, error = null, alturas = alturas, calidad = calidad,
             alturaReproduciendo = seleccion?.altura ?: 0,
             titulo = info.name.orEmpty(), autor = info.uploaderName, miniatura = info.thumbnails.bestUrl(), local = false, esAudio = audioSolo != null,
-            pistas = StreamSelector.pistas(info.audioStreams),
+            pistas = StreamSelector.pistas(info.audioStreams), enVivo = enVivo,
         )
+    }
+
+    /** Vuelve al momento actual de la transmisión en vivo (si te quedaste atrás o pausaste). */
+    fun irAlDirecto() { player.seekToDefaultPosition(); player.play() }
+
+    /** Cuánto vas atrás del momento actual en un directo (ms); 0 si estás al día o no es en vivo. */
+    fun atrasEnVivo(): Long {
+        val p = player
+        if (_video.value?.enVivo != true || !p.isCurrentMediaItemLive) return 0
+        val offset = p.currentLiveOffset
+        return if (offset == C.TIME_UNSET) 0 else offset
     }
 
     /** Cambia la calidad sin perder el punto en el que vas. */

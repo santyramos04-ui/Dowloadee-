@@ -4,6 +4,8 @@ import com.santyramos.mirador.ui.listaSugerencias
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -368,6 +370,12 @@ fun HomeScreen(
 }
 
 /** Tendencias ya cargadas (se conservan al cambiar de pestaña). */
+/** Transmisiones en vivo populares (se conservan al cambiar de pestaña; se renuevan cada 10 min). */
+private object EnVivoCache {
+    var datos: List<Elemento.Video>? = null
+    var hora = 0L
+}
+
 private object TendenciasCache {
     var datos: List<Elemento.Video>? = null
     var intentado = false
@@ -414,6 +422,13 @@ private fun Portada(
         }
     }
     LaunchedEffect(Unit) { recomendar(false) }
+    var enVivo by remember { mutableStateOf(EnVivoCache.datos) }
+    LaunchedEffect(Unit) {
+        if (EnVivoCache.datos == null || System.currentTimeMillis() - EnVivoCache.hora > 10 * 60_000) {
+            val r = runCatching { Youtube.buscar("en vivo", com.santyramos.mirador.extractor.FiltroBusqueda.EN_VIVO).elementos.filterIsInstance<Elemento.Video>() }.getOrNull()
+            if (r != null) { EnVivoCache.datos = r; EnVivoCache.hora = System.currentTimeMillis(); enVivo = r }
+        }
+    }
 
     LazyColumn(Modifier.fillMaxSize(), state = estado, contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp)) {
         item {
@@ -428,6 +443,15 @@ private fun Portada(
                         }
                     }
                 }
+            }
+        }
+        if (!enVivo.isNullOrEmpty()) item {
+            Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(10.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFFD32F2F)))
+                Text("En vivo ahora", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 10.dp))
+            }
+            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(enVivo!!, key = { "v" + it.url }) { v -> TarjetaEnVivo(v) { onAbrirVideo(v.url) } }
             }
         }
         if (!tendencias.isNullOrEmpty()) {
@@ -489,5 +513,21 @@ private fun BotonPlataforma(p: Plataforma, onClick: () -> Unit) {
             }
         }
         Text(p.nombre, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, modifier = Modifier.padding(top = 6.dp))
+    }
+}
+
+/** Tarjeta compacta de una transmisión en vivo para la fila «En vivo ahora». */
+@Composable
+private fun TarjetaEnVivo(v: Elemento.Video, onClick: () -> Unit) {
+    Column(Modifier.width(248.dp).clip(RoundedCornerShape(14.dp)).clickable(onClickLabel = "Ver en vivo", onClick = onClick)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)) {
+            coil3.compose.AsyncImage(model = v.miniatura, contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            Text(
+                "EN VIVO", style = MaterialTheme.typography.labelSmall, color = Color.White,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xE6D32F2F)).padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
+        Text(v.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
+        if (!v.autor.isNullOrBlank()) Text(v.autor, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
     }
 }

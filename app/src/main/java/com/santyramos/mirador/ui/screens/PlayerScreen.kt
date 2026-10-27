@@ -490,7 +490,19 @@ fun PlayerScreen(
                             },
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("${Format.duracion(estado.posicionMs / 1000)} / ${Format.duracion(estado.duracionMs / 1000)}", color = Color.White, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                            if (video?.enVivo == true) {
+                                // En vivo: no hay duración; se indica si vas atrás y se ofrece volver al momento actual.
+                                val atras = remember(estado.posicionMs) { VideoController.atrasEnVivo() } // se recalcula con cada avance
+                                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "● EN VIVO", color = Color.White, style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(if (atras > 30_000) Color(0x66FFFFFF) else Color(0xE6D32F2F)).padding(horizontal = 8.dp, vertical = 3.dp),
+                                    )
+                                    if (atras > 30_000) TextButton(onClick = { VideoController.irAlDirecto() }) {
+                                        Text("Ir al directo (−${Format.duracion(atras / 1000)})", color = Color.White, style = MaterialTheme.typography.labelMedium)
+                                    }
+                                }
+                            } else Text("${Format.duracion(estado.posicionMs / 1000)} / ${Format.duracion(estado.duracionMs / 1000)}", color = Color.White, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
                             IconButton(onClick = {
                                 actividad?.requestedOrientation = if (enHorizontal) ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                             }) { Icon(if (enHorizontal) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen, "Pantalla completa", tint = Color.White) }

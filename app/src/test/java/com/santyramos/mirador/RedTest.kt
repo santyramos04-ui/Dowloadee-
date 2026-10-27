@@ -60,6 +60,27 @@ class RedTest {
         }
     }
 
+    @Test fun reproduceUnaTransmisionEnVivo() = runBlocking {
+        requiere()
+        Youtube.iniciar()
+        // Los directos cambian de enlace al reiniciarse: se busca uno que esté al aire ahora.
+        val busqueda = Youtube.buscar("lofi música", FiltroBusqueda.EN_VIVO)
+        println("PRUEBA_VER búsqueda en vivo: ${busqueda.elementos.size} directos; primero = ${busqueda.elementos.firstOrNull()?.titulo}")
+        assertTrue("La búsqueda «En vivo» no encontró directos", busqueda.elementos.isNotEmpty())
+        val url = busqueda.elementos.first().url
+        val info = try {
+            Youtube.video(url)
+        } catch (e: org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException) {
+            println("PRUEBA_VER en vivo: NO CONCLUYENTE — YouTube bloqueó la IP del servidor.")
+            assumeTrue("YouTube bloqueó la IP del servidor", false)
+            return@runBlocking
+        }
+        val enVivo = com.santyramos.mirador.player.PlayerSources.esEnVivo(info)
+        println("PRUEBA_VER en vivo: «${info.name}» tipo=${info.streamType} hls=${!info.hlsUrl.isNullOrEmpty()} dash=${!info.dashMpdUrl.isNullOrEmpty()} streams=${info.videoStreams.size}+${info.videoOnlyStreams.size}")
+        assumeTrue("La transmisión terminó justo ahora", enVivo)
+        assertTrue("El directo no trae HLS ni DASH", !info.hlsUrl.isNullOrEmpty() || !info.dashMpdUrl.isNullOrEmpty())
+    }
+
     @Test fun cargaLosVideosDeUnCanal() = runBlocking {
         requiere()
         Youtube.iniciar()

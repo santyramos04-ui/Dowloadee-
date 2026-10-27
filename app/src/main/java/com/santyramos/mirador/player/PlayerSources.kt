@@ -29,17 +29,27 @@ object PlayerSources {
         .setArtworkUri(info.thumbnails.maxByOrNull { it.width }?.url?.let(Uri::parse))
         .build()
 
+    /** Es una transmisión en vivo que está sucediendo ahora. */
+    fun esEnVivo(info: StreamInfo): Boolean = info.streamType == StreamType.LIVE_STREAM || info.streamType == StreamType.AUDIO_LIVE_STREAM
+
     /** Fuente para un directo o un video con la selección elegida. */
     fun construir(info: StreamInfo, seleccion: SeleccionStreams?): MediaSource {
         val meta = metadatos(info)
-        val esDirecto = info.streamType == StreamType.LIVE_STREAM || info.streamType == StreamType.AUDIO_LIVE_STREAM
-        if (esDirecto || seleccion == null) {
+        if (esEnVivo(info) || seleccion == null) {
             val hls = info.hlsUrl
             if (!hls.isNullOrEmpty()) {
                 return HlsMediaSource.Factory(PlayerData.fabricaGenerica())
                     .createMediaSource(MediaItem.Builder().setUri(hls).setMediaMetadata(meta).build())
             }
-            error("Este contenido no se puede reproducir (no hay streams disponibles)")
+            // Algunos directos solo traen el manifiesto DASH.
+            val dash = info.dashMpdUrl
+            if (!dash.isNullOrEmpty()) {
+                return DashMediaSource.Factory(PlayerData.fabricaDash())
+                    .createMediaSource(MediaItem.Builder().setUri(dash).setMediaMetadata(meta).build())
+            }
+            // Último intento: un stream del directo que venga como HLS.
+            (info.videoStreams + info.videoOnlyStreams).firstOrNull { it.deliveryMethod == DeliveryMethod.HLS }?.let { return fuente(info, it, meta) }
+            if (seleccion == null) error("Este contenido no se puede reproducir (no hay streams disponibles)")
         }
         val video = fuente(info, seleccion.video, meta)
         val audio = seleccion.audio?.let { fuente(info, it, meta) }
