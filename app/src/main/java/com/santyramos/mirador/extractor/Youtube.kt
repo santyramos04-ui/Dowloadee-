@@ -94,10 +94,20 @@ object Youtube {
     fun iniciar(downloader: NewPipeDownloader = NewPipeDownloader()) {
         if (iniciado) return
         NewPipe.init(downloader, Localization("es", "CO"), ContentCountry("CO"))
+        // «es-CO» no está en la lista de idiomas de YouTube y NewPipe caía en inglés (en-GB): YouTube
+        // entonces traducía los títulos al inglés. Se elige una variante de español que sí reconoce.
+        NewPipe.setupLocalization(espanol(servicio.supportedLocalizations), ContentCountry("CO"))
         iniciado = true
     }
 
     private val servicio get() = ServiceList.YouTube
+
+    /** Español latinoamericano si YouTube lo ofrece; si no, cualquier español; si no, «es». */
+    internal fun espanol(soportados: List<Localization>): Localization =
+        soportados.firstOrNull { it.localizationCode.equals("es-419", true) }
+            ?: soportados.firstOrNull { it.localizationCode.equals("es", true) }
+            ?: soportados.firstOrNull { it.languageCode == "es" }
+            ?: Localization("es")
 
     fun aElemento(item: InfoItem): Elemento? = when (item) {
         is StreamInfoItem -> Elemento.Video(

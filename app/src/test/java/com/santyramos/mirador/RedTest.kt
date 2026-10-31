@@ -81,7 +81,7 @@ class RedTest {
         assertTrue("El directo no trae HLS ni DASH", !info.hlsUrl.isNullOrEmpty() || !info.dashMpdUrl.isNullOrEmpty())
     }
 
-    /** Diagnóstico: ¿en qué idioma llegan los títulos de la búsqueda y las sugerencias? (solo imprime). */
+    /** Los títulos deben llegar en español (YouTube los traduce al idioma que se le pide). */
     @Test fun idiomaDeLosTitulos() = runBlocking {
         requiere()
         Youtube.iniciar()
@@ -91,6 +91,7 @@ class RedTest {
             println("PRUEBA_VER idioma «$q»: $r")
         }
         println("PRUEBA_VER idioma sugerencias «musica»: ${Youtube.sugerencias("musica").take(6)}")
+        assertTrue("YouTube debe recibir el idioma español", org.schabi.newpipe.extractor.ServiceList.YouTube.localization.languageCode == "es")
     }
 
     @Test fun cargaLosVideosDeUnCanal() = runBlocking {
