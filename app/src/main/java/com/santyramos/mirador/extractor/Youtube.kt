@@ -175,9 +175,11 @@ object Youtube {
 
     suspend fun video(url: String): StreamInfo = withContext(Dispatchers.IO) {
         iniciar()
-        // En español (títulos de relacionados incluidos); si algo del texto no se entiende, como antes.
+        // En español (títulos de relacionados incluidos).
         runCatching { StreamInfo.getInfo(servicio.getStreamExtractor(url).enEspanol().apply { fetchPage() }) }
-            .getOrElse { e -> if (e is org.schabi.newpipe.extractor.exceptions.ParsingException && e !is org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException) StreamInfo.getInfo(servicio, url) else throw e }
+            // Si falla, se repite sin forzar el idioma: así los avisos de YouTube (p. ej. «no eres un robot»,
+            // que NewPipe reconoce solo en inglés) llegan con su tipo de error y mensaje claro.
+            .getOrElse { StreamInfo.getInfo(servicio, url) }
     }
 
     private fun infoPestana(tab: org.schabi.newpipe.extractor.linkhandler.ListLinkHandler): ChannelTabInfo =
