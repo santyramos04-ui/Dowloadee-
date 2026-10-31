@@ -7,7 +7,7 @@ import android.net.Uri
 
 /** Enviar archivos descargados a otras apps (WhatsApp, Instagram, TikTok, Telegram, correo…). */
 object Compartir {
-    /** Tipo que entienden las redes sociales: «video/*», «audio/*», «image/*» o el exacto si se conoce. */
+    /** Tipo del archivo para las otras apps (el exacto si se conoce; si no, «cualquiera»). */
     fun tipo(mime: String?): String = when {
         mime.isNullOrBlank() -> "*/*"
         mime.contains('/') -> mime
