@@ -108,9 +108,9 @@ object Youtube {
     private val COLOMBIA = ContentCountry("CO")
     private fun <T : org.schabi.newpipe.extractor.Extractor> T.enEspanol(): T = apply { forceLocalization(ESPANOL); forceContentCountry(COLOMBIA) }
 
-    private fun primeraBusqueda(qh: org.schabi.newpipe.extractor.search.SearchQueryHandler): SearchInfo =
+    private fun primeraBusqueda(qh: org.schabi.newpipe.extractor.linkhandler.SearchQueryHandler): SearchInfo =
         SearchInfo.getInfo(servicio.getSearchExtractor(qh).enEspanol().apply { fetchPage() })
-    private fun masDeBusqueda(qh: org.schabi.newpipe.extractor.search.SearchQueryHandler, pagina: Page): org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage<InfoItem> {
+    private fun masDeBusqueda(qh: org.schabi.newpipe.extractor.linkhandler.SearchQueryHandler, pagina: Page): org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage<InfoItem> {
         val ex: org.schabi.newpipe.extractor.search.SearchExtractor = servicio.getSearchExtractor(qh)
         ex.forceLocalization(ESPANOL); ex.forceContentCountry(COLOMBIA)
         return ex.getPage(pagina)
