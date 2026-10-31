@@ -81,6 +81,18 @@ class RedTest {
         assertTrue("El directo no trae HLS ni DASH", !info.hlsUrl.isNullOrEmpty() || !info.dashMpdUrl.isNullOrEmpty())
     }
 
+    /** Diagnóstico: ¿en qué idioma llegan los títulos de la búsqueda y las sugerencias? (solo imprime). */
+    @Test fun idiomaDeLosTitulos() = runBlocking {
+        requiere()
+        Youtube.iniciar()
+        println("PRUEBA_VER idioma: localizacion=${org.schabi.newpipe.extractor.ServiceList.YouTube.localization} pais=${org.schabi.newpipe.extractor.ServiceList.YouTube.contentCountry}")
+        for (q in listOf("noticias colombia", "minecraft", "mrbeast")) {
+            val r = runCatching { Youtube.buscar(q, FiltroBusqueda.VIDEOS).elementos.take(6).joinToString(" | ") { it.titulo } }.getOrElse { "error: ${it.message}" }
+            println("PRUEBA_VER idioma «$q»: $r")
+        }
+        println("PRUEBA_VER idioma sugerencias «musica»: ${Youtube.sugerencias("musica").take(6)}")
+    }
+
     @Test fun cargaLosVideosDeUnCanal() = runBlocking {
         requiere()
         Youtube.iniciar()
