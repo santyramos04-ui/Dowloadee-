@@ -110,8 +110,11 @@ object Youtube {
 
     private fun primeraBusqueda(qh: org.schabi.newpipe.extractor.search.SearchQueryHandler): SearchInfo =
         SearchInfo.getInfo(servicio.getSearchExtractor(qh).enEspanol().apply { fetchPage() })
-    private fun masDeBusqueda(qh: org.schabi.newpipe.extractor.search.SearchQueryHandler, pagina: Page) =
-        servicio.getSearchExtractor(qh).enEspanol().getPage(pagina)
+    private fun masDeBusqueda(qh: org.schabi.newpipe.extractor.search.SearchQueryHandler, pagina: Page): org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage<InfoItem> {
+        val ex: org.schabi.newpipe.extractor.search.SearchExtractor = servicio.getSearchExtractor(qh)
+        ex.forceLocalization(ESPANOL); ex.forceContentCountry(COLOMBIA)
+        return ex.getPage(pagina)
+    }
 
     fun aElemento(item: InfoItem): Elemento? = when (item) {
         is StreamInfoItem -> Elemento.Video(
