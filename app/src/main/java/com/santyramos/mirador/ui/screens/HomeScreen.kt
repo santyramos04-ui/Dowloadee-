@@ -28,6 +28,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.runtime.collectAsState
@@ -423,6 +425,8 @@ private fun Portada(
     }
     LaunchedEffect(Unit) { recomendar(false) }
     var enVivo by remember { mutableStateOf(EnVivoCache.datos) }
+    val ajustesPortada = com.santyramos.mirador.data.Settings(androidx.compose.ui.platform.LocalContext.current)
+    val livesOcultos by remember { ajustesPortada.livesOcultos }.collectAsState(initial = false)
     LaunchedEffect(Unit) {
         if (EnVivoCache.datos == null || System.currentTimeMillis() - EnVivoCache.hora > 10 * 60_000) {
             val r = runCatching { Youtube.buscar("en vivo", com.santyramos.mirador.extractor.FiltroBusqueda.EN_VIVO).elementos.filterIsInstance<Elemento.Video>() }.getOrNull()
@@ -446,12 +450,29 @@ private fun Portada(
             }
         }
         if (!enVivo.isNullOrEmpty()) item {
-            Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            // «Lives»: se pliega y despliega tocando el título (se recuerda la elección).
+            Row(
+                Modifier.fillMaxWidth().padding(top = 18.dp)
+                    .clickable(onClickLabel = if (livesOcultos) "Mostrar lives" else "Ocultar lives") { scope.launch { ajustesPortada.setLivesOcultos(!livesOcultos) } }
+                    .padding(start = 20.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Box(Modifier.size(10.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFFD32F2F)))
-                Text("En vivo ahora", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 10.dp))
+                Text("Lives", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 10.dp).weight(1f))
+                Icon(
+                    if (livesOcultos) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowUp,
+                    if (livesOcultos) "Mostrar lives" else "Ocultar lives",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(30.dp),
+                )
             }
-            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(enVivo!!, key = { "v" + it.url }) { v -> TarjetaEnVivo(v) { onAbrirVideo(v.url) } }
+            androidx.compose.animation.AnimatedVisibility(
+                visible = !livesOcultos,
+                enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+            ) {
+                LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(enVivo!!, key = { "v" + it.url }) { v -> TarjetaEnVivo(v) { onAbrirVideo(v.url) } }
+                }
             }
         }
         if (!tendencias.isNullOrEmpty()) {
@@ -516,7 +537,7 @@ private fun BotonPlataforma(p: Plataforma, onClick: () -> Unit) {
     }
 }
 
-/** Tarjeta compacta de una transmisión en vivo para la fila «En vivo ahora». */
+/** Tarjeta compacta de una transmisión en vivo para la fila «Lives». */
 @Composable
 private fun TarjetaEnVivo(v: Elemento.Video, onClick: () -> Unit) {
     Column(Modifier.width(248.dp).clip(RoundedCornerShape(14.dp)).clickable(onClickLabel = "Ver en vivo", onClick = onClick)) {
