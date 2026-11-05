@@ -99,6 +99,23 @@ object Youtube {
 
     private val servicio get() = ServiceList.YouTube
 
+    /**
+     * Idioma que se le pide a YouTube. NewPipeExtractor solo «admite» inglés británico para YouTube y
+     * cambia cualquier otro idioma por ese; YouTube entonces traduce los títulos al inglés. Por eso se
+     * fuerza el español en cada consulta.
+     */
+    val ESPANOL = Localization("es", "419")
+    private val COLOMBIA = ContentCountry("CO")
+    private fun <T : org.schabi.newpipe.extractor.Extractor> T.enEspanol(): T = apply { forceLocalization(ESPANOL); forceContentCountry(COLOMBIA) }
+
+    private fun primeraBusqueda(qh: org.schabi.newpipe.extractor.linkhandler.SearchQueryHandler): SearchInfo =
+        SearchInfo.getInfo(servicio.getSearchExtractor(qh).enEspanol().apply { fetchPage() })
+    private fun masDeBusqueda(qh: org.schabi.newpipe.extractor.linkhandler.SearchQueryHandler, pagina: Page): org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage<InfoItem> {
+        val ex: org.schabi.newpipe.extractor.search.SearchExtractor = servicio.getSearchExtractor(qh)
+        ex.forceLocalization(ESPANOL); ex.forceContentCountry(COLOMBIA)
+        return ex.getPage(pagina)
+    }
+
     fun aElemento(item: InfoItem): Elemento? = when (item) {
         is StreamInfoItem -> Elemento.Video(
             titulo = item.name.orEmpty(), url = item.url, miniatura = item.thumbnails.bestUrl(),
@@ -118,7 +135,7 @@ object Youtube {
             iniciar()
             if (filtro == FiltroBusqueda.EN_VIVO) return@withContext buscarEnVivo(consulta, null)
             val qh = servicio.searchQHFactory.fromQuery(consulta, listOf(filtro.clave), "")
-            val info = SearchInfo.getInfo(servicio, qh)
+            val info = primeraBusqueda(qh)
             Pagina(info.relatedItems.mapNotNull(::aElemento), info.nextPage)
         }
 
@@ -127,7 +144,7 @@ object Youtube {
             iniciar()
             if (filtro == FiltroBusqueda.EN_VIVO) return@withContext buscarEnVivo(consulta, pagina)
             val qh = servicio.searchQHFactory.fromQuery(consulta, listOf(filtro.clave), "")
-            val p = SearchInfo.getMoreItems(servicio, qh, pagina)
+            val p = masDeBusqueda(qh, pagina)
             Pagina(p.items.mapNotNull(::aElemento), p.nextPage)
         }
 
@@ -142,8 +159,8 @@ object Youtube {
         var pagina: Page? = desde
         var vueltas = 0
         do {
-            val (items, sig) = if (pagina == null && vueltas == 0) SearchInfo.getInfo(servicio, qh).let { it.relatedItems to it.nextPage }
-            else SearchInfo.getMoreItems(servicio, qh, pagina!!).let { it.items to it.nextPage }
+            val (items, sig) = if (pagina == null && vueltas == 0) primeraBusqueda(qh).let { it.relatedItems to it.nextPage }
+            else masDeBusqueda(qh, pagina!!).let { it.items to it.nextPage }
             encontrados += items.mapNotNull(::aElemento).filter { it is Elemento.Video && it.esDirecto }
             pagina = sig
             vueltas++
@@ -158,17 +175,24 @@ object Youtube {
 
     suspend fun video(url: String): StreamInfo = withContext(Dispatchers.IO) {
         iniciar()
-        StreamInfo.getInfo(servicio, url)
+        // En español (títulos de relacionados incluidos).
+        runCatching { StreamInfo.getInfo(servicio.getStreamExtractor(url).enEspanol().apply { fetchPage() }) }
+            // Si falla, se repite sin forzar el idioma: así los avisos de YouTube (p. ej. «no eres un robot»,
+            // que NewPipe reconoce solo en inglés) llegan con su tipo de error y mensaje claro.
+            .getOrElse { StreamInfo.getInfo(servicio, url) }
     }
+
+    private fun infoPestana(tab: org.schabi.newpipe.extractor.linkhandler.ListLinkHandler): ChannelTabInfo =
+        runCatching { ChannelTabInfo.getInfo(servicio.getChannelTabExtractor(tab).enEspanol().apply { fetchPage() }) }.getOrElse { ChannelTabInfo.getInfo(servicio, tab) }
 
     class DatosCanal(val info: ChannelInfo, val videos: Pagina<Elemento>)
 
     suspend fun canal(url: String): DatosCanal = withContext(Dispatchers.IO) {
         iniciar()
-        val info = ChannelInfo.getInfo(servicio, url)
+        val info = runCatching { ChannelInfo.getInfo(servicio.getChannelExtractor(url).enEspanol().apply { fetchPage() }) }.getOrElse { ChannelInfo.getInfo(servicio, url) }
         val tab = info.tabs.firstOrNull { it.contentFilters.contains(ChannelTabs.VIDEOS) }
         val videos = if (tab != null) {
-            val t = ChannelTabInfo.getInfo(servicio, tab)
+            val t = infoPestana(tab)
             Pagina(t.relatedItems.mapNotNull(::aElemento), t.nextPage)
         } else Pagina(emptyList(), null)
         DatosCanal(info, videos)
@@ -181,7 +205,7 @@ object Youtube {
     suspend fun pestanaCanal(info: ChannelInfo, pestana: String): Pagina<Elemento> = withContext(Dispatchers.IO) {
         iniciar()
         val tab = info.tabs.firstOrNull { it.contentFilters.contains(pestana) } ?: return@withContext Pagina(emptyList(), null)
-        val t = ChannelTabInfo.getInfo(servicio, tab)
+        val t = infoPestana(tab)
         Pagina(t.relatedItems.mapNotNull(::aElemento), t.nextPage)
     }
 
@@ -189,7 +213,7 @@ object Youtube {
         iniciar()
         val tab = info.tabs.firstOrNull { it.contentFilters.contains(pestana) }
             ?: return@withContext Pagina(emptyList(), null)
-        val p = ChannelTabInfo.getMoreItems(servicio, tab, pagina)
+        val p = servicio.getChannelTabExtractor(tab).enEspanol().getPage(pagina)
         Pagina(p.items.mapNotNull(::aElemento), p.nextPage)
     }
 
@@ -197,13 +221,13 @@ object Youtube {
 
     suspend fun lista(url: String): DatosLista = withContext(Dispatchers.IO) {
         iniciar()
-        val info = PlaylistInfo.getInfo(servicio, url)
+        val info = runCatching { PlaylistInfo.getInfo(servicio.getPlaylistExtractor(url).enEspanol().apply { fetchPage() }) }.getOrElse { PlaylistInfo.getInfo(servicio, url) }
         DatosLista(info, Pagina(info.relatedItems.mapNotNull(::aElemento), info.nextPage))
     }
 
     suspend fun masLista(url: String, pagina: Page): Pagina<Elemento> = withContext(Dispatchers.IO) {
         iniciar()
-        val p = PlaylistInfo.getMoreItems(servicio, url, pagina)
+        val p = servicio.getPlaylistExtractor(url).enEspanol().getPage(pagina)
         Pagina(p.items.mapNotNull(::aElemento), p.nextPage)
     }
 

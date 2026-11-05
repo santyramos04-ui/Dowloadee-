@@ -81,6 +81,22 @@ class RedTest {
         assertTrue("El directo no trae HLS ni DASH", !info.hlsUrl.isNullOrEmpty() || !info.dashMpdUrl.isNullOrEmpty())
     }
 
+    /** Los títulos deben llegar en español (YouTube los traduce al idioma que se le pide). */
+    @Test fun idiomaDeLosTitulos() = runBlocking {
+        requiere()
+        Youtube.iniciar()
+        for (q in listOf("noticias colombia", "minecraft", "mrbeast")) {
+            val r = runCatching { Youtube.buscar(q, FiltroBusqueda.VIDEOS).elementos.take(6).joinToString(" | ") { it.titulo } }.getOrElse { "error: ${it.message}" }
+            println("PRUEBA_VER idioma «$q»: $r")
+        }
+        println("PRUEBA_VER idioma sugerencias «musica»: ${Youtube.sugerencias("musica").take(6)}")
+        // «noticias colombia» trae noticieros colombianos: con el idioma bien pedido, ninguno llega traducido al inglés.
+        val noticias = Youtube.buscar("noticias colombia", FiltroBusqueda.VIDEOS).elementos.map { it.titulo }
+        val enIngles = noticias.filter { Regex("\\b(the|of|and|arrival|news|broadcast)\\b", RegexOption.IGNORE_CASE).containsMatchIn(it) }
+        println("PRUEBA_VER idioma: títulos que parecen inglés = $enIngles")
+        assertTrue("Hay títulos traducidos al inglés: $enIngles", enIngles.size <= 1)
+    }
+
     @Test fun cargaLosVideosDeUnCanal() = runBlocking {
         requiere()
         Youtube.iniciar()

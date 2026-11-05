@@ -32,6 +32,8 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Refresh
@@ -296,8 +298,22 @@ private fun FilaDescarga(d: DownloadEntity, onQuitar: () -> Unit) {
                     }
                     DownloadStatus.DONE -> {
                         if (d.esReproducible()) BotonIcono(Icons.Outlined.PlayArrow, "Reproducir en la app", { com.santyramos.mirador.player.VideoController.abrirArchivo(d.aCola()) }, destacado = true)
-                        if (d.archivoUri != null) BotonIcono(Icons.Outlined.OpenInNew, "Abrir con otra app", { abrir(contexto, d) }, destacado = !d.esReproducible())
-                        BotonIcono(Icons.Outlined.Delete, "Quitar de la lista", onQuitar)
+                        // Compartir el archivo (no el enlace) con WhatsApp, Instagram, TikTok…
+                        if (d.archivoUri != null) BotonIcono(Icons.Outlined.Share, "Compartir a otras apps", { com.santyramos.mirador.util.Compartir.archivo(contexto, d.archivoUri, d.archivoMime, d.titulo) }, destacado = !d.esReproducible())
+                        Box {
+                            var menu by remember { mutableStateOf(false) }
+                            BotonIcono(Icons.Outlined.MoreVert, "Más opciones", { menu = true })
+                            androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                                if (d.archivoUri != null) androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text("Abrir con otra app") }, leadingIcon = { Icon(Icons.Outlined.OpenInNew, null) },
+                                    onClick = { menu = false; abrir(contexto, d) },
+                                )
+                                androidx.compose.material3.DropdownMenuItem(
+                                    text = { Text("Quitar de la lista") }, leadingIcon = { Icon(Icons.Outlined.Delete, null) },
+                                    onClick = { menu = false; onQuitar() },
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -102,6 +102,13 @@ object Notifications {
             .setContentText(d.titulo)
             .setStyle(NotificationCompat.BigTextStyle().bigText(d.titulo + "\nToca para abrir. Guardado en Descargas/${com.santyramos.mirador.util.Marca.NOMBRE}"))
             .setContentIntent(pi)
+            .addAction(
+                0, "Compartir",
+                PendingIntent.getActivity(
+                    context, 500_000 + d.id.toInt(), com.santyramos.mirador.util.Compartir.selector(uri, mime, d.titulo),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                ),
+            )
             .setAutoCancel(true)
             .build()
         NotificationManagerCompat.from(context).notify(BASE_RESULTADO + d.id.toInt(), n)

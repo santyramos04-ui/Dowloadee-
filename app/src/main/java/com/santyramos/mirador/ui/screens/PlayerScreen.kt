@@ -527,7 +527,15 @@ fun PlayerScreen(
                                 Icon(if (v.origen == null) Icons.Outlined.DownloadDone else Icons.Outlined.Movie, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                                 Text(v.origen ?: "Desde tus descargas · sin conexión", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                             }
-                            BarraAcciones(local = true, onCola = { verCola = true }, onMas = { verMas = true })
+                            BarraAcciones(
+                                local = true, onCola = { verCola = true }, onMas = { verMas = true },
+                                // Descarga tuya: se comparte el archivo; si viene de internet (Internet Archive…), el enlace.
+                                onCompartir = {
+                                    val uri = v.archivoUri
+                                    if (v.origen == null && uri != null) com.santyramos.mirador.util.Compartir.archivo(contexto, uri, v.archivoMime, v.titulo)
+                                    else contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, v.urlOriginal), "Compartir enlace"))
+                                },
+                            )
                             TextButton(onClick = { VideoController.cerrar(); onMinimizar() }) { Text("Cerrar reproductor", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         }
                     }

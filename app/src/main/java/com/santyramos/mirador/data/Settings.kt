@@ -66,6 +66,7 @@ class Settings(private val context: Context) {
         val sinConexion = booleanPreferencesKey("modo_sin_conexion")
         val soloAudio = booleanPreferencesKey("solo_audio")
         val gestosBrilloVolumen = booleanPreferencesKey("gestos_brillo_volumen")
+        val livesOcultos = booleanPreferencesKey("lives_ocultos")
         val servidor = stringPreferencesKey("servidor_jellyfin")
         val dispositivo = stringPreferencesKey("id_dispositivo")
         val servidorAhorro = booleanPreferencesKey("servidor_ahorro_datos")
@@ -103,6 +104,9 @@ class Settings(private val context: Context) {
     suspend fun setSinConexion(v: Boolean) = ds.edit { it[K.sinConexion] = v }
     suspend fun setSoloAudio(v: Boolean) = ds.edit { it[K.soloAudio] = v }
     suspend fun setGestosBrilloVolumen(v: Boolean) = ds.edit { it[K.gestosBrilloVolumen] = v }
+    /** La fila «Lives» de Inicio está plegada. */
+    val livesOcultos: Flow<Boolean> = ds.data.map { it[K.livesOcultos] ?: false }
+    suspend fun setLivesOcultos(v: Boolean) = ds.edit { it[K.livesOcultos] = v }
 
     // ---------- Tu servidor (Jellyfin en la mini PC). La sesión solo vive en este celular: no va en los respaldos. ----------
     val servidor: Flow<com.santyramos.mirador.servidor.ServidorJf?> = ds.data.map { p -> p[K.servidor]?.let { com.santyramos.mirador.servidor.ServidorJf.deTexto(it) } }
