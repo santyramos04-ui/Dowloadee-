@@ -24,7 +24,7 @@ coil = "3.6.3"
 junit = "4.13.2"
 desugar = "2.1.5"
 # NewPipeExtractor (JitPack) - lo actualiza el workflow semanal
-newpipeExtractor = "v0.26.5"
+newpipeExtractor = "v0.27.0"
 # youtubedl-android (Maven Central): yt-dlp + Python + ffmpeg + QuickJS
 youtubedlAndroid = "0.18.1"
 
