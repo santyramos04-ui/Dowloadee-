@@ -174,6 +174,10 @@ fun HomeScreen(
         com.santyramos.mirador.ui.Sugerir.combinar(consulta, historialBusquedas, remotas)
     }
     androidx.activity.compose.BackHandler(enabled = enfocado) { foco.clearFocus() }
+    // Atrás con resultados de búsqueda en pantalla: vuelve a la portada (no sale de la app).
+    androidx.activity.compose.BackHandler(enabled = !enfocado && (buscado != null || cargando)) {
+        trabajo?.cancel(); consulta = ""; buscado = null; error = null; resultados.clear(); siguiente = null; cargando = false
+    }
 
     // Búsquedas pedidas desde fuera (canción de Spotify → YouTube).
     val pedida = Entrada.buscar

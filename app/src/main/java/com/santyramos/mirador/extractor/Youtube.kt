@@ -198,6 +198,9 @@ object Youtube {
         DatosCanal(info, videos)
     }
 
+    /** El canal tiene esa pestaña ([ChannelTabs.PLAYLISTS], [ChannelTabs.LIVESTREAMS]…). */
+    fun tienePestana(info: ChannelInfo, pestana: String): Boolean = info.tabs.any { it.contentFilters.contains(pestana) }
+
     /** El canal tiene pestaña de transmisiones en vivo (actuales y pasadas). */
     fun tieneEnVivo(info: ChannelInfo): Boolean = info.tabs.any { it.contentFilters.contains(ChannelTabs.LIVESTREAMS) }
 

@@ -95,6 +95,9 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     val video by VideoController.video.collectAsState()
     val actualizacion by AppUpdater.estado.collectAsState()
 
+    // Atrás dentro de una pantalla abierta (canal, lista, ajustes, sin conexión…): vuelve a la anterior.
+    // Las pantallas que manejan su propio atrás (p. ej. el navegador) lo hacen primero.
+    androidx.activity.compose.BackHandler(enabled = pila.isNotEmpty() && !reproductorAbierto) { pila.removeLastOrNull() }
     // Atrás en la pantalla principal: primero vuelve a Inicio y luego pide confirmar para salir.
     val contexto = androidx.compose.ui.platform.LocalContext.current
     var ultimoAtras by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
@@ -176,7 +179,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                     label = "pantallas",
                 ) { (d, _) ->
                 when (d) {
-                    is Destino.Canal -> ChannelScreen(d.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
+                    is Destino.Canal -> ChannelScreen(d.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it }, onAbrirLista = { pila.add(Destino.Lista(it)) })
                     is Destino.Lista -> PlaylistScreen(d.url, onAtras = { pila.removeLastOrNull() }, onAbrirVideo = ::abrirVideo, onDescargar = { urlDescarga = it })
                     Destino.Ajustes -> SettingsScreen(onAtras = { pila.removeLastOrNull() }, onAbrirNavegador = { pila.add(Destino.Navegador(it)) })
                     is Destino.Navegador -> com.santyramos.mirador.ui.screens.NavegadorScreen(d.url, { pila.removeLastOrNull() }, { urlDescarga = it })
