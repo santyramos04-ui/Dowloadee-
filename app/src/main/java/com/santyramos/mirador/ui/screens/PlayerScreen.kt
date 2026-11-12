@@ -114,6 +114,11 @@ import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.Surface
 import com.santyramos.mirador.util.Format
 import kotlinx.coroutines.delay
+import com.santyramos.mirador.player.Miniaturas
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.offset
 import kotlinx.coroutines.launch
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInRoot
@@ -160,6 +165,7 @@ fun PlayerScreen(
     DisposableEffect(Unit) {
         PipState.permitido = true
         onDispose {
+            com.santyramos.mirador.player.Miniaturas.liberar()
             PipState.permitido = false
             actividad?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             actividad?.window?.let { w ->
@@ -470,6 +476,36 @@ fun PlayerScreen(
                             thumbColor = com.santyramos.mirador.ui.theme.Acento, activeTrackColor = com.santyramos.mirador.ui.theme.Acento,
                             inactiveTrackColor = Color(0x55FFFFFF),
                         )
+                        // Al arrastrar: el segundo exacto y una miniatura de ese momento, encima del dedo (como YouTube).
+                        if (arrastrando && video?.enVivo != true) {
+                            var cuadro by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+                            LaunchedEffect(Unit) {
+                                androidx.compose.runtime.snapshotFlow { posArrastre }.collectLatest { f ->
+                                    delay(40) // espera a que el dedo se detenga un instante
+                                    val v = video
+                                    Miniaturas.cuadro(contexto, v?.info, v?.archivoUri, (f * dur).toLong())?.let { cuadro = it.asImageBitmap() }
+                                }
+                            }
+                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                                val anchoMini = if (enHorizontal) 200.dp else 150.dp
+                                Column(
+                                    Modifier.offset(x = (maxWidth - anchoMini) * posArrastre).width(anchoMini),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    cuadro?.let {
+                                        androidx.compose.foundation.Image(
+                                            it, null, contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(10.dp))
+                                                .border(2.dp, Color.White, RoundedCornerShape(10.dp)).background(Color.Black),
+                                        )
+                                    }
+                                    Text(
+                                        Format.duracion((posArrastre * dur / 1000).toLong()), color = Color.White, style = MaterialTheme.typography.titleSmall,
+                                        modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xCC000000)).padding(horizontal = 10.dp, vertical = 4.dp),
+                                    )
+                                }
+                            }
+                        }
                         // Barra fina con un punto redondo (la de serie traía un tirador alto que tapaba el video).
                         Slider(
                             value = if (arrastrando) posArrastre else (estado.posicionMs.toFloat() / dur).coerceIn(0f, 1f),
