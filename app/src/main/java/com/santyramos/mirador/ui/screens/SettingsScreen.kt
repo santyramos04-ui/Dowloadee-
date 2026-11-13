@@ -189,6 +189,7 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
             }
             Seccion("Aplicación") {
                 Text("${com.santyramos.mirador.util.Marca.NOMBRE} ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyMedium)
+                Text("Raccoon Audio Quest", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 when (val e = estadoApp) {
                     AppUpdater.Estado.Nada -> {}
                     AppUpdater.Estado.Buscando -> LinearProgressIndicator(Modifier.fillMaxWidth())

@@ -1,5 +1,9 @@
 package com.santyramos.mirador.ui.screens
 
+import androidx.compose.ui.focus.onFocusChanged
+
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -161,11 +165,20 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
     val alFinal by remember { derivedStateOf { (grilla.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) >= grilla.layoutInfo.totalItemsCount - 6 } }
     LaunchedEffect(alFinal) { if (alFinal && hayMas && !cargando && peliculas.isNotEmpty()) cargar(reiniciar = false) }
 
-    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+    // Título, buscador y categorías se esconden al bajar por las películas.
+    val listaPelis = androidx.compose.foundation.lazy.rememberLazyListState()
+    val cabecera = com.santyramos.mirador.ui.rememberCabeceraPlegable {
+        grilla.canScrollForward || grilla.canScrollBackward || listaPelis.canScrollForward || listaPelis.canScrollBackward
+    }
+    LaunchedEffect(fuenteIndice) { cabecera.mostrar() }
+    Column(Modifier.fillMaxSize().statusBarsPadding().nestedScroll(cabecera.conexion)) {
+      com.santyramos.mirador.ui.CabeceraPlegable(cabecera) {
+       Column {
         Encabezado("Películas", if (fuente == FuentePeli.Servidor) "Tus películas, series y videos desde tu mini PC" else "Gratis y legales: cine de dominio público y estrenos que sus dueños comparten")
         OutlinedTextField(
             value = consulta, onValueChange = { consulta = it }, singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).semantics { contentDescription = "Buscar películas" },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp).semantics { contentDescription = "Buscar películas" }
+                .onFocusChanged { cabecera.fija = it.isFocused; if (it.isFocused) cabecera.mostrar() },
             placeholder = { Text(if (fuente == FuentePeli.Servidor) "Buscar en mi servidor…" else "Buscar una película…", color = Paleta.Texto3) },
             leadingIcon = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -179,6 +192,8 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
         LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
             items(FUENTES.size) { i -> Filtro(FUENTES[i].etiqueta(), fuenteIndice == i) { fuenteIndice = i } }
         }
+       }
+      }
 
         val vacio = peliculas.isEmpty() && videos.isEmpty()
         when {
@@ -194,7 +209,7 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
             vacio -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 EstadoVacio(Icons.Outlined.Movie, "No encontré películas", "Prueba con otra palabra o con otra categoría.")
             }
-            fuente == FuentePeli.YouTube -> androidx.compose.foundation.lazy.LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
+            fuente == FuentePeli.YouTube -> androidx.compose.foundation.lazy.LazyColumn(state = listaPelis, contentPadding = PaddingValues(bottom = 16.dp)) {
                 items(videos, key = { it.url }) { v -> FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
             }
             else -> LazyVerticalGrid(
