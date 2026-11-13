@@ -1,6 +1,6 @@
-# Mirador
+# RACQ
 
-**Mirador** es una app para Android, de uso personal, con dos funciones que funcionan igual de bien:
+**RACQ** (antes llamada Mirador) es una app para Android, de uso personal, con dos funciones que funcionan igual de bien:
 
 1. **Ver YouTube sin anuncios y sin cuenta de Google** (usa la librería NewPipeExtractor, como NewPipe).
 2. **Descargar videos, audio e imágenes** de YouTube, X, Instagram, TikTok, Facebook y muchos otros sitios (usa yt-dlp + ffmpeg dentro de la app).

@@ -47,6 +47,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import androidx.compose.ui.unit.dp
 import com.santyramos.mirador.player.VideoController
 import com.santyramos.mirador.ui.screens.BibliotecaScreen
@@ -101,6 +105,33 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     // Atrás en la pantalla principal: primero vuelve a Inicio y luego pide confirmar para salir.
     val contexto = androidx.compose.ui.platform.LocalContext.current
     var ultimoAtras by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    val scopeApp = androidx.compose.runtime.rememberCoroutineScope()
+    // Aviso por única vez para quien venía usando la app con su nombre anterior: «Mirador ahora es RACQ».
+    val ajustesApp = remember { com.santyramos.mirador.data.Settings(contexto) }
+    var verAvisoNombre by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (ajustesApp.avisoNuevoNombreVisto.first()) return@LaunchedEffect
+        // Solo si la app se actualizó (una instalación nueva ya nace como RACQ).
+        val info = runCatching { contexto.packageManager.getPackageInfo(contexto.packageName, 0) }.getOrNull()
+        if (info != null && info.lastUpdateTime > info.firstInstallTime) verAvisoNombre = true
+        else ajustesApp.setAvisoNuevoNombreVisto()
+    }
+    if (verAvisoNombre) {
+        val cerrar = { verAvisoNombre = false; scopeApp.launch { ajustesApp.setAvisoNuevoNombreVisto() }; Unit }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = cerrar,
+            icon = {
+                androidx.compose.foundation.Image(
+                    androidx.compose.ui.res.painterResource(com.santyramos.mirador.R.drawable.ic_mark), null,
+                    Modifier.size(72.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(18.dp)),
+                )
+            },
+            title = { Text("Ahora Mirador es RACQ") },
+            text = { Text("Es la misma app que ya conoces, con nombre e ícono nuevos. Tus descargas, suscripciones, historial y listas siguen aquí.") },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = cerrar) { Text("¡Entendido!") } },
+        )
+    }
+
     androidx.activity.compose.BackHandler(enabled = pila.isEmpty() && !reproductorAbierto) {
         if (pestana != 0) pestana = 0
         else {

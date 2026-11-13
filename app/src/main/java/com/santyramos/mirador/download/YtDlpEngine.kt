@@ -141,7 +141,7 @@ object YtDlpEngine {
         val r = if (infoJson != null) YoutubeDLRequest(emptyList<String>()).also { it.addOption("--load-info-json", infoJson.absolutePath) }
         else YoutubeDLRequest(job.url)
         r.conCache()
-        r.addOption("-o", File(dir, "%(playlist_index&{} - |)s%(title).110B.%(ext)s").absolutePath)
+        r.addOption("-o", File(dir, "%(title).110B.%(ext)s").absolutePath)
         r.addOption("--newline")
         r.addOption("--progress-template", ProgressParser.PLANTILLA)
         r.addOption("--no-mtime")

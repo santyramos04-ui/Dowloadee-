@@ -67,6 +67,7 @@ class Settings(private val context: Context) {
         val soloAudio = booleanPreferencesKey("solo_audio")
         val gestosBrilloVolumen = booleanPreferencesKey("gestos_brillo_volumen")
         val livesOcultos = booleanPreferencesKey("lives_ocultos")
+        val avisoNuevoNombre = booleanPreferencesKey("aviso_mirador_es_racq")
         val servidor = stringPreferencesKey("servidor_jellyfin")
         val dispositivo = stringPreferencesKey("id_dispositivo")
         val servidorAhorro = booleanPreferencesKey("servidor_ahorro_datos")
@@ -107,6 +108,9 @@ class Settings(private val context: Context) {
     /** La fila «Lives» de Inicio está plegada. */
     val livesOcultos: Flow<Boolean> = ds.data.map { it[K.livesOcultos] ?: false }
     suspend fun setLivesOcultos(v: Boolean) = ds.edit { it[K.livesOcultos] = v }
+    /** Ya se mostró (una sola vez) el aviso «Mirador ahora es RACQ». */
+    val avisoNuevoNombreVisto: Flow<Boolean> = ds.data.map { it[K.avisoNuevoNombre] ?: false }
+    suspend fun setAvisoNuevoNombreVisto() = ds.edit { it[K.avisoNuevoNombre] = true }
 
     // ---------- Tu servidor (Jellyfin en la mini PC). La sesión solo vive en este celular: no va en los respaldos. ----------
     val servidor: Flow<com.santyramos.mirador.servidor.ServidorJf?> = ds.data.map { p -> p[K.servidor]?.let { com.santyramos.mirador.servidor.ServidorJf.deTexto(it) } }

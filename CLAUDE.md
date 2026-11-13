@@ -1,4 +1,6 @@
-# Mirador
+# RACQ (antes Mirador)
+
+Nombre visible: **RACQ** (`version.properties` → `nombre`). Su significado, «Raccoon Audio Quest», solo aparece en Ajustes junto a la versión. El código y el paquete siguen como `mirador`.
 
 App Android (Kotlin + Jetpack Compose, Media3, NewPipeExtractor, yt-dlp vía youtubedl-android). Licencia GPLv3.
 El dueño no programa: explicar todo en español sencillo y paso a paso.

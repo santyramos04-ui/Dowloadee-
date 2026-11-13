@@ -72,6 +72,16 @@ object UrlTools {
         Regex("""/(?:p|reel|reels|tv)/([A-Za-z0-9_-]+)""").find(url)?.groupValues?.get(1)
 
     /** Nombre de archivo seguro. */
+    /**
+     * Nombre de carpeta para una lista: solo letras (con tildes y ñ), números y espacios.
+     * Sin emojis ni símbolos, para que se vea limpio en cualquier celular o computador.
+     */
+    fun nombreCarpeta(s: String, max: Int = 60): String {
+        val limpio = s.map { c -> if (Character.isLetterOrDigit(c)) c else ' ' }.joinToString("")
+            .replace(Regex("\\s+"), " ").trim().take(max).trim()
+        return limpio.ifEmpty { "Lista" }
+    }
+
     fun nombreSeguro(s: String, max: Int = 80): String {
         val limpio = s.replace(Regex("""[\\/:*?"<>|\u0000-\u001f]"""), "_").trim().trim('.')
         return (if (limpio.isEmpty()) "archivo" else limpio).take(max)

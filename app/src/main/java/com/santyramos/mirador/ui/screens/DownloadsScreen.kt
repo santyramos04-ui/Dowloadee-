@@ -1,5 +1,9 @@
 package com.santyramos.mirador.ui.screens
 
+import androidx.compose.ui.focus.onFocusChanged
+
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -146,8 +150,13 @@ fun DownloadsScreen(modifier: Modifier = Modifier, onSinConexion: () -> Unit = {
     }
     val visibles = descargas.filter { it.coincide(filtro) && it.id !in ocultas }
 
+    // La parte de arriba (título, pegar enlaces y filtros) se esconde al bajar por la lista.
+    val listaDescargas = androidx.compose.foundation.lazy.rememberLazyListState()
+    val cabecera = com.santyramos.mirador.ui.rememberCabeceraPlegable { listaDescargas.canScrollForward || listaDescargas.canScrollBackward }
     Box(modifier.fillMaxSize()) {
-    Column(Modifier.fillMaxSize().statusBarsPadding()) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().nestedScroll(cabecera.conexion)) {
+      com.santyramos.mirador.ui.CabeceraPlegable(cabecera) {
+       Column {
         Encabezado(
             "Descargas",
             if (descargas.isEmpty()) "Pega un enlace para empezar"
@@ -158,7 +167,9 @@ fun DownloadsScreen(modifier: Modifier = Modifier, onSinConexion: () -> Unit = {
         Panel(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 androidx.compose.material3.OutlinedTextField(
-                    value = texto, onValueChange = { texto = it }, modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Enlaces para descargar" },
+                    value = texto, onValueChange = { texto = it },
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Enlaces para descargar" }
+                        .onFocusChanged { cabecera.fija = it.isFocused; if (it.isFocused) cabecera.mostrar() },
                     minLines = 1, maxLines = 5, shape = RoundedCornerShape(14.dp),
                     placeholder = { Text("Pega aquí uno o varios enlaces…", color = Paleta.Texto3) },
                     trailingIcon = { IconButton(onClick = { pegar() }) { Icon(Icons.Outlined.ContentPaste, "Pegar del portapapeles", tint = MaterialTheme.colorScheme.onSurfaceVariant) } },
@@ -198,6 +209,8 @@ fun DownloadsScreen(modifier: Modifier = Modifier, onSinConexion: () -> Unit = {
                 }
             }
         }
+       }
+      }
 
         if (descargas.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -206,7 +219,7 @@ fun DownloadsScreen(modifier: Modifier = Modifier, onSinConexion: () -> Unit = {
         } else if (visibles.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("No hay nada en esta categoría.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
         } else {
-            LazyColumn(contentPadding = PaddingValues(top = 6.dp, bottom = 16.dp)) {
+            LazyColumn(state = listaDescargas, contentPadding = PaddingValues(top = 6.dp, bottom = 16.dp)) {
                 items(visibles, key = { it.id }) { d -> Box(Modifier.animateItem()) { FilaDescarga(d) { quitar(listOf(d.id), "Se quitó «${d.titulo.take(40)}»") } } }
             }
         }

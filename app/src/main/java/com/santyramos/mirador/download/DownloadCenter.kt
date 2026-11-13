@@ -87,9 +87,9 @@ object DownloadCenter {
     /** Una descarga por cada video de la lista (cada uno con su progreso, pausa y reintento). */
     suspend fun encolarLista(lista: ListaInfo, preset: Preset, seleccion: Set<Int>? = null): Int {
         val grupo = System.currentTimeMillis()
-        val carpeta = UrlTools.nombreSeguro(lista.titulo, 60)
+        val carpeta = UrlTools.nombreCarpeta(lista.titulo)
         val ancho = maxOf(2, lista.entradas.size.toString().length)
-        // Si se eligieron solo algunos, el número del nombre conserva su posición original en la lista.
+        // El número de posición solo sirve para ordenarlas en la app (no va en el nombre del archivo).
         val elegidas = lista.entradas.withIndex().filter { seleccion == null || it.index in seleccion }
         if (elegidas.isEmpty()) return 0
         dao.insertarVarias(
@@ -122,7 +122,7 @@ object DownloadCenter {
             if (esLista) {
                 try {
                     val lista = YtDlpEngine.lista(UrlTools.urlDeLista(u), Cookies.archivo(app))
-                    val carpeta = UrlTools.nombreSeguro(lista.titulo, 60)
+                    val carpeta = UrlTools.nombreCarpeta(lista.titulo)
                     val ancho = maxOf(2, lista.entradas.size.toString().length)
                     lista.entradas.forEachIndexed { i, e ->
                         filas += DownloadEntity(
@@ -263,7 +263,8 @@ object DownloadCenter {
             if (archivos.isEmpty()) throw IllegalStateException("No hay video en este enlace")
             var primero: MediaStoreSaver.Guardado? = null
             for (f in archivos) {
-                val g = MediaStoreSaver.guardar(app, f, nombre = (d.prefijo ?: "") + f.name, subcarpeta = d.carpeta)
+                // Las canciones de una lista se guardan con su nombre tal cual, sin el número de posición.
+                val g = MediaStoreSaver.guardar(app, f, nombre = f.name, subcarpeta = d.carpeta)
                 if (primero == null) primero = g
             }
             val fin = (dao.buscar(d.id) ?: d).copy(
