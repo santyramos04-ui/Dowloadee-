@@ -51,6 +51,10 @@ class UrlToolsTest {
     @Test fun nombresSeguros() {
         assertEquals("a_b_c", UrlTools.nombreSeguro("a/b:c"))
         assertEquals("archivo", UrlTools.nombreSeguro("   "))
+        // Carpetas de listas: solo letras y números (sin emojis ni símbolos).
+        assertEquals("Mix Salsa 2024 Éxitos", UrlTools.nombreCarpeta("🔥 Mix Salsa 2024 ✨ | Éxitos!!"))
+        assertEquals("Canción ñandú", UrlTools.nombreCarpeta("Canción — ñandú 🎶"))
+        assertEquals("Lista", UrlTools.nombreCarpeta("🎵🎵 ★"))
     }
 }
 
