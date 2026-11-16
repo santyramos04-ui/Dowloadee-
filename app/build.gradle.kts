@@ -149,6 +149,6 @@ dependencies {
     implementation(libs.youtubedl.ffmpeg)
 
     testImplementation(libs.junit)
-    testImplementation("org.json:json:20240303")
+    testImplementation("org.json:json:20260814")
     testImplementation(libs.kotlinx.coroutines.android)
 }
