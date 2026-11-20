@@ -59,6 +59,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -97,6 +98,20 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.schabi.newpipe.extractor.Page
 
+/** Lo último que se buscó en Inicio (sobrevive mientras la app esté abierta). */
+private object EstadoBusqueda {
+    var consulta by mutableStateOf("")
+    var filtro by mutableStateOf(FiltroBusqueda.TODO)
+    var duracion by mutableStateOf(FiltroDuracion.CUALQUIERA)
+    val resultados = mutableStateListOf<Elemento>()
+    var siguiente by mutableStateOf<Page?>(null)
+    var error by mutableStateOf<String?>(null)
+    var buscado by mutableStateOf<String?>(null)
+    var filtroDeResultados: FiltroBusqueda? = null
+    var indice = 0
+    var desfase = 0
+}
+
 private enum class FiltroDuracion(val etiqueta: String) {
     CUALQUIERA("Cualquier duración"), CORTOS("Menos de 4 min"), MEDIOS("4 a 20 min"), LARGOS("Más de 20 min");
 
@@ -133,18 +148,21 @@ fun HomeScreen(
     var enfocado by remember { mutableStateOf(false) }
     var remotas by remember { mutableStateOf<List<String>>(emptyList()) }
     val scope = rememberCoroutineScope()
-    var consulta by rememberSaveable { mutableStateOf("") }
-    var filtro by rememberSaveable { mutableStateOf(FiltroBusqueda.TODO) }
-    var duracion by rememberSaveable { mutableStateOf(FiltroDuracion.CUALQUIERA) }
-    val resultados = remember { mutableStateListOf<Elemento>() }
-    var siguiente by remember { mutableStateOf<Page?>(null) }
+    // La búsqueda vive fuera de la pantalla (EstadoBusqueda): al abrir una lista o un canal y volver,
+    // siguen ahí los resultados y el punto donde ibas.
+    var consulta by EstadoBusqueda::consulta
+    var filtro by EstadoBusqueda::filtro
+    var duracion by EstadoBusqueda::duracion
+    val resultados = EstadoBusqueda.resultados
+    var siguiente by EstadoBusqueda::siguiente
     var cargando by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var buscado by remember { mutableStateOf<String?>(null) }
+    var error by EstadoBusqueda::error
+    var buscado by EstadoBusqueda::buscado
     var trabajo by remember { mutableStateOf<Job?>(null) }
     val foco = LocalFocusManager.current
     val pedirFoco = remember { androidx.compose.ui.focus.FocusRequester() }
-    val lista = rememberLazyListState()
+    val lista = rememberLazyListState(EstadoBusqueda.indice, EstadoBusqueda.desfase)
+    DisposableEffect(lista) { onDispose { EstadoBusqueda.indice = lista.firstVisibleItemIndex; EstadoBusqueda.desfase = lista.firstVisibleItemScrollOffset } }
 
     fun buscar() {
         val q = consulta.trim()
@@ -156,7 +174,7 @@ fun HomeScreen(
             cargando = true; error = null; resultados.clear(); siguiente = null
             try {
                 val p = Youtube.buscar(q, filtro)
-                resultados.addAll(p.elementos); siguiente = p.siguiente; buscado = q
+                resultados.addAll(p.elementos); siguiente = p.siguiente; buscado = q; EstadoBusqueda.filtroDeResultados = filtro
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -186,7 +204,8 @@ fun HomeScreen(
     }
 
     // Al cambiar el filtro se repite la búsqueda.
-    LaunchedEffect(filtro) { if (buscado != null) buscar() }
+    // Solo si el filtro cambió de verdad (al volver de una lista no se repite la búsqueda).
+    LaunchedEffect(filtro) { if (buscado != null && EstadoBusqueda.filtroDeResultados != filtro) buscar() }
 
     // Carga la página siguiente al llegar al final.
     val alFinal by remember { derivedStateOf { val u = lista.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0; u >= resultados.size - 4 && resultados.isNotEmpty() } }

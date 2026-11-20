@@ -123,6 +123,7 @@ internal fun VideoSheetContent(
     val contexto = LocalContext.current
     val scope = rememberCoroutineScope()
     var estado by remember(url) { mutableStateOf<Estado>(Estado.Cargando) }
+    var repetida by remember { mutableStateOf(false) }
     var elegido by remember(url) { mutableStateOf(Preset.MEJOR) }
     var intento by remember(url) { mutableStateOf(0) }
 
@@ -221,9 +222,29 @@ internal fun VideoSheetContent(
                 }
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (repetida) androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { repetida = false },
+                        icon = { Icon(Icons.Filled.Warning, null, tint = MaterialTheme.colorScheme.tertiary) },
+                        title = { Text("Ya lo estás descargando") },
+                        text = { Text("Este video ya está en Descargas (listo o en cola) con este mismo formato.") },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(onClick = {
+                                repetida = false
+                                scope.launch { DownloadCenter.encolar(completa ?: info, elegido, soloEste); onEncolada() }
+                            }) { Text("Descargar otra vez") }
+                        },
+                        dismissButton = { androidx.compose.material3.TextButton(onClick = { repetida = false }) { Text("Cancelar") } },
+                    )
                     BotonSecundario("Cancelar", onCerrar, Modifier.weight(1f))
                     BotonPrimario(
-                        "Descargar", { scope.launch { DownloadCenter.encolar(completa ?: info, elegido, soloEste); onEncolada() } },
+                        "Descargar", {
+                            scope.launch {
+                                val i = completa ?: info
+                                // Si ya está en Descargas con este mismo formato, se pregunta antes de repetir.
+                                if (DownloadCenter.repetidas(listOf(i.url), elegido).isNotEmpty()) repetida = true
+                                else { DownloadCenter.encolar(i, elegido, soloEste); onEncolada() }
+                            }
+                        },
                         Modifier.weight(1.5f), icono = Icons.Outlined.FileDownload,
                     )
                 }

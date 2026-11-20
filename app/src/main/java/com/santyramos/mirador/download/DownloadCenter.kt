@@ -55,6 +55,11 @@ object DownloadCenter {
     }
 
     fun observarTodas() = dao.observarTodas()
+    fun observarEnCurso() = dao.observarEnCurso()
+
+    /** Cuáles de estas direcciones ya están en Descargas con el mismo formato (para avisar antes de repetir). */
+    suspend fun repetidas(urls: Collection<String>, preset: Preset): Set<String> =
+        urls.distinct().chunked(500).flatMap { dao.yaPedidas(it, preset.name) }.toSet()
     fun observarReproducibles() = dao.observarReproducibles()
     suspend fun archivoDe(url: String) = dao.archivoDe(url)
 
@@ -285,14 +290,14 @@ object DownloadCenter {
                 dao.actualizar(falla)
                 if (d.grupo == null) Notifications.error(app, falla, motivo)
             }
-        } finally {
+        } finally { withContext(kotlinx.coroutines.NonCancellable) {
             val terminada = dao.buscar(d.id)?.status
             if (terminada == DownloadStatus.DONE || terminada == DownloadStatus.ERROR) { dir.deleteRecursively(); archivoInfo(d.id).delete() }
             trabajos.remove(d.id)
             _trabajosActivos.value = trabajos.size
             runCatching { avisarSiTerminoElGrupo(d) }
             bombear()
-        }
+        } }
     }
 
     private suspend fun descargarDirectos(d: DownloadEntity, dir: File, alAvanzar: suspend (Float) -> Unit): List<File> =

@@ -20,6 +20,14 @@ interface DownloadDao {
     @Query("SELECT * FROM descargas WHERE estado = 'QUEUED' ORDER BY id ASC LIMIT 1")
     suspend fun siguienteEnCola(): DownloadEntity?
 
+    /** De estas direcciones, cuáles ya se están bajando (o ya se bajaron) con ese mismo formato. */
+    @Query("SELECT DISTINCT url FROM descargas WHERE url IN (:urls) AND preset = :preset AND estado IN ('QUEUED','RUNNING','PAUSED','DONE')")
+    suspend fun yaPedidas(urls: List<String>, preset: String): List<String>
+
+    /** Solo lo que está en curso o en cola (lo que mira el servicio para su notificación). */
+    @Query("SELECT * FROM descargas WHERE estado IN ('QUEUED','RUNNING') ORDER BY id ASC")
+    fun observarEnCurso(): Flow<List<DownloadEntity>>
+
     @Query("SELECT COUNT(*) FROM descargas WHERE estado IN ('QUEUED','RUNNING')")
     fun observarActivas(): Flow<Int>
 

@@ -99,6 +99,33 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     val video by VideoController.video.collectAsState()
     val actualizacion by AppUpdater.estado.collectAsState()
 
+    // La app se cerró por un error la última vez: se ofrece compartir el informe para poder arreglarlo.
+    var informeFallo by remember { mutableStateOf(com.santyramos.mirador.util.Fallos.pendiente(contexto)) }
+    informeFallo?.let { texto ->
+        val cerrar = { com.santyramos.mirador.util.Fallos.descartar(contexto); informeFallo = null }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = cerrar,
+            title = { Text("${com.santyramos.mirador.util.Marca.NOMBRE} se cerró de forma inesperada") },
+            text = { Text("Se guardó un informe con lo que pasó (sin datos personales). Compártelo para que se pueda arreglar.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    runCatching {
+                        contexto.startActivity(
+                            android.content.Intent.createChooser(
+                                android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+                                    .putExtra(android.content.Intent.EXTRA_SUBJECT, "Informe de fallo de ${com.santyramos.mirador.util.Marca.NOMBRE}")
+                                    .putExtra(android.content.Intent.EXTRA_TEXT, texto),
+                                "Compartir informe",
+                            ),
+                        )
+                    }
+                    cerrar()
+                }) { Text("Compartir informe") }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = cerrar) { Text("Ahora no") } },
+        )
+    }
+
     // Atrás dentro de una pantalla abierta (canal, lista, ajustes, sin conexión…): vuelve a la anterior.
     // Las pantallas que manejan su propio atrás (p. ej. el navegador) lo hacen primero.
     androidx.activity.compose.BackHandler(enabled = pila.isNotEmpty() && !reproductorAbierto) { pila.removeLastOrNull() }

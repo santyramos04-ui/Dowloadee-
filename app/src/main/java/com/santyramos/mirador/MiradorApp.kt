@@ -17,6 +17,7 @@ class MiradorApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        com.santyramos.mirador.util.Fallos.instalar(this)
         Notifications.crearCanales(this)
         Youtube.iniciar()
         DownloadCenter.init(this)
