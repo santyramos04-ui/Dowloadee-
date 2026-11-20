@@ -99,6 +99,13 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     val video by VideoController.video.collectAsState()
     val actualizacion by AppUpdater.estado.collectAsState()
 
+    // Atrás dentro de una pantalla abierta (canal, lista, ajustes, sin conexión…): vuelve a la anterior.
+    // Las pantallas que manejan su propio atrás (p. ej. el navegador) lo hacen primero.
+    androidx.activity.compose.BackHandler(enabled = pila.isNotEmpty() && !reproductorAbierto) { pila.removeLastOrNull() }
+    // Atrás en la pantalla principal: primero vuelve a Inicio y luego pide confirmar para salir.
+    val contexto = androidx.compose.ui.platform.LocalContext.current
+    var ultimoAtras by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    val scopeApp = androidx.compose.runtime.rememberCoroutineScope()
     // La app se cerró por un error la última vez: se ofrece compartir el informe para poder arreglarlo.
     var informeFallo by remember { mutableStateOf(com.santyramos.mirador.util.Fallos.pendiente(contexto)) }
     informeFallo?.let { texto ->
@@ -126,13 +133,6 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
         )
     }
 
-    // Atrás dentro de una pantalla abierta (canal, lista, ajustes, sin conexión…): vuelve a la anterior.
-    // Las pantallas que manejan su propio atrás (p. ej. el navegador) lo hacen primero.
-    androidx.activity.compose.BackHandler(enabled = pila.isNotEmpty() && !reproductorAbierto) { pila.removeLastOrNull() }
-    // Atrás en la pantalla principal: primero vuelve a Inicio y luego pide confirmar para salir.
-    val contexto = androidx.compose.ui.platform.LocalContext.current
-    var ultimoAtras by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
-    val scopeApp = androidx.compose.runtime.rememberCoroutineScope()
     // Aviso por única vez para quien venía usando la app con su nombre anterior: «Mirador ahora es RACQ».
     val ajustesApp = remember { com.santyramos.mirador.data.Settings(contexto) }
     var verAvisoNombre by remember { mutableStateOf(false) }
