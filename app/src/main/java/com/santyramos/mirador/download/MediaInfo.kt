@@ -81,6 +81,20 @@ object MediaInfoParser {
         return if (guardable) info.copy(rawJson = crudo) else info
     }
 
+    /**
+     * Videos de una lista que no se pueden bajar: borrados, privados, solo para miembros o que piden
+     * iniciar sesión. yt-dlp los marca con `availability` o con nombres como «[Private video]»; los que
+     * llegan sin título ni duración también son de este tipo. Se omiten para no llenar Descargas de errores.
+     */
+    internal fun disponibleEnLista(eo: JsonObject): Boolean {
+        val titulo = eo.str("title")
+        if (titulo != null && Regex("^\\[(private|deleted|unavailable)( video)?\\]$", RegexOption.IGNORE_CASE).matches(titulo.trim())) return false
+        val disp = eo.str("availability")
+        if (disp in setOf("private", "premium_only", "subscriber_only", "needs_auth", "unavailable")) return false
+        if (titulo == null && eo.lng("duration") == null) return false
+        return true
+    }
+
     fun parsearLista(texto: String): ListaInfo {
         val inicio = texto.indexOf('{')
         require(inicio >= 0) { "yt-dlp no devolvió datos" }
@@ -90,9 +104,8 @@ object MediaInfoParser {
             val id = eo.str("id")
             var url = eo.str("url") ?: eo.str("webpage_url")
             if (url == null || !url.startsWith("http")) url = if (id != null) "https://www.youtube.com/watch?v=$id" else return@mapNotNull null
+            if (!disponibleEnLista(eo)) return@mapNotNull null
             val titulo = eo.str("title") ?: "Video"
-            // Videos borrados o privados aparecen con estos nombres y no se pueden bajar.
-            if (titulo == "[Private video]" || titulo == "[Deleted video]" || titulo == "[Unavailable video]") return@mapNotNull null
             val mini = eo.str("thumbnail") ?: (eo["thumbnails"] as? JsonArray)?.lastOrNull()?.let { (it as? JsonObject)?.str("url") }
             EntradaLista(url, titulo, mini, eo.lng("duration"))
         }

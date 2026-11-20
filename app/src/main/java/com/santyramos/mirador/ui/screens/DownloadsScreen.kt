@@ -283,9 +283,13 @@ private fun FilaDescarga(d: DownloadEntity, onQuitar: () -> Unit) {
                 Text(d.titulo, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(7.dp).clip(CircleShape).background(colorEstado))
-                    Text(textoEstado(d), style = MaterialTheme.typography.bodySmall, color = colorEstado, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Text(if (estado == DownloadStatus.ERROR) "Error" else textoEstado(d), style = MaterialTheme.typography.bodySmall, color = colorEstado, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                     Insignia(etiquetaPreset(d))
                 }
+                // El motivo del error, completo y en su propia línea (antes quedaba cortado junto al formato).
+                if (estado == DownloadStatus.ERROR && !d.error.isNullOrBlank()) Text(
+                    d.error, style = MaterialTheme.typography.bodySmall, color = colorEstado, maxLines = 4, overflow = TextOverflow.Ellipsis,
+                )
                 when (estado) {
                     DownloadStatus.RUNNING ->
                         if (d.progreso in 0f..98.9f) LinearProgressIndicator(progress = { progresoAnimado }, modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape), color = Acento, trackColor = Paleta.S3, gapSize = 0.dp, drawStopIndicator = {})
