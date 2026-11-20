@@ -83,15 +83,14 @@ object MediaInfoParser {
 
     /**
      * Videos de una lista que no se pueden bajar: borrados, privados, solo para miembros o que piden
-     * iniciar sesión. yt-dlp los marca con `availability` o con nombres como «[Private video]»; los que
-     * llegan sin título ni duración también son de este tipo. Se omiten para no llenar Descargas de errores.
+     * iniciar sesión. yt-dlp los marca con `availability` o con nombres como «[Private video]».
+     * Se omiten para no llenar Descargas de errores.
      */
     internal fun disponibleEnLista(eo: JsonObject): Boolean {
         val titulo = eo.str("title")
         if (titulo != null && Regex("^\\[(private|deleted|unavailable)( video)?\\]$", RegexOption.IGNORE_CASE).matches(titulo.trim())) return false
         val disp = eo.str("availability")
         if (disp in setOf("private", "premium_only", "subscriber_only", "needs_auth", "unavailable")) return false
-        if (titulo == null && eo.lng("duration") == null) return false
         return true
     }
 

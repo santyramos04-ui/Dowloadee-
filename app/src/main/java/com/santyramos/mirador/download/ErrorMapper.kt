@@ -21,6 +21,11 @@ object ErrorMapper {
                 "unable to connect", "failed to connect", "sockettimeoutexception", "econnreset"),
             "No hay conexión a internet (o es muy inestable). Revisa tu Wi‑Fi o tus datos y reintenta.",
         ),
+        // Freno temporal de YouTube tras muchas descargas seguidas (dice «not available, try again later»).
+        Regla(
+            listOf("try again later", "inténtalo de nuevo más tarde", "vuelve a intentarlo más tarde"),
+            FRENO,
+        ),
         Regla(
             listOf("private video", "this video is private", "is private", "private account",
                 "this account is private", "video privado"),
@@ -74,6 +79,15 @@ object ErrorMapper {
             "Falló la conversión del archivo (ffmpeg). Prueba con otra calidad.",
         ),
     )
+
+    const val FRENO = "YouTube frenó las descargas por un momento (fueron muchas seguidas). RACQ la reintentará sola en unos minutos."
+
+    /** Errores pasajeros (freno de YouTube, «no eres un robot», demasiadas solicitudes, red): vale la pena reintentar. */
+    fun esTemporal(mensaje: String): Boolean = mensaje == FRENO || mensaje.startsWith("YouTube pidió comprobar") ||
+        mensaje.startsWith("El sitio recibió demasiadas") || mensaje.startsWith("No hay conexión a internet")
+
+    /** El sitio pidió bajar el ritmo: conviene pausar toda la cola un rato. */
+    fun pidePausa(mensaje: String): Boolean = mensaje == FRENO || mensaje.startsWith("YouTube pidió comprobar") || mensaje.startsWith("El sitio recibió demasiadas")
 
     fun mensaje(error: Throwable?): String {
         val texto = buildString {

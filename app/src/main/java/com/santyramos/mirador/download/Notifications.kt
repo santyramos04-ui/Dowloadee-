@@ -64,7 +64,14 @@ object Notifications {
             .setContentIntent(abrirApp(context))
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
         if (activas.isEmpty()) {
-            b.setContentTitle(com.santyramos.mirador.util.Marca.NOMBRE).setContentText(if (enCola > 0) "$enCola en cola" else "Preparando descarga…")
+            val pausa = DownloadCenter.segundosDePausa()
+            b.setContentTitle(com.santyramos.mirador.util.Marca.NOMBRE).setContentText(
+                when {
+                    pausa > 0 -> "YouTube pidió una pausa · sigue en ${(pausa + 59) / 60} min · $enCola en cola"
+                    enCola > 0 -> "$enCola en cola"
+                    else -> "Preparando descarga…"
+                },
+            )
                 .setProgress(0, 0, true)
         } else {
             val a = activas.first()

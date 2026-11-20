@@ -62,6 +62,10 @@ interface DownloadDao {
     @Query("DELETE FROM descargas WHERE id = :id")
     suspend fun borrar(id: Long)
 
+    /** Vuelve a poner en la cola todas las que fallaron. Devuelve cuántas. */
+    @Query("UPDATE descargas SET estado='QUEUED', error=NULL, progreso=0, velocidadBps=0, etaSeg=0 WHERE estado='ERROR'")
+    suspend fun reencolarErrores(): Int
+
     @Query("DELETE FROM descargas WHERE estado IN ('DONE','ERROR','CANCELED')")
     suspend fun limpiarTerminadas()
 }

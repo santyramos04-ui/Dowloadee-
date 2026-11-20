@@ -1,5 +1,9 @@
 package com.santyramos.mirador.ui.screens
 
+import androidx.compose.foundation.rememberScrollState
+
+import androidx.compose.foundation.horizontalScroll
+
 import androidx.compose.ui.focus.onFocusChanged
 
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -198,10 +202,14 @@ fun DownloadsScreen(modifier: Modifier = Modifier, onSinConexion: () -> Unit = {
                 }
             }
             if (descargas.any { it.status in setOf(DownloadStatus.DONE, DownloadStatus.ERROR, DownloadStatus.CANCELED) }) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
                     if (descargas.any { it.status == DownloadStatus.DONE && it.esReproducible() }) {
                         TextButton(onClick = onSinConexion) { Text("Escuchar sin conexión", color = MaterialTheme.colorScheme.primary) }
-                    } else androidx.compose.foundation.layout.Spacer(Modifier)
+                    }
+                    val conError = descargas.count { it.status == DownloadStatus.ERROR }
+                    if (conError > 0) TextButton(onClick = {
+                        scope.launch { val n = DownloadCenter.reintentarErrores(); aviso.showSnackbar("$n descargas volvieron a la cola") }
+                    }) { Text("Reintentar fallidas ($conError)", color = MaterialTheme.colorScheme.primary) }
                     TextButton(onClick = {
                         val terminadas = descargas.filter { it.status in setOf(DownloadStatus.DONE, DownloadStatus.ERROR, DownloadStatus.CANCELED) }.map { it.id }
                         quitar(terminadas, "Se quitaron ${terminadas.size} de la lista")
@@ -340,7 +348,7 @@ private fun FilaDescarga(d: DownloadEntity, onQuitar: () -> Unit) {
 }
 
 private fun textoEstado(d: DownloadEntity): String = when (d.status) {
-    DownloadStatus.QUEUED -> "En cola…"
+    DownloadStatus.QUEUED -> d.error ?: "En cola…"
     DownloadStatus.RUNNING -> buildString {
         if (d.progreso >= 99f && d.velocidadBps == 0L) append("Procesando el archivo…")
         else {
