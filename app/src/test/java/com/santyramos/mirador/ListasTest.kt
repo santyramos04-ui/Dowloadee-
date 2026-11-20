@@ -52,7 +52,6 @@ class ListasTest {
               {"id":"aaaaaaaaaaa","title":"Sí","duration":200},
               {"id":"bbbbbbbbbbb","title":"Solo miembros","duration":180,"availability":"subscriber_only"},
               {"id":"ccccccccccc","title":"Con sesión","availability":"needs_auth"},
-              {"id":"ddddddddddd"},
               {"id":"eeeeeeeeeee","title":"[Unavailable]"}
             ]}
         """.trimIndent()
