@@ -37,9 +37,11 @@ class RedTest {
         Youtube.iniciar()
         val info = try {
             Youtube.video("https://www.youtube.com/watch?v=jNQXAC9IVRw")
-        } catch (e: org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException) {
+        } catch (e: Exception) {
             // «No eres un robot» o «This content isn't available» con un video público: YouTube frena la IP de GitHub.
-            if (e !is org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException && e.message?.contains("isn't available", true) != true) throw e
+            val frenoDeGithub = e is org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException ||
+                (e is org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException && e.message?.contains("isn't available", true) == true)
+            if (!frenoDeGithub) throw e
             // YouTube bloquea las IP de los servidores de GitHub: no es un fallo de la app, pero tampoco una prueba superada.
             println("PRUEBA_VER video: NO CONCLUYENTE — YouTube bloqueó la IP del servidor («no eres un robot»). Probar en el celular.")
             assumeTrue("YouTube bloqueó la IP del servidor", false)
@@ -72,9 +74,11 @@ class RedTest {
         val url = busqueda.elementos.first().url
         val info = try {
             Youtube.video(url)
-        } catch (e: org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException) {
+        } catch (e: Exception) {
             // «No eres un robot» o «This content isn't available» con un video público: YouTube frena la IP de GitHub.
-            if (e !is org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException && e.message?.contains("isn't available", true) != true) throw e
+            val frenoDeGithub = e is org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException ||
+                (e is org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException && e.message?.contains("isn't available", true) == true)
+            if (!frenoDeGithub) throw e
             println("PRUEBA_VER en vivo: NO CONCLUYENTE — YouTube bloqueó la IP del servidor.")
             assumeTrue("YouTube bloqueó la IP del servidor", false)
             return@runBlocking
@@ -140,9 +144,11 @@ class RedTest {
             val p = Youtube.comentarios("https://www.youtube.com/watch?v=jNQXAC9IVRw")
             println("PRUEBA_VER comentarios: ${p.comentarios.size}; primero = ${p.comentarios.firstOrNull()?.texto?.take(60)}")
             assertTrue("No hubo comentarios", p.comentarios.isNotEmpty())
-        } catch (e: org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException) {
+        } catch (e: Exception) {
             // «No eres un robot» o «This content isn't available» con un video público: YouTube frena la IP de GitHub.
-            if (e !is org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException && e.message?.contains("isn't available", true) != true) throw e
+            val frenoDeGithub = e is org.schabi.newpipe.extractor.exceptions.SignInConfirmNotBotException ||
+                (e is org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException && e.message?.contains("isn't available", true) == true)
+            if (!frenoDeGithub) throw e
             println("PRUEBA_VER comentarios: NO CONCLUYENTE — YouTube bloqueó la IP del servidor")
             assumeTrue("YouTube bloqueó la IP del servidor", false)
         }
