@@ -417,6 +417,13 @@ private object EnVivoCache {
     var hora = 0L
 }
 
+/** Shorts para la fila de Inicio (se renuevan cada 30 min). */
+private object ShortsCache {
+    var datos: List<Elemento.Video>? = null
+    var pagina: org.schabi.newpipe.extractor.Page? = null
+    var hora = 0L
+}
+
 private object TendenciasCache {
     var datos: List<Elemento.Video>? = null
     var intentado = false
@@ -530,6 +537,15 @@ private fun Portada(
         }
     }
 
+    var cortos by remember { mutableStateOf(ShortsCache.datos) }
+    LaunchedEffect(Unit) {
+        if (ShortsCache.datos == null || System.currentTimeMillis() - ShortsCache.hora > 30 * 60_000) {
+            val r = runCatching { Youtube.buscar("#shorts", com.santyramos.mirador.extractor.FiltroBusqueda.VIDEOS) }.getOrNull()
+            val l = r?.let { com.santyramos.mirador.ui.Shorts.soloCortos(it.elementos) }
+            if (!l.isNullOrEmpty()) { ShortsCache.datos = l; ShortsCache.pagina = r?.siguiente; ShortsCache.hora = System.currentTimeMillis(); cortos = l }
+        }
+    }
+
     // Jalar hacia abajo desde arriba trae recomendaciones nuevas.
     androidx.compose.material3.pulltorefresh.PullToRefreshBox(isRefreshing = feed.refrescando, onRefresh = { refrescar() }, modifier = Modifier.fillMaxSize()) {
     LazyColumn(Modifier.fillMaxSize(), state = estado, contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp)) {
@@ -570,6 +586,15 @@ private fun Portada(
             ) {
                 LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(enVivo!!.distinctBy { it.url }, key = { "v" + it.url }) { v -> TarjetaEnVivo(v) { onAbrirVideo(v.url) } }
+                }
+            }
+        }
+        if (!cortos.isNullOrEmpty()) item {
+            Text("Shorts", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 10.dp))
+            val l = cortos!!.distinctBy { it.url }
+            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                itemsIndexed(l, key = { _, v -> "s" + v.url }) { i, v ->
+                    TarjetaShort(v) { com.santyramos.mirador.ui.Shorts.abrir(l, i, "#shorts", ShortsCache.pagina) }
                 }
             }
         }
@@ -637,6 +662,23 @@ private fun BotonPlataforma(p: Plataforma, onClick: () -> Unit) {
 }
 
 /** Tarjeta compacta de una transmisión en vivo para la fila «Lives». */
+@Composable
+private fun TarjetaShort(v: Elemento.Video, onClick: () -> Unit) {
+    Box(
+        Modifier.width(132.dp).aspectRatio(9f / 16f).clip(RoundedCornerShape(14.dp)).background(Paleta.S2)
+            .clickable(onClickLabel = "Ver Short", onClick = onClick),
+    ) {
+        coil3.compose.AsyncImage(model = v.miniatura, contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        Box(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000))))
+                .padding(start = 8.dp, end = 8.dp, top = 24.dp, bottom = 8.dp),
+        ) {
+            Text(v.titulo, color = Color.White, style = MaterialTheme.typography.labelMedium, maxLines = 3, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+    }
+}
+
 @Composable
 private fun TarjetaEnVivo(v: Elemento.Video, onClick: () -> Unit) {
     Column(Modifier.width(248.dp).clip(RoundedCornerShape(14.dp)).clickable(onClickLabel = "Ver en vivo", onClick = onClick)) {

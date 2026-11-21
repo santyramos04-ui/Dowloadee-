@@ -189,7 +189,7 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
             bottomBar = {
                 Column {
                     AnimatedVisibility(
-                        visible = video != null && !reproductorAbierto,
+                        visible = video != null && !reproductorAbierto && !Shorts.abierto,
                         enter = slideInVertically { it } + fadeIn(),
                         exit = slideOutVertically { it } + fadeOut(),
                     ) { MiniReproductor(onAbrir = { reproductorAbierto = true }) }
@@ -308,6 +308,20 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
             }
         }
         if (reproductorAbierto && video == null) reproductorAbierto = false
+
+        // Shorts: a pantalla completa, encima de todo (también de la barra de abajo).
+        AnimatedVisibility(
+            visible = Shorts.abierto,
+            enter = androidx.compose.animation.slideInVertically { it / 3 } + fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically { it / 3 } + fadeOut(),
+        ) {
+            ShortsScreen(
+                onCerrar = { Shorts.abierto = false },
+                onDescargar = { urlDescarga = it },
+                onAbrirCanal = { Shorts.abierto = false; pila.add(Destino.Canal(it)); reproductorAbierto = false },
+                onVerCompleto = { Shorts.abierto = false; reproductorAbierto = true },
+            )
+        }
     }
 
     videoAcciones?.let { v ->
