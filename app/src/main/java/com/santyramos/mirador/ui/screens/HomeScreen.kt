@@ -616,6 +616,24 @@ private fun Portada(
     }
 }
 
+/** Cada sitio es una «ventana» en arco, como las de un mirador: el único gesto decorativo de la pantalla. */
+@Composable
+private fun BotonPlataforma(p: Plataforma, onClick: () -> Unit) {
+    val arco = RoundedCornerShape(topStart = 29.dp, topEnd = 29.dp, bottomStart = 10.dp, bottomEnd = 10.dp)
+    Column(Modifier.width(60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        androidx.compose.material3.Surface(
+            onClick = onClick, shape = arco, color = Paleta.S2,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Paleta.Linea), modifier = Modifier.size(width = 58.dp, height = 72.dp),
+        ) {
+            Box(Modifier.padding(top = 6.dp), contentAlignment = Alignment.Center) {
+                if (p.icono != null) Icon(painterResource(p.icono), p.nombre, tint = Acento, modifier = Modifier.size(26.dp))
+                else Icon(Icons.Outlined.Public, p.nombre, tint = Acento, modifier = Modifier.size(26.dp))
+            }
+        }
+        Text(p.nombre, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, modifier = Modifier.padding(top = 6.dp))
+    }
+}
+
 /** Tarjeta compacta de una transmisión en vivo para la fila «Lives». */
 @Composable
 private fun TarjetaEnVivo(v: Elemento.Video, onClick: () -> Unit) {
