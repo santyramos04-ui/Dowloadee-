@@ -447,6 +447,13 @@ private fun Portada(
         }
     }
     LaunchedEffect(Unit) { recomendar(false) }
+    // Al volver a la app (o tras ver videos) se revisa si toca renovar «Para ti».
+    val ciclo = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(ciclo) {
+        val o = androidx.lifecycle.LifecycleEventObserver { _, ev -> if (ev == androidx.lifecycle.Lifecycle.Event.ON_RESUME) recomendar(false) }
+        ciclo.lifecycle.addObserver(o)
+        onDispose { ciclo.lifecycle.removeObserver(o) }
+    }
     var enVivo by remember { mutableStateOf(EnVivoCache.datos) }
     val ajustesPortada = com.santyramos.mirador.data.Settings(androidx.compose.ui.platform.LocalContext.current)
     val livesOcultos by remember { ajustesPortada.livesOcultos }.collectAsState(initial = false)

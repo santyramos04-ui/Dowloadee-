@@ -17,9 +17,13 @@ import kotlinx.coroutines.withContext
  * y lo de canales que ya ves o sigues. Nada de lo ya visto vuelve a aparecer.
  */
 object Recomendador {
-    private const val VIGENCIA_MS = 30 * 60_000L
+    private const val VIGENCIA_MS = 10 * 60_000L
     private var guardado: List<Elemento.Video>? = null
     private var calculadoEn = 0L
+    /** Último video visto cuando se calcularon: si ves otro, se recalcula aunque no hayan pasado 10 min. */
+    private var ultimoVisto: String? = null
+    /** Lo que ya se mostró arriba en las últimas vueltas: baja de puesto para que la lista se renueve. */
+    private val yaMostrados = ArrayDeque<String>()
 
     /** Cuánto pesa cada señal al ordenar (público para poder probarlo). */
     internal data class Puntos(val repeticion: Int = 2, val canalVisto: Int = 3, val canalSeguido: Int = 4, val novedadSeguida: Int = 5)
@@ -32,6 +36,8 @@ object Recomendador {
         autoresSeguidos: Set<String>,
         p: Puntos = Puntos(),
         limite: Int = 40,
+        mostradosAntes: Set<String> = emptySet(),
+        azar: kotlin.random.Random? = null,
     ): List<Elemento.Video> {
         val puntos = HashMap<String, Int>()
         val datos = LinkedHashMap<String, Elemento.Video>()
@@ -51,21 +57,30 @@ object Recomendador {
             datos.putIfAbsent(n.url, Elemento.Video(n.titulo, n.url, n.miniatura, n.canalNombre, null, 0, n.vistas, null, false, false, n.publicadoMs))
             puntos[n.url] = (puntos[n.url] ?: 0) + p.novedadSeguida
         }
+        // Lo ya mostrado baja un poco y una pizca de azar desempata, así cada vuelta trae algo distinto.
+        mostradosAntes.forEach { u -> puntos[u]?.let { puntos[u] = it - 4 } }
+        if (azar != null) puntos.keys.toList().forEach { u -> puntos[u] = puntos[u]!! + azar.nextInt(0, 3) }
         return datos.values.sortedByDescending { puntos[it.url] ?: 0 }.take(limite)
     }
 
     /** @return null si todavía no hay con qué recomendar (sin historial ni suscripciones). */
     suspend fun recomendar(forzar: Boolean = false): List<Elemento.Video>? = withContext(Dispatchers.IO) {
-        val previo = guardado
-        if (!forzar && previo != null && System.currentTimeMillis() - calculadoEn < VIGENCIA_MS) return@withContext previo
         val dao = Biblioteca.dao
         val historial = dao.observarHistorial().first()
+        val previo = guardado
+        val sinCambios = historial.firstOrNull()?.url == ultimoVisto
+        if (!forzar && previo != null && sinCambios && System.currentTimeMillis() - calculadoEn < VIGENCIA_MS) return@withContext previo
         val suscripciones = dao.suscripciones()
         val novedades = dao.observarNovedades().first()
         if (historial.isEmpty() && suscripciones.isEmpty()) return@withContext null
 
-        // Semillas: los últimos videos vistos, de canales distintos para variar.
-        val semillas = historial.distinctBy { it.urlAutor ?: it.autor ?: it.url }.take(5)
+        // Semillas: los 3 últimos videos vistos (de canales distintos) y 3 más al azar de lo que viste antes,
+        // para que no salga siempre lo mismo.
+        val canal = { v: Visto -> v.urlAutor ?: v.autor ?: v.url }
+        val recientes = historial.distinctBy(canal).take(3)
+        val delPasado = historial.drop(3).take(60).filter { v -> recientes.none { canal(it) == canal(v) } }
+            .distinctBy(canal).shuffled().take(3)
+        val semillas = recientes + delPasado
         val cupo = Semaphore(3)
         val relacionados = coroutineScope {
             semillas.map { s ->
@@ -83,8 +98,14 @@ object Recomendador {
             urlsVistas = historial.map { it.url }.toSet(),
             autoresVistos = historial.mapNotNull { it.autor }.groupingBy { it }.eachCount(),
             autoresSeguidos = suscripciones.map { it.nombre }.toSet(),
+            mostradosAntes = yaMostrados.toSet(),
+            azar = kotlin.random.Random.Default,
         )
-        if (resultado.isNotEmpty()) { guardado = resultado; calculadoEn = System.currentTimeMillis() }
+        if (resultado.isNotEmpty()) {
+            guardado = resultado; calculadoEn = System.currentTimeMillis(); ultimoVisto = historial.firstOrNull()?.url
+            resultado.take(12).forEach { yaMostrados.addLast(it.url) }
+            while (yaMostrados.size > 60) yaMostrados.removeFirst()
+        }
         resultado
     }
 }

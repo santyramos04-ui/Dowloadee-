@@ -116,6 +116,15 @@ class RecomendadorTest {
         assertEquals(3, r.size)
     }
 
+    @Test fun loYaMostradoBajaDePuesto() {
+        val a = listOf(v("a", "X"), v("b", "Y"))
+        val r = com.santyramos.mirador.data.lib.Recomendador.ordenar(
+            listOf(a), emptyList(), urlsVistas = emptySet(), autoresVistos = emptyMap(), autoresSeguidos = emptySet(),
+            mostradosAntes = setOf("u/a"),
+        )
+        assertEquals("u/b", r.first().url) // «a» ya se mostró: ahora sale primero lo nuevo
+    }
+
     @Test fun fechaLegible() {
         assertEquals("8 feb 2013", com.santyramos.mirador.extractor.fechaLegible("2013-02-08T17:38:24-08:00"))
         assertEquals("hace 3 días", com.santyramos.mirador.extractor.fechaLegible("hace 3 días"))
