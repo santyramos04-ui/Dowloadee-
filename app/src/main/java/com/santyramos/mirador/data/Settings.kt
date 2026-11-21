@@ -68,6 +68,7 @@ class Settings(private val context: Context) {
         val gestosBrilloVolumen = booleanPreferencesKey("gestos_brillo_volumen")
         val livesOcultos = booleanPreferencesKey("lives_ocultos")
         val soloWifi = booleanPreferencesKey("descargar_solo_wifi")
+        val subtitulos = stringPreferencesKey("subtitulos_idioma")
         val avisoNuevoNombre = booleanPreferencesKey("aviso_mirador_es_racq")
         val servidor = stringPreferencesKey("servidor_jellyfin")
         val dispositivo = stringPreferencesKey("id_dispositivo")
@@ -112,6 +113,9 @@ class Settings(private val context: Context) {
     /** Descargar solo con Wi‑Fi (o cualquier red que no cobre por datos). */
     val soloWifi: Flow<Boolean> = ds.data.map { it[K.soloWifi] ?: false }
     suspend fun setSoloWifi(v: Boolean) = ds.edit { it[K.soloWifi] = v }
+    /** Idioma de subtítulos que elegiste la última vez ("" o null = sin subtítulos). */
+    val subtitulos: Flow<String?> = ds.data.map { it[K.subtitulos] }
+    suspend fun setSubtitulos(idioma: String) = ds.edit { it[K.subtitulos] = idioma }
     /** Ya se mostró (una sola vez) el aviso «Mirador ahora es RACQ». */
     val avisoNuevoNombreVisto: Flow<Boolean> = ds.data.map { it[K.avisoNuevoNombre] ?: false }
     suspend fun setAvisoNuevoNombreVisto() = ds.edit { it[K.avisoNuevoNombre] = true }

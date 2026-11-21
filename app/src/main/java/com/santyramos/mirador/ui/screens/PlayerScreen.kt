@@ -93,6 +93,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Cast
+import androidx.compose.material.icons.outlined.ClosedCaptionOff
+import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -444,6 +446,21 @@ fun PlayerScreen(
                                 }
                             }
                         }
+                        // Subtítulos (CC): solo si el video los tiene.
+                        val subs = video?.subtitulos.orEmpty()
+                        if (subs.isNotEmpty()) Box {
+                            var menuCc by remember { mutableStateOf(false) }
+                            val actual = video?.subtitulo?.takeIf { it.isNotEmpty() }
+                            IconButton(onClick = { menuCc = true }) {
+                                Icon(if (actual != null) Icons.Filled.ClosedCaption else Icons.Outlined.ClosedCaptionOff, "Subtítulos", tint = if (actual != null) com.santyramos.mirador.ui.theme.Acento else Color.White)
+                            }
+                            DropdownMenu(expanded = menuCc, onDismissRequest = { menuCc = false }) {
+                                DropdownMenuItem(text = { Text("Desactivados") }, onClick = { menuCc = false; VideoController.cambiarSubtitulo(null) }, trailingIcon = { if (actual == null) Icon(Icons.Filled.Check, null) })
+                                subs.forEach { st ->
+                                    DropdownMenuItem(text = { Text(st.nombre) }, onClick = { menuCc = false; VideoController.cambiarSubtitulo(st.id) }, trailingIcon = { if (st.id == actual) Icon(Icons.Filled.Check, null) })
+                                }
+                            }
+                        }
                         IconButton(onClick = { verTv = true }) { Icon(Icons.Outlined.Cast, "Ver en el televisor", tint = if (enTv != null) com.santyramos.mirador.ui.theme.Acento else Color.White) }
                         IconButton(onClick = { bloqueado = true; mostrarControles = false }) { Icon(Icons.Outlined.Lock, "Bloquear pantalla", tint = Color.White) }
                         IconButton(onClick = onEntrarPip) { Icon(Icons.Filled.PictureInPictureAlt, "Imagen en imagen", tint = Color.White) }
@@ -499,6 +516,11 @@ fun PlayerScreen(
                                                 .border(2.dp, Color.White, RoundedCornerShape(10.dp)).background(Color.Black),
                                         )
                                     }
+                                    val capArrastre = video?.capitulos.orEmpty().lastOrNull { it.inicioMs <= (posArrastre * dur).toLong() }?.titulo
+                                    if (!capArrastre.isNullOrBlank()) Text(
+                                        capArrastre, color = Color.White, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = 6.dp),
+                                    )
                                     Text(
                                         Format.duracion((posArrastre * dur / 1000).toLong()), color = Color.White, style = MaterialTheme.typography.titleSmall,
                                         modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xCC000000)).padding(horizontal = 10.dp, vertical = 4.dp),
@@ -519,10 +541,20 @@ fun PlayerScreen(
                                 )
                             },
                             track = { estadoBarra ->
-                                androidx.compose.material3.SliderDefaults.Track(
-                                    sliderState = estadoBarra, colors = coloresBarra, modifier = Modifier.height(4.dp),
-                                    thumbTrackGapSize = 0.dp, trackInsideCornerSize = 0.dp, drawStopIndicator = null,
-                                )
+                                Box {
+                                    androidx.compose.material3.SliderDefaults.Track(
+                                        sliderState = estadoBarra, colors = coloresBarra, modifier = Modifier.height(4.dp),
+                                        thumbTrackGapSize = 0.dp, trackInsideCornerSize = 0.dp, drawStopIndicator = null,
+                                    )
+                                    // Capítulos: una pequeña separación en la barra donde empieza cada uno (como YouTube).
+                                    val caps = video?.capitulos.orEmpty()
+                                    if (caps.size > 1 && estado.duracionMs > 0) androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+                                        caps.drop(1).forEach { c ->
+                                            val x = size.width * (c.inicioMs.toFloat() / estado.duracionMs).coerceIn(0f, 1f)
+                                            drawRect(Color.Black, topLeft = androidx.compose.ui.geometry.Offset(x - 1.5f, 0f), size = androidx.compose.ui.geometry.Size(3f, size.height))
+                                        }
+                                    }
+                                }
                             },
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -538,7 +570,13 @@ fun PlayerScreen(
                                         Text("Ir al directo (−${Format.duracion(atras / 1000)})", color = Color.White, style = MaterialTheme.typography.labelMedium)
                                     }
                                 }
-                            } else Text("${Format.duracion(estado.posicionMs / 1000)} / ${Format.duracion(estado.duracionMs / 1000)}", color = Color.White, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                            } else {
+                                val capActual = video?.capitulos.orEmpty().lastOrNull { it.inicioMs <= estado.posicionMs }?.titulo
+                                Text(
+                                    "${Format.duracion(estado.posicionMs / 1000)} / ${Format.duracion(estado.duracionMs / 1000)}" + (capActual?.takeIf { it.isNotBlank() }?.let { " · $it" } ?: ""),
+                                    color = Color.White, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
+                                )
+                            }
                             IconButton(onClick = {
                                 actividad?.requestedOrientation = if (enHorizontal) ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                             }) { Icon(if (enHorizontal) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen, "Pantalla completa", tint = Color.White) }
