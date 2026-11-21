@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -88,6 +89,8 @@ data class EstadoReproduccion(
 object VideoController {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var app: Context
+    /** Ya se preparó el reproductor (la app se abrió al menos una vez en este proceso). */
+    val iniciado: Boolean get() = ::app.isInitialized
     private var trabajo: Job? = null
     private var sondeo: Job? = null
 
@@ -143,6 +146,12 @@ object VideoController {
         }
         PlayerHolder.conectarServicio(app)
         Sonido.init(app, player.audioSessionId)
+        // El widget de la pantalla de inicio se redibuja cuando cambia lo que suena o la pausa.
+        scope.launch {
+            kotlinx.coroutines.flow.combine(_video, _estado) { v, e -> Triple(v?.titulo, v?.autor, e.reproduciendo) }
+                .distinctUntilChanged()
+                .collect { com.santyramos.mirador.ui.WidgetRacq.actualizar(app) }
+        }
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 publicar()
