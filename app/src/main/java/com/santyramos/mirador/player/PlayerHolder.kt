@@ -36,6 +36,8 @@ object PlayerHolder {
             // Mantiene CPU y Wi‑Fi despiertos mientras reproduce con la pantalla apagada.
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
+        // Sesión de audio fija desde el principio, para conectar el ecualizador y el «volumen parejo».
+        p.audioSessionId = androidx.media3.common.util.Util.generateAudioSessionIdV21(ctx)
         player = p
         return p
     }

@@ -802,6 +802,21 @@ private fun OpcionesSheetContent(onCerrar: () -> Unit) {
         com.santyramos.mirador.ui.FilaInterruptor("Aleatorio", aleatorio, { if (it != aleatorio) VideoController.cambiarAleatorio() }, "Mezcla el orden de la cola")
         com.santyramos.mirador.ui.FilaInterruptor("Reproducción automática", auto, { VideoController.cambiarAutoSiguiente(it) }, "Al terminar, sigue con la cola o el siguiente video")
 
+        // Sonido: volumen parejo y ecualizador (se aplican a todo lo que suena en la app).
+        val parejo by com.santyramos.mirador.player.Sonido.parejo.collectAsState()
+        val estiloSonido by com.santyramos.mirador.player.Sonido.estilo.collectAsState()
+        Text("Sonido", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 20.dp, top = 6.dp))
+        if (com.santyramos.mirador.player.Sonido.parejoDisponible) com.santyramos.mirador.ui.FilaInterruptor(
+            "Volumen parejo", parejo, { com.santyramos.mirador.player.Sonido.cambiarParejo(it) },
+            "Sube lo que suena bajito y baja lo muy fuerte, para que todo suene parecido",
+        )
+        Text("Ecualizador", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 20.dp, top = 4.dp))
+        androidx.compose.foundation.layout.FlowRow(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.santyramos.mirador.player.Sonido.Estilo.entries.forEach { e ->
+                com.santyramos.mirador.ui.Filtro(e.etiqueta, estiloSonido == e) { com.santyramos.mirador.player.Sonido.cambiarEstilo(e) }
+            }
+        }
+
         Text("Temporizador para dormir", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 20.dp, top = 6.dp))
         androidx.compose.foundation.layout.FlowRow(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             com.santyramos.mirador.ui.Filtro("Apagado", temporizador == null) { VideoController.programarTemporizador(null) }

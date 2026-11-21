@@ -142,6 +142,7 @@ object VideoController {
             _soloAudio.value = ajustes.soloAudio.first()
         }
         PlayerHolder.conectarServicio(app)
+        Sonido.init(app, player.audioSessionId)
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 publicar()
