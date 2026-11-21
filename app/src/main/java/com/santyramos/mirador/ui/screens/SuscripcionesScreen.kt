@@ -140,7 +140,7 @@ fun SuscripcionesScreen(
                 if (novedades.isEmpty() && estado !is Biblioteca.EstadoFeed.Actualizando) {
                     item { Text("Todavía no hay videos para mostrar.", Modifier.padding(20.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
-                items(novedades, key = { it.url }) { n ->
+                items(novedades.distinctBy { it.url }, key = { it.url }) { n ->
                     val v = n.aElemento()
                     Box(Modifier.animateItem()) { TarjetaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
                 }

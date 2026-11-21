@@ -210,7 +210,7 @@ fun PeliculasScreen(onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Uni
                 EstadoVacio(Icons.Outlined.Movie, "No encontré películas", "Prueba con otra palabra o con otra categoría.")
             }
             fuente == FuentePeli.YouTube -> androidx.compose.foundation.lazy.LazyColumn(state = listaPelis, contentPadding = PaddingValues(bottom = 16.dp)) {
-                items(videos, key = { it.url }) { v -> FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
+                items(videos.distinctBy { it.url }, key = { it.url }) { v -> FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
             }
             else -> LazyVerticalGrid(
                 columns = GridCells.Adaptive(150.dp), state = grilla,

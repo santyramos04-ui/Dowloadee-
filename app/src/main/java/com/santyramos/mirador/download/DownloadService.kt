@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
  * (bloqueo de CPU y de Wi‑Fi mientras haya trabajo) y muestra el progreso.
  */
 class DownloadService : Service() {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var observador: Job? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
@@ -41,17 +41,22 @@ class DownloadService : Service() {
         DownloadCenter.bombear()
         if (observador == null) {
             observador = scope.launch {
-                kotlinx.coroutines.flow.combine(DownloadCenter.observarTodas(), DownloadCenter.trabajosActivos) { todas, n -> todas to n }
+                // Solo lo que está en curso o en cola (con cientos de descargas, leer todas a cada avance
+                // cargaba demasiado el celular), y como mucho dos veces por segundo.
+                kotlinx.coroutines.flow.combine(DownloadCenter.observarEnCurso(), DownloadCenter.trabajosActivos) { todas, n -> todas to n }
                     .collectLatest { (todas, trabajosCorriendo) ->
+                        delay(500)
                         val activas = todas.filter { it.status == DownloadStatus.RUNNING }
                         val enCola = todas.count { it.status == DownloadStatus.QUEUED }
                         if (enCola > 0) DownloadCenter.bombear()
                         if (activas.isEmpty() && enCola == 0 && trabajosCorriendo == 0) {
                             // Ya no queda nada por hacer: se quita la notificación y se apaga el servicio.
                             delay(1500)
-                            ServiceCompat.stopForeground(this@DownloadService, ServiceCompat.STOP_FOREGROUND_REMOVE)
-                            androidx.core.app.NotificationManagerCompat.from(this@DownloadService).cancel(Notifications.ID_SERVICIO)
-                            stopSelf()
+                            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                                ServiceCompat.stopForeground(this@DownloadService, ServiceCompat.STOP_FOREGROUND_REMOVE)
+                                androidx.core.app.NotificationManagerCompat.from(this@DownloadService).cancel(Notifications.ID_SERVICIO)
+                                stopSelf()
+                            }
                         } else {
                             Notifications.actualizarServicio(this@DownloadService, activas, enCola)
                         }

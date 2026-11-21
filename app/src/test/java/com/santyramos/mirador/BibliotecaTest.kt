@@ -116,6 +116,36 @@ class RecomendadorTest {
         assertEquals(3, r.size)
     }
 
+    @Test fun temasDesdeElHistorial() {
+        fun h(t: String, a: String) = com.santyramos.mirador.data.lib.Visto(url = "u/$t", titulo = t, miniatura = null, autor = a, urlAutor = null, duracionSeg = 100)
+        val temas = com.santyramos.mirador.data.lib.Recomendador.armarTemas(listOf(
+            h("Salsa clásica para bailar", "Canal A"), h("Salsa romántica en vivo", "Canal A"), h("Receta de arepas", "Canal B"),
+        ))
+        val nombres = temas.map { it.nombre }
+        assertEquals(listOf("Todo", "Música", "En vivo"), nombres.take(3))
+        assertTrue("Canal A" in nombres)   // el canal que más ves
+        assertTrue("Salsa" in nombres)     // la palabra que se repite
+        assertTrue("Canal B" !in nombres)  // visto una sola vez
+    }
+
+    @Test fun unCanalNoAcaparaLosPrimerosPuestos() {
+        val podcast = (1..5).map { v("p$it", "Podcast") }
+        val otros = listOf(v("m1", "Música"), v("n1", "Noticias"))
+        val r = com.santyramos.mirador.data.lib.Recomendador.ordenar(
+            listOf(podcast + otros), emptyList(), urlsVistas = emptySet(), autoresVistos = emptyMap(), autoresSeguidos = setOf("Podcast"),
+        )
+        assertEquals(setOf("Podcast", "Música", "Noticias"), r.take(3).map { it.autor }.toSet())
+    }
+
+    @Test fun loYaMostradoBajaDePuesto() {
+        val a = listOf(v("a", "X"), v("b", "Y"))
+        val r = com.santyramos.mirador.data.lib.Recomendador.ordenar(
+            listOf(a), emptyList(), urlsVistas = emptySet(), autoresVistos = emptyMap(), autoresSeguidos = emptySet(),
+            mostradosAntes = setOf("u/a"),
+        )
+        assertEquals("u/b", r.first().url) // «a» ya se mostró: ahora sale primero lo nuevo
+    }
+
     @Test fun fechaLegible() {
         assertEquals("8 feb 2013", com.santyramos.mirador.extractor.fechaLegible("2013-02-08T17:38:24-08:00"))
         assertEquals("hace 3 días", com.santyramos.mirador.extractor.fechaLegible("hace 3 días"))

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -59,6 +60,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -97,6 +99,20 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.schabi.newpipe.extractor.Page
 
+/** Lo último que se buscó en Inicio (sobrevive mientras la app esté abierta). */
+private object EstadoBusqueda {
+    var consulta by mutableStateOf("")
+    var filtro by mutableStateOf(FiltroBusqueda.TODO)
+    var duracion by mutableStateOf(FiltroDuracion.CUALQUIERA)
+    val resultados = mutableStateListOf<Elemento>()
+    var siguiente by mutableStateOf<Page?>(null)
+    var error by mutableStateOf<String?>(null)
+    var buscado by mutableStateOf<String?>(null)
+    var filtroDeResultados: FiltroBusqueda? = null
+    var indice = 0
+    var desfase = 0
+}
+
 private enum class FiltroDuracion(val etiqueta: String) {
     CUALQUIERA("Cualquier duración"), CORTOS("Menos de 4 min"), MEDIOS("4 a 20 min"), LARGOS("Más de 20 min");
 
@@ -133,18 +149,21 @@ fun HomeScreen(
     var enfocado by remember { mutableStateOf(false) }
     var remotas by remember { mutableStateOf<List<String>>(emptyList()) }
     val scope = rememberCoroutineScope()
-    var consulta by rememberSaveable { mutableStateOf("") }
-    var filtro by rememberSaveable { mutableStateOf(FiltroBusqueda.TODO) }
-    var duracion by rememberSaveable { mutableStateOf(FiltroDuracion.CUALQUIERA) }
-    val resultados = remember { mutableStateListOf<Elemento>() }
-    var siguiente by remember { mutableStateOf<Page?>(null) }
+    // La búsqueda vive fuera de la pantalla (EstadoBusqueda): al abrir una lista o un canal y volver,
+    // siguen ahí los resultados y el punto donde ibas.
+    var consulta by EstadoBusqueda::consulta
+    var filtro by EstadoBusqueda::filtro
+    var duracion by EstadoBusqueda::duracion
+    val resultados = EstadoBusqueda.resultados
+    var siguiente by EstadoBusqueda::siguiente
     var cargando by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var buscado by remember { mutableStateOf<String?>(null) }
+    var error by EstadoBusqueda::error
+    var buscado by EstadoBusqueda::buscado
     var trabajo by remember { mutableStateOf<Job?>(null) }
     val foco = LocalFocusManager.current
     val pedirFoco = remember { androidx.compose.ui.focus.FocusRequester() }
-    val lista = rememberLazyListState()
+    val lista = rememberLazyListState(EstadoBusqueda.indice, EstadoBusqueda.desfase)
+    DisposableEffect(lista) { onDispose { EstadoBusqueda.indice = lista.firstVisibleItemIndex; EstadoBusqueda.desfase = lista.firstVisibleItemScrollOffset } }
 
     fun buscar() {
         val q = consulta.trim()
@@ -156,7 +175,7 @@ fun HomeScreen(
             cargando = true; error = null; resultados.clear(); siguiente = null
             try {
                 val p = Youtube.buscar(q, filtro)
-                resultados.addAll(p.elementos); siguiente = p.siguiente; buscado = q
+                resultados.addAll(p.elementos); siguiente = p.siguiente; buscado = q; EstadoBusqueda.filtroDeResultados = filtro
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -186,7 +205,8 @@ fun HomeScreen(
     }
 
     // Al cambiar el filtro se repite la búsqueda.
-    LaunchedEffect(filtro) { if (buscado != null) buscar() }
+    // Solo si el filtro cambió de verdad (al volver de una lista no se repite la búsqueda).
+    LaunchedEffect(filtro) { if (buscado != null && EstadoBusqueda.filtroDeResultados != filtro) buscar() }
 
     // Carga la página siguiente al llegar al final.
     val alFinal by remember { derivedStateOf { val u = lista.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0; u >= resultados.size - 4 && resultados.isNotEmpty() } }
@@ -197,7 +217,9 @@ fun HomeScreen(
             cargando = true
             try {
                 val p = Youtube.masBusqueda(q, filtro, s)
-                resultados.addAll(p.elementos); siguiente = p.siguiente
+                // YouTube a veces repite en la página siguiente un video que ya salió: se omite.
+                val ya = resultados.map { it.url }.toHashSet()
+                resultados.addAll(p.elementos.filter { ya.add(it.url) }); siguiente = p.siguiente
             } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { siguiente = null } finally { cargando = false }
         }
     }
@@ -360,7 +382,7 @@ fun HomeScreen(
                 buscado == null && !cargando -> Portada(lista, onAbrirNavegador, { pedirFoco.requestFocus() }, onAbrirVideo, onDescargar)
                 visibles.isEmpty() && !cargando -> Text("No encontré resultados.", Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else -> LazyColumn(state = lista, contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp)) {
-                    items(visibles, key = { it.url }) { e ->
+                    items(visibles.distinctBy { it.url }, key = { it.url }) { e ->
                         when (e) {
                             is Elemento.Video -> TarjetaVideo(e, onClick = { onAbrirVideo(e.url) }, onDescargar = { onDescargar(e.url) })
                             is Elemento.Canal -> FilaCanal(e, onClick = { onAbrirCanal(e.url) })
@@ -376,6 +398,19 @@ fun HomeScreen(
 }
 
 /** Tendencias ya cargadas (se conservan al cambiar de pestaña). */
+/** El feed «Para ti» (se conserva al cambiar de pestaña o abrir un video). */
+private object FeedParaTi {
+    val items = mutableStateListOf<Elemento.Video>()
+    var base: List<Elemento.Video>? = null
+    var temas by mutableStateOf(listOf(Recomendador.Tema("Todo", null)))
+    var tema by mutableStateOf(0)
+    var pagina: Page? = null
+    var calculando by mutableStateOf(false)
+    var cargandoMas by mutableStateOf(false)
+    var refrescando by mutableStateOf(false)
+    var fin by mutableStateOf(false)
+}
+
 /** Transmisiones en vivo populares (se conservan al cambiar de pestaña; se renuevan cada 10 min). */
 private object EnVivoCache {
     var datos: List<Elemento.Video>? = null
@@ -405,22 +440,72 @@ private val Plataformas = listOf(
 )
 
 /** Inicio sin búsqueda: banda de plataformas, tendencias (si YouTube las ofrece) y recomendaciones según tu uso. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun Portada(
     estado: androidx.compose.foundation.lazy.LazyListState, onAbrirNavegador: (String?) -> Unit, onBuscarYoutube: () -> Unit,
     onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Unit,
 ) {
     var tendencias by remember { mutableStateOf(TendenciasCache.datos) }
-    var recomendados by remember { mutableStateOf<List<Elemento.Video>?>(null) }
-    var calculando by remember { mutableStateOf(true) }
+    val feed = FeedParaTi
     val scope = rememberCoroutineScope()
+    /** «Todo»: recomendaciones calculadas en el celular. Solo reemplaza el feed si cambiaron (o si se pide). */
     fun recomendar(forzar: Boolean) {
         scope.launch {
-            calculando = true
-            recomendados = try { Recomendador.recomendar(forzar) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { null }
-            calculando = false
+            feed.calculando = true
+            val r = try { Recomendador.recomendar(forzar) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { null }
+            if (r != null && (forzar || r !== feed.base)) {
+                feed.base = r
+                if (feed.tema == 0) { feed.items.clear(); feed.items.addAll(r); feed.fin = false }
+            }
+            feed.calculando = false; feed.refrescando = false
         }
     }
+    /** Un tema distinto de «Todo»: búsqueda de YouTube con páginas sin fin. */
+    fun cargarTema() {
+        val t = feed.temas.getOrNull(feed.tema)?.takeIf { it.consulta != null } ?: return
+        scope.launch {
+            feed.calculando = true
+            val f = if (t.enVivo) com.santyramos.mirador.extractor.FiltroBusqueda.EN_VIVO else com.santyramos.mirador.extractor.FiltroBusqueda.VIDEOS
+            val r = runCatching { Youtube.buscar(t.consulta!!, f) }.getOrNull()
+            feed.items.clear(); feed.items.addAll(r?.elementos.orEmpty().filterIsInstance<Elemento.Video>()); feed.pagina = r?.siguiente; feed.fin = r?.siguiente == null
+            feed.calculando = false; feed.refrescando = false
+        }
+    }
+    fun cargarMas() {
+        if (feed.cargandoMas || feed.fin || feed.items.isEmpty()) return
+        feed.cargandoMas = true
+        scope.launch {
+            try {
+                val t = feed.temas.getOrNull(feed.tema)
+                val nuevos = if (t?.consulta == null) Recomendador.mas(feed.items.map { it.url }.toSet())
+                else {
+                    val pag = feed.pagina
+                    if (pag == null) emptyList() else {
+                        val f = if (t.enVivo) com.santyramos.mirador.extractor.FiltroBusqueda.EN_VIVO else com.santyramos.mirador.extractor.FiltroBusqueda.VIDEOS
+                        val r = Youtube.masBusqueda(t.consulta!!, f, pag); feed.pagina = r.siguiente
+                        r.elementos.filterIsInstance<Elemento.Video>()
+                    }
+                }
+                val vistos = feed.items.map { it.url }.toSet()
+                val agregar = nuevos.filter { it.url !in vistos }
+                if (agregar.isEmpty()) feed.fin = true else feed.items.addAll(agregar)
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { feed.fin = true } finally { feed.cargandoMas = false }
+        }
+    }
+    fun elegirTema(i: Int) {
+        if (i == feed.tema) return
+        feed.tema = i; feed.items.clear(); feed.fin = false; feed.pagina = null
+        if (i == 0) { val b = feed.base; if (b != null) feed.items.addAll(b) else recomendar(false) } else cargarTema()
+    }
+    fun refrescar() {
+        feed.refrescando = true
+        if (feed.tema == 0) recomendar(true) else cargarTema()
+    }
+    LaunchedEffect(Unit) { if (feed.temas.size <= 1) runCatching { Recomendador.temas() }.getOrNull()?.let { feed.temas = it } }
+    // Al acercarse al final se cargan más (feed infinito).
+    val cercaDelFinal by remember { derivedStateOf { val u = estado.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0; u >= estado.layoutInfo.totalItemsCount - 5 } }
+    LaunchedEffect(cercaDelFinal, feed.items.size) { if (cercaDelFinal) cargarMas() }
     LaunchedEffect(Unit) {
         if (!TendenciasCache.intentado) {
             tendencias = Youtube.tendencias()
@@ -428,6 +513,13 @@ private fun Portada(
         }
     }
     LaunchedEffect(Unit) { recomendar(false) }
+    // Al volver a la app (o tras ver videos) se revisa si toca renovar «Para ti».
+    val ciclo = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(ciclo) {
+        val o = androidx.lifecycle.LifecycleEventObserver { _, ev -> if (ev == androidx.lifecycle.Lifecycle.Event.ON_RESUME) recomendar(false) }
+        ciclo.lifecycle.addObserver(o)
+        onDispose { ciclo.lifecycle.removeObserver(o) }
+    }
     var enVivo by remember { mutableStateOf(EnVivoCache.datos) }
     val ajustesPortada = com.santyramos.mirador.data.Settings(androidx.compose.ui.platform.LocalContext.current)
     val livesOcultos by remember { ajustesPortada.livesOcultos }.collectAsState(initial = false)
@@ -438,6 +530,8 @@ private fun Portada(
         }
     }
 
+    // Jalar hacia abajo desde arriba trae recomendaciones nuevas.
+    androidx.compose.material3.pulltorefresh.PullToRefreshBox(isRefreshing = feed.refrescando, onRefresh = { refrescar() }, modifier = Modifier.fillMaxSize()) {
     LazyColumn(Modifier.fillMaxSize(), state = estado, contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp)) {
         item {
             Text("Descargar desde", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 20.dp, top = 6.dp, bottom = 10.dp))
@@ -475,51 +569,52 @@ private fun Portada(
                 exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
             ) {
                 LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(enVivo!!, key = { "v" + it.url }) { v -> TarjetaEnVivo(v) { onAbrirVideo(v.url) } }
+                    items(enVivo!!.distinctBy { it.url }, key = { "v" + it.url }) { v -> TarjetaEnVivo(v) { onAbrirVideo(v.url) } }
                 }
             }
         }
         if (!tendencias.isNullOrEmpty()) {
             item { Text("Tendencias en Colombia", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 6.dp)) }
-            items(tendencias!!, key = { "t" + it.url }) { v -> TarjetaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
+            items(tendencias!!.distinctBy { it.url }, key = { "t" + it.url }) { v -> TarjetaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
         }
         item {
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 28.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Para ti", style = MaterialTheme.typography.titleLarge)
-                    Text("Según lo que ves y los canales que sigues. Se calcula en tu celular.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Según lo que ves y los canales que sigues. Jala hacia abajo para renovar.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (!recomendados.isNullOrEmpty()) BotonIcono(Icons.Outlined.Refresh, "Actualizar recomendaciones", { recomendar(true) })
+                if (feed.items.isNotEmpty()) BotonIcono(Icons.Filled.PlayArrow, "Reproducir todo", {
+                    VideoController.definirCola(feed.items.map { it.url }); onAbrirVideo(feed.items.first().url)
+                })
             }
         }
-        val lista = recomendados
+        // Temas, como en YouTube: «Todo», «Música», «En vivo», tus canales y temas que más ves.
+        if (feed.temas.size > 1) item {
+            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                itemsIndexed(feed.temas) { i, t -> Filtro(t.nombre, feed.tema == i) { elegirTema(i) } }
+            }
+        }
+        val lista = feed.items
         when {
-            calculando && lista == null -> item { Box(Modifier.fillMaxWidth().padding(28.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Acento, modifier = Modifier.size(28.dp)) } }
-            lista.isNullOrEmpty() -> item {
+            lista.isEmpty() && feed.calculando -> item { Box(Modifier.fillMaxWidth().padding(28.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Acento, modifier = Modifier.size(28.dp)) } }
+            lista.isEmpty() -> item {
                 Text(
-                    "Mira algunos videos o sigue canales y aquí aparecerán recomendaciones hechas para ti.",
+                    if (feed.tema == 0) "Mira algunos videos o sigue canales y aquí aparecerán recomendaciones hechas para ti." else "No encontré videos de este tema ahora. Jala hacia abajo para intentar otra vez.",
                     style = MaterialTheme.typography.bodyMedium, color = Paleta.Texto3, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                 )
             }
             else -> {
-                item {
-                    BotonPrimario(
-                        "Reproducir recomendados", {
-                            VideoController.definirCola(lista.map { it.url })
-                            onAbrirVideo(lista.first().url)
-                        },
-                        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), icono = Icons.Filled.PlayArrow,
-                    )
-                }
-                items(lista, key = { "r" + it.url }) { v ->
+                items(lista.toList().distinctBy { it.url }, key = { "r" + it.url }) { v ->
                     TarjetaVideo(
                         v,
                         onClick = { VideoController.definirCola(lista.map { it.url }); onAbrirVideo(v.url) },
                         onDescargar = { onDescargar(v.url) },
                     )
                 }
+                if (feed.cargandoMas) item { Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Acento, modifier = Modifier.size(26.dp)) } }
             }
         }
+    }
     }
 }
 

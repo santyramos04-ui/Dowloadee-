@@ -39,6 +39,12 @@ object DownloadCenter {
     /** Cuántas descargas están corriendo ahora mismo (el servicio lo usa para saber cuándo apagarse). */
     val trabajosActivos: kotlinx.coroutines.flow.StateFlow<Int> = _trabajosActivos
     private val candado = Mutex()
+    // Freno de YouTube: cuántas veces se reintentó cada descarga y hasta cuándo se pausa la cola.
+    private val reintentos = ConcurrentHashMap<Long, Int>()
+    @Volatile private var pausaHasta = 0L
+    @Volatile private var esperandoPausa = false
+    /** Segundos que faltan para reanudar la cola tras un freno de YouTube (0 = sin pausa). */
+    fun segundosDePausa(): Long = ((pausaHasta - System.currentTimeMillis()) / 1000).coerceAtLeast(0)
     private val json = Json { ignoreUnknownKeys = true }
 
     private val db get() = AppDatabase.get(app)
@@ -55,6 +61,11 @@ object DownloadCenter {
     }
 
     fun observarTodas() = dao.observarTodas()
+    fun observarEnCurso() = dao.observarEnCurso()
+
+    /** Cuáles de estas direcciones ya están en Descargas con el mismo formato (para avisar antes de repetir). */
+    suspend fun repetidas(urls: Collection<String>, preset: Preset): Set<String> =
+        urls.distinct().chunked(500).flatMap { dao.yaPedidas(it, preset.name) }.toSet()
     fun observarReproducibles() = dao.observarReproducibles()
     suspend fun archivoDe(url: String) = dao.archivoDe(url)
 
@@ -173,6 +184,14 @@ object DownloadCenter {
 
     suspend fun limpiarTerminadas() = dao.limpiarTerminadas()
 
+    /** «Reintentar las que fallaron»: todas a la cola otra vez. */
+    suspend fun reintentarErrores(): Int {
+        val n = dao.reencolarErrores()
+        reintentos.clear()
+        if (n > 0) arrancarServicio()
+        return n
+    }
+
     private fun detener(id: Long) {
         YtDlpEngine.detener(id)
         trabajos[id]?.cancel()
@@ -193,6 +212,12 @@ object DownloadCenter {
     fun bombear() {
         scope.launch {
             candado.withLock {
+                // Si YouTube pidió una pausa, se espera y luego se sigue solo.
+                val espera = pausaHasta - System.currentTimeMillis()
+                if (espera > 0) {
+                    if (!esperandoPausa) { esperandoPausa = true; scope.launch { kotlinx.coroutines.delay(espera + 500); esperandoPausa = false; bombear() } }
+                    return@withLock
+                }
                 val limite = settings.simultaneas.first()
                 while (trabajos.size < limite) {
                     val siguiente = dao.siguienteEnCola() ?: break
@@ -281,18 +306,27 @@ object DownloadCenter {
             } else {
                 Log.w(TAG, "Descarga ${d.id} falló", e)
                 val motivo = ErrorMapper.mensaje(e)
-                val falla = (dao.buscar(d.id) ?: d).copy(estado = DownloadStatus.ERROR.name, error = motivo, velocidadBps = 0, etaSeg = 0)
-                dao.actualizar(falla)
-                if (d.grupo == null) Notifications.error(app, falla, motivo)
+                val vez = (reintentos[d.id] ?: 0) + 1
+                if (ErrorMapper.esTemporal(motivo) && vez <= 3) {
+                    // Pasajero: vuelve a la cola sola; si YouTube frenó, toda la cola descansa un rato (1, 2 y 4 min).
+                    reintentos[d.id] = vez
+                    if (ErrorMapper.pidePausa(motivo)) pausaHasta = maxOf(pausaHasta, System.currentTimeMillis() + 60_000L * (1 shl (vez - 1)))
+                    dao.actualizar((dao.buscar(d.id) ?: d).copy(estado = DownloadStatus.QUEUED.name, error = "Reintentando ($vez de 3)…", progreso = 0f, velocidadBps = 0, etaSeg = 0))
+                } else {
+                    reintentos.remove(d.id)
+                    val falla = (dao.buscar(d.id) ?: d).copy(estado = DownloadStatus.ERROR.name, error = motivo, velocidadBps = 0, etaSeg = 0)
+                    dao.actualizar(falla)
+                    if (d.grupo == null) Notifications.error(app, falla, motivo)
+                }
             }
-        } finally {
+        } finally { withContext(kotlinx.coroutines.NonCancellable) {
             val terminada = dao.buscar(d.id)?.status
             if (terminada == DownloadStatus.DONE || terminada == DownloadStatus.ERROR) { dir.deleteRecursively(); archivoInfo(d.id).delete() }
             trabajos.remove(d.id)
             _trabajosActivos.value = trabajos.size
             runCatching { avisarSiTerminoElGrupo(d) }
             bombear()
-        }
+        } }
     }
 
     private suspend fun descargarDirectos(d: DownloadEntity, dir: File, alAvanzar: suspend (Float) -> Unit): List<File> =

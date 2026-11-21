@@ -14,7 +14,8 @@ import java.io.File
  */
 object MediaStoreSaver {
     enum class Carpeta(val ruta: String) {
-        VIDEOS("${com.santyramos.mirador.util.Marca.NOMBRE}/Videos"), AUDIO("${com.santyramos.mirador.util.Marca.NOMBRE}/Audio"), IMAGENES("${com.santyramos.mirador.util.Marca.NOMBRE}/Imagenes")
+        VIDEOS("${com.santyramos.mirador.util.Marca.NOMBRE}/Videos"), AUDIO("${com.santyramos.mirador.util.Marca.NOMBRE}/Audio"), IMAGENES("${com.santyramos.mirador.util.Marca.NOMBRE}/Imagenes"),
+        INFORMES("${com.santyramos.mirador.util.Marca.NOMBRE}/Informes")
     }
 
     data class Guardado(val uri: Uri, val mime: String, val nombre: String)
@@ -41,6 +42,7 @@ object MediaStoreSaver {
         mime.startsWith("video/") -> Carpeta.VIDEOS
         mime.startsWith("audio/") -> Carpeta.AUDIO
         mime.startsWith("image/") -> Carpeta.IMAGENES
+        mime.startsWith("text/") -> Carpeta.INFORMES
         else -> Carpeta.VIDEOS
     }
 

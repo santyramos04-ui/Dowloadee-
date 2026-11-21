@@ -45,6 +45,19 @@ class ListasTest {
         assertEquals(65L, l.entradas[0].duracionSeg)
         assertEquals("https://i/1.jpg", l.entradas[0].miniatura)
     }
+
+    @Test fun omiteLosQueNoSePuedenBajar() {
+        val json = """
+            {"_type":"playlist","title":"L","entries":[
+              {"id":"aaaaaaaaaaa","title":"Sí","duration":200},
+              {"id":"bbbbbbbbbbb","title":"Solo miembros","duration":180,"availability":"subscriber_only"},
+              {"id":"ccccccccccc","title":"Con sesión","availability":"needs_auth"},
+              {"id":"eeeeeeeeeee","title":"[Unavailable]"}
+            ]}
+        """.trimIndent()
+        val l = MediaInfoParser.parsearLista(json)
+        assertEquals(listOf("Sí"), l.entradas.map { it.titulo })
+    }
 }
 
 class SpotifyTest {

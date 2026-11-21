@@ -106,6 +106,33 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     val contexto = androidx.compose.ui.platform.LocalContext.current
     var ultimoAtras by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
     val scopeApp = androidx.compose.runtime.rememberCoroutineScope()
+    // La app se cerró por un error la última vez: se ofrece compartir el informe para poder arreglarlo.
+    var informeFallo by remember { mutableStateOf(com.santyramos.mirador.util.Fallos.pendiente(contexto)) }
+    // Además se guarda como .txt en Descargas/RACQ/Informes, para que no se pierda.
+    var nombreInforme by remember { mutableStateOf<String?>(null) }
+    androidx.compose.runtime.LaunchedEffect(informeFallo) {
+        val t = informeFallo ?: return@LaunchedEffect
+        nombreInforme = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.santyramos.mirador.util.Fallos.guardarEnDescargas(contexto, t) }
+    }
+    informeFallo?.let { texto ->
+        val cerrar = { com.santyramos.mirador.util.Fallos.descartar(contexto); informeFallo = null }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = cerrar,
+            title = { Text("${com.santyramos.mirador.util.Marca.NOMBRE} se cerró de forma inesperada") },
+            text = {
+                Text(
+                    "Se guardó un informe con lo que pasó (sin datos personales)" +
+                        (nombreInforme?.let { " en Descargas/${com.santyramos.mirador.util.Marca.NOMBRE}/Informes como «$it»" } ?: "") +
+                        ". Compártelo para que se pueda arreglar; también queda en Ajustes → Aplicación.",
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { com.santyramos.mirador.util.Fallos.compartir(contexto, texto); cerrar() }) { Text("Compartir informe") }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = cerrar) { Text("Ahora no") } },
+        )
+    }
+
     // Aviso por única vez para quien venía usando la app con su nombre anterior: «Mirador ahora es RACQ».
     val ajustesApp = remember { com.santyramos.mirador.data.Settings(contexto) }
     var verAvisoNombre by remember { mutableStateOf(false) }

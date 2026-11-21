@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 import com.santyramos.mirador.ui.theme.Paleta
@@ -128,6 +129,15 @@ fun SeleccionListaContent(l: ListaInfo, onCerrar: () -> Unit, onEncolada: () -> 
     var elegido by remember { mutableStateOf(Preset.MEJOR) }
     var seleccion by remember(l) { mutableStateOf(l.entradas.indices.toSet()) }
     var trabajando by remember { mutableStateOf(false) }
+    var repetidas by remember { mutableStateOf<Set<String>?>(null) }
+    fun encolarElegidas(sel: Set<Int>) {
+        trabajando = true
+        scope.launch {
+            val n = DownloadCenter.encolarLista(l, elegido, sel)
+            Toast.makeText(contexto, "Se agregaron $n videos a la cola", Toast.LENGTH_LONG).show()
+            onEncolada()
+        }
+    }
     val total = l.entradas.size
 
     Column(Modifier.fillMaxWidth().fillMaxHeight(0.92f)) {
@@ -185,14 +195,37 @@ fun SeleccionListaContent(l: ListaInfo, onCerrar: () -> Unit, onEncolada: () -> 
                     onClick = {
                         trabajando = true
                         scope.launch {
-                            val n = DownloadCenter.encolarLista(l, elegido, seleccion)
-                            Toast.makeText(contexto, "Se agregaron $n videos a la cola", Toast.LENGTH_LONG).show()
-                            onEncolada()
+                            // ¿Ya están en Descargas con este mismo formato? Entonces se pregunta antes de repetir.
+                            val rep = DownloadCenter.repetidas(seleccion.mapNotNull { l.entradas.getOrNull(it)?.url }, elegido)
+                            if (rep.isEmpty()) encolarElegidas(seleccion) else { repetidas = rep; trabajando = false }
                         }
                     },
                 )
             }
         }
+    }
+
+    repetidas?.let { rep ->
+        val faltan = seleccion.filter { l.entradas.getOrNull(it)?.url !in rep }.toSet()
+        val yaEstan = seleccion.size - faltan.size
+        AlertDialog(
+            onDismissRequest = { repetidas = null },
+            icon = { Icon(Icons.Filled.Warning, null, tint = MaterialTheme.colorScheme.tertiary) },
+            title = { Text(if (faltan.isEmpty()) "Ya estás descargando esta lista" else "Ya tienes parte de esta lista") },
+            text = {
+                Text(
+                    if (faltan.isEmpty()) "Las ${seleccion.size} canciones ya están en Descargas (listas o en cola) con este mismo formato."
+                    else "$yaEstan de las ${seleccion.size} ya están en Descargas (listas o en cola) con este mismo formato.",
+                )
+            },
+            confirmButton = {
+                Column(horizontalAlignment = Alignment.End) {
+                    if (faltan.isNotEmpty()) TextButton(onClick = { repetidas = null; encolarElegidas(faltan) }) { Text("Solo las que faltan (${faltan.size})") }
+                    TextButton(onClick = { repetidas = null; encolarElegidas(seleccion) }) { Text("Descargar todas otra vez") }
+                    TextButton(onClick = { repetidas = null }) { Text("Cancelar") }
+                }
+            },
+        )
     }
 }
 

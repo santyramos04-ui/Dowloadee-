@@ -150,6 +150,9 @@ object YtDlpEngine {
         r.addOption("--retries", 10)
         r.addOption("--fragment-retries", 10)
         r.addOption("--socket-timeout", 30)
+        // Un respiro entre pedidos y reintentos de extracción: con listas largas YouTube frena menos.
+        r.addOption("--sleep-requests", "0.75")
+        r.addOption("--extractor-retries", 3)
         r.addOption(if (job.sinLista) "--no-playlist" else "--yes-playlist")
         cookies?.let { r.addOption("--cookies", it.absolutePath) }
 
