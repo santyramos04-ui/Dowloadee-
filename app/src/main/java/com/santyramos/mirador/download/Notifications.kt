@@ -67,6 +67,7 @@ object Notifications {
             val pausa = DownloadCenter.segundosDePausa()
             b.setContentTitle(com.santyramos.mirador.util.Marca.NOMBRE).setContentText(
                 when {
+                    DownloadCenter.esperandoWifi -> "Esperando Wi‑Fi · $enCola en cola"
                     pausa > 0 -> "YouTube pidió una pausa · sigue en ${(pausa + 59) / 60} min · $enCola en cola"
                     enCola > 0 -> "$enCola en cola"
                     else -> "Preparando descarga…"

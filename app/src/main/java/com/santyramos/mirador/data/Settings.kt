@@ -67,6 +67,7 @@ class Settings(private val context: Context) {
         val soloAudio = booleanPreferencesKey("solo_audio")
         val gestosBrilloVolumen = booleanPreferencesKey("gestos_brillo_volumen")
         val livesOcultos = booleanPreferencesKey("lives_ocultos")
+        val soloWifi = booleanPreferencesKey("descargar_solo_wifi")
         val avisoNuevoNombre = booleanPreferencesKey("aviso_mirador_es_racq")
         val servidor = stringPreferencesKey("servidor_jellyfin")
         val dispositivo = stringPreferencesKey("id_dispositivo")
@@ -108,6 +109,9 @@ class Settings(private val context: Context) {
     /** La fila «Lives» de Inicio está plegada. */
     val livesOcultos: Flow<Boolean> = ds.data.map { it[K.livesOcultos] ?: false }
     suspend fun setLivesOcultos(v: Boolean) = ds.edit { it[K.livesOcultos] = v }
+    /** Descargar solo con Wi‑Fi (o cualquier red que no cobre por datos). */
+    val soloWifi: Flow<Boolean> = ds.data.map { it[K.soloWifi] ?: false }
+    suspend fun setSoloWifi(v: Boolean) = ds.edit { it[K.soloWifi] = v }
     /** Ya se mostró (una sola vez) el aviso «Mirador ahora es RACQ». */
     val avisoNuevoNombreVisto: Flow<Boolean> = ds.data.map { it[K.avisoNuevoNombre] ?: false }
     suspend fun setAvisoNuevoNombreVisto() = ds.edit { it[K.avisoNuevoNombre] = true }

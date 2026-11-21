@@ -165,8 +165,11 @@ object YtDlpEngine {
             if (preset.portada) {
                 r.addOption("--embed-thumbnail")
                 r.addOption("--convert-thumbnails", "jpg")
+                // Portada cuadrada (como la de un álbum) recortando el centro de la miniatura.
+                r.addOption("--ppa", "ThumbnailsConvertor+ffmpeg_o:-c:v mjpeg -vf crop=\"'if(gt(ih,iw),iw,ih)':'if(gt(iw,ih),ih,iw)'\"")
             }
             r.addOption("--embed-metadata")
+            metadatosDeMusica(job).forEach { (op, valor) -> r.addOption(op, valor) }
         } else {
             // Orden de preferencia: la mayor resolución hasta el tope, luego H.264 y AAC (compatibles
             // con cualquier celular). Si el sitio no tiene H.264 se usa lo mejor que haya.
@@ -177,6 +180,21 @@ object YtDlpEngine {
             // Sin --embed-metadata en video: obligaba a reescribir todo el archivo con ffmpeg una vez más.
         }
         return r
+    }
+
+    /**
+     * Datos de la canción para otras apps de música: título sin «(Official Video)», artista sin « - Topic»,
+     * y si viene de una lista, el álbum (nombre de la lista) y el número de pista.
+     */
+    internal fun metadatosDeMusica(job: DownloadEntity): List<Pair<String, String>> = buildList {
+        // Título sin «(Official Video)», «[Lyrics]», «(Audio)»…
+        add("--parse-metadata" to "title:(?i)(?P<title>.+?)(?:\\s*[\\(\\[](?:official|oficial|video|v[ií]deo|audio|lyrics?|letra|visualizer|hd|4k|mv)[^\\)\\]]*[\\)\\]])*$")
+        // Artista: el del sitio o el canal, sin « - Topic».
+        add("--parse-metadata" to "%(artist,uploader)s:(?P<meta_artist>.+?)(?: - Topic)?$")
+        val album = job.grupoNombre?.takeIf { job.grupo != null && !it.startsWith("Lote de ") }
+        if (album != null) add("--parse-metadata" to "${album.replace("%", "%%").replace(":", " -")}:(?P<meta_album>.+)")
+        val pista = job.prefijo?.takeWhile { it.isDigit() }?.trimStart('0')
+        if (!pista.isNullOrEmpty()) add("--parse-metadata" to "$pista:(?P<meta_track>.+)")
     }
 
     class Cancelada : Exception("Descarga cancelada")

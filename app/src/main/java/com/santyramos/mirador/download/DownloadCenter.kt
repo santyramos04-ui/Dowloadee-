@@ -51,8 +51,43 @@ object DownloadCenter {
     private val dao get() = db.descargas()
     val settings get() = Settings(app)
 
+    /** «Solo con Wi‑Fi» activado y ahora no hay Wi‑Fi: la cola espera. */
+    @Volatile var esperandoWifi = false
+        private set
+
+    private fun redSinCosto(): Boolean {
+        val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        return cm.activeNetwork != null && !cm.isActiveNetworkMetered
+    }
+
+    /** Cuando cambia la red: con Wi‑Fi se sigue; si se perdió y es «solo Wi‑Fi», las que bajaban vuelven a la cola. */
+    private fun vigilarRed() {
+        val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        runCatching {
+            cm.registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
+                override fun onCapabilitiesChanged(network: android.net.Network, caps: android.net.NetworkCapabilities) { revisarRed() }
+                override fun onLost(network: android.net.Network) { revisarRed() }
+            })
+        }
+    }
+
+    private fun revisarRed() {
+        scope.launch {
+            if (settings.soloWifi.first() && !redSinCosto()) {
+                esperandoWifi = true
+                trabajos.keys.toList().forEach { id -> dao.cambiarEstado(id, DownloadStatus.QUEUED.name); detener(id) }
+            } else {
+                val estaba = esperandoWifi
+                esperandoWifi = false
+                // Volvió el Wi‑Fi y hay cola: se arranca el servicio (que es el que bombea).
+                if (estaba && dao.siguienteEnCola() != null) arrancarServicio()
+            }
+        }
+    }
+
     fun init(context: Context) {
         app = context.applicationContext
+        vigilarRed()
         scope.launch {
             // Si la app se cerró en medio de una descarga, esas descargas vuelven a la cola.
             dao.devolverEnCursoALaCola()
@@ -218,6 +253,9 @@ object DownloadCenter {
                     if (!esperandoPausa) { esperandoPausa = true; scope.launch { kotlinx.coroutines.delay(espera + 500); esperandoPausa = false; bombear() } }
                     return@withLock
                 }
+                // «Solo con Wi‑Fi»: sin Wi‑Fi no se empieza nada (se sigue sola al volver el Wi‑Fi).
+                esperandoWifi = settings.soloWifi.first() && !redSinCosto()
+                if (esperandoWifi) return@withLock
                 val limite = settings.simultaneas.first()
                 while (trabajos.size < limite) {
                     val siguiente = dao.siguienteEnCola() ?: break
