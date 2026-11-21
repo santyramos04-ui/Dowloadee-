@@ -116,6 +116,18 @@ class RecomendadorTest {
         assertEquals(3, r.size)
     }
 
+    @Test fun temasDesdeElHistorial() {
+        fun h(t: String, a: String) = com.santyramos.mirador.data.lib.Visto(url = "u/$t", titulo = t, miniatura = null, autor = a, urlAutor = null, duracionSeg = 100)
+        val temas = com.santyramos.mirador.data.lib.Recomendador.armarTemas(listOf(
+            h("Salsa clásica para bailar", "Canal A"), h("Salsa romántica en vivo", "Canal A"), h("Receta de arepas", "Canal B"),
+        ))
+        val nombres = temas.map { it.nombre }
+        assertEquals(listOf("Todo", "Música", "En vivo"), nombres.take(3))
+        assertTrue("Canal A" in nombres)   // el canal que más ves
+        assertTrue("Salsa" in nombres)     // la palabra que se repite
+        assertTrue("Canal B" !in nombres)  // visto una sola vez
+    }
+
     @Test fun loYaMostradoBajaDePuesto() {
         val a = listOf(v("a", "X"), v("b", "Y"))
         val r = com.santyramos.mirador.data.lib.Recomendador.ordenar(

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -395,6 +396,19 @@ fun HomeScreen(
 }
 
 /** Tendencias ya cargadas (se conservan al cambiar de pestaña). */
+/** El feed «Para ti» (se conserva al cambiar de pestaña o abrir un video). */
+private object FeedParaTi {
+    val items = mutableStateListOf<Elemento.Video>()
+    var base: List<Elemento.Video>? = null
+    var temas by mutableStateOf(listOf(Recomendador.Tema("Todo", null)))
+    var tema by mutableStateOf(0)
+    var pagina: Page? = null
+    var calculando by mutableStateOf(false)
+    var cargandoMas by mutableStateOf(false)
+    var refrescando by mutableStateOf(false)
+    var fin by mutableStateOf(false)
+}
+
 /** Transmisiones en vivo populares (se conservan al cambiar de pestaña; se renuevan cada 10 min). */
 private object EnVivoCache {
     var datos: List<Elemento.Video>? = null
@@ -424,22 +438,72 @@ private val Plataformas = listOf(
 )
 
 /** Inicio sin búsqueda: banda de plataformas, tendencias (si YouTube las ofrece) y recomendaciones según tu uso. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun Portada(
     estado: androidx.compose.foundation.lazy.LazyListState, onAbrirNavegador: (String?) -> Unit, onBuscarYoutube: () -> Unit,
     onAbrirVideo: (String) -> Unit, onDescargar: (String) -> Unit,
 ) {
     var tendencias by remember { mutableStateOf(TendenciasCache.datos) }
-    var recomendados by remember { mutableStateOf<List<Elemento.Video>?>(null) }
-    var calculando by remember { mutableStateOf(true) }
+    val feed = FeedParaTi
     val scope = rememberCoroutineScope()
+    /** «Todo»: recomendaciones calculadas en el celular. Solo reemplaza el feed si cambiaron (o si se pide). */
     fun recomendar(forzar: Boolean) {
         scope.launch {
-            calculando = true
-            recomendados = try { Recomendador.recomendar(forzar) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { null }
-            calculando = false
+            feed.calculando = true
+            val r = try { Recomendador.recomendar(forzar) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { null }
+            if (r != null && (forzar || r !== feed.base)) {
+                feed.base = r
+                if (feed.tema == 0) { feed.items.clear(); feed.items.addAll(r); feed.fin = false }
+            }
+            feed.calculando = false; feed.refrescando = false
         }
     }
+    /** Un tema distinto de «Todo»: búsqueda de YouTube con páginas sin fin. */
+    fun cargarTema() {
+        val t = feed.temas.getOrNull(feed.tema)?.takeIf { it.consulta != null } ?: return
+        scope.launch {
+            feed.calculando = true
+            val f = if (t.enVivo) com.santyramos.mirador.extractor.FiltroBusqueda.EN_VIVO else com.santyramos.mirador.extractor.FiltroBusqueda.VIDEOS
+            val r = runCatching { Youtube.buscar(t.consulta!!, f) }.getOrNull()
+            feed.items.clear(); feed.items.addAll(r?.elementos.orEmpty().filterIsInstance<Elemento.Video>()); feed.pagina = r?.siguiente; feed.fin = r?.siguiente == null
+            feed.calculando = false; feed.refrescando = false
+        }
+    }
+    fun cargarMas() {
+        if (feed.cargandoMas || feed.fin || feed.items.isEmpty()) return
+        feed.cargandoMas = true
+        scope.launch {
+            try {
+                val t = feed.temas.getOrNull(feed.tema)
+                val nuevos = if (t?.consulta == null) Recomendador.mas(feed.items.map { it.url }.toSet())
+                else {
+                    val pag = feed.pagina
+                    if (pag == null) emptyList() else {
+                        val f = if (t.enVivo) com.santyramos.mirador.extractor.FiltroBusqueda.EN_VIVO else com.santyramos.mirador.extractor.FiltroBusqueda.VIDEOS
+                        val r = Youtube.masBusqueda(t.consulta!!, f, pag); feed.pagina = r.siguiente
+                        r.elementos.filterIsInstance<Elemento.Video>()
+                    }
+                }
+                val vistos = feed.items.map { it.url }.toSet()
+                val agregar = nuevos.filter { it.url !in vistos }
+                if (agregar.isEmpty()) feed.fin = true else feed.items.addAll(agregar)
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { feed.fin = true } finally { feed.cargandoMas = false }
+        }
+    }
+    fun elegirTema(i: Int) {
+        if (i == feed.tema) return
+        feed.tema = i; feed.items.clear(); feed.fin = false; feed.pagina = null
+        if (i == 0) { val b = feed.base; if (b != null) feed.items.addAll(b) else recomendar(false) } else cargarTema()
+    }
+    fun refrescar() {
+        feed.refrescando = true
+        if (feed.tema == 0) recomendar(true) else cargarTema()
+    }
+    LaunchedEffect(Unit) { if (feed.temas.size <= 1) runCatching { Recomendador.temas() }.getOrNull()?.let { feed.temas = it } }
+    // Al acercarse al final se cargan más (feed infinito).
+    val cercaDelFinal by remember { derivedStateOf { val u = estado.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0; u >= estado.layoutInfo.totalItemsCount - 5 } }
+    LaunchedEffect(cercaDelFinal, feed.items.size) { if (cercaDelFinal) cargarMas() }
     LaunchedEffect(Unit) {
         if (!TendenciasCache.intentado) {
             tendencias = Youtube.tendencias()
@@ -464,6 +528,8 @@ private fun Portada(
         }
     }
 
+    // Jalar hacia abajo desde arriba trae recomendaciones nuevas.
+    androidx.compose.material3.pulltorefresh.PullToRefreshBox(isRefreshing = feed.refrescando, onRefresh = { refrescar() }, modifier = Modifier.fillMaxSize()) {
     LazyColumn(Modifier.fillMaxSize(), state = estado, contentPadding = PaddingValues(top = 4.dp, bottom = 24.dp)) {
         item {
             Text("Descargar desde", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 20.dp, top = 6.dp, bottom = 10.dp))
@@ -513,57 +579,40 @@ private fun Portada(
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 28.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Para ti", style = MaterialTheme.typography.titleLarge)
-                    Text("Según lo que ves y los canales que sigues. Se calcula en tu celular.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Según lo que ves y los canales que sigues. Jala hacia abajo para renovar.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                if (!recomendados.isNullOrEmpty()) BotonIcono(Icons.Outlined.Refresh, "Actualizar recomendaciones", { recomendar(true) })
+                if (feed.items.isNotEmpty()) BotonIcono(Icons.Filled.PlayArrow, "Reproducir todo", {
+                    VideoController.definirCola(feed.items.map { it.url }); onAbrirVideo(feed.items.first().url)
+                })
             }
         }
-        val lista = recomendados
+        // Temas, como en YouTube: «Todo», «Música», «En vivo», tus canales y temas que más ves.
+        if (feed.temas.size > 1) item {
+            LazyRow(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                itemsIndexed(feed.temas) { i, t -> Filtro(t.nombre, feed.tema == i) { elegirTema(i) } }
+            }
+        }
+        val lista = feed.items
         when {
-            calculando && lista == null -> item { Box(Modifier.fillMaxWidth().padding(28.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Acento, modifier = Modifier.size(28.dp)) } }
-            lista.isNullOrEmpty() -> item {
+            lista.isEmpty() && feed.calculando -> item { Box(Modifier.fillMaxWidth().padding(28.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Acento, modifier = Modifier.size(28.dp)) } }
+            lista.isEmpty() -> item {
                 Text(
-                    "Mira algunos videos o sigue canales y aquí aparecerán recomendaciones hechas para ti.",
+                    if (feed.tema == 0) "Mira algunos videos o sigue canales y aquí aparecerán recomendaciones hechas para ti." else "No encontré videos de este tema ahora. Jala hacia abajo para intentar otra vez.",
                     style = MaterialTheme.typography.bodyMedium, color = Paleta.Texto3, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                 )
             }
             else -> {
-                item {
-                    BotonPrimario(
-                        "Reproducir recomendados", {
-                            VideoController.definirCola(lista.map { it.url })
-                            onAbrirVideo(lista.first().url)
-                        },
-                        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp), icono = Icons.Filled.PlayArrow,
-                    )
-                }
-                items(lista, key = { "r" + it.url }) { v ->
+                items(lista.toList(), key = { "r" + it.url }) { v ->
                     TarjetaVideo(
                         v,
                         onClick = { VideoController.definirCola(lista.map { it.url }); onAbrirVideo(v.url) },
                         onDescargar = { onDescargar(v.url) },
                     )
                 }
+                if (feed.cargandoMas) item { Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Acento, modifier = Modifier.size(26.dp)) } }
             }
         }
     }
-}
-
-/** Cada sitio es una «ventana» en arco, como las de un mirador: el único gesto decorativo de la pantalla. */
-@Composable
-private fun BotonPlataforma(p: Plataforma, onClick: () -> Unit) {
-    val arco = RoundedCornerShape(topStart = 29.dp, topEnd = 29.dp, bottomStart = 10.dp, bottomEnd = 10.dp)
-    Column(Modifier.width(60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        androidx.compose.material3.Surface(
-            onClick = onClick, shape = arco, color = Paleta.S2,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Paleta.Linea), modifier = Modifier.size(width = 58.dp, height = 72.dp),
-        ) {
-            Box(Modifier.padding(top = 6.dp), contentAlignment = Alignment.Center) {
-                if (p.icono != null) Icon(painterResource(p.icono), p.nombre, tint = Acento, modifier = Modifier.size(26.dp))
-                else Icon(Icons.Outlined.Public, p.nombre, tint = Acento, modifier = Modifier.size(26.dp))
-            }
-        }
-        Text(p.nombre, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, modifier = Modifier.padding(top = 6.dp))
     }
 }
 
