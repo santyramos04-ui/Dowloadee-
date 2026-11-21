@@ -64,7 +64,7 @@ fun PlaylistScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> U
         val s = siguiente
         if (alFinal && s != null && !cargandoMas) {
             cargandoMas = true
-            try { val p = Youtube.masLista(url, s); videos.addAll(p.elementos); siguiente = p.siguiente }
+            try { val p = Youtube.masLista(url, s); val ya = videos.map { it.url }.toHashSet(); videos.addAll(p.elementos.filter { ya.add(it.url) }); siguiente = p.siguiente }
             catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { siguiente = null } finally { cargandoMas = false }
         }
     }
@@ -89,7 +89,7 @@ fun PlaylistScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> U
                             icono = androidx.compose.material.icons.Icons.Outlined.Download,
                         )
                     }
-                    items(videos.filterIsInstance<Elemento.Video>(), key = { it.url }) { v ->
+                    items(videos.filterIsInstance<Elemento.Video>().distinctBy { it.url }, key = { it.url }) { v ->
                         FilaVideo(v, onClick = { com.santyramos.mirador.player.VideoController.definirCola(videos.filterIsInstance<Elemento.Video>().map { it.url }); onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) })
                     }
                     if (cargandoMas) item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }

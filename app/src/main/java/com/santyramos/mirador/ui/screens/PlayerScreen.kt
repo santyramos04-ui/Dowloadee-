@@ -646,7 +646,7 @@ fun PlayerScreen(
                     }
                     aContinuacion(cola)
                     if (relacionados.isNotEmpty()) item { Text("Videos relacionados", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) }
-                    items(relacionados, key = { it.url }) { v -> FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
+                    items(relacionados.distinctBy { it.url }, key = { it.url }) { v -> FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
                 }
             }
         }

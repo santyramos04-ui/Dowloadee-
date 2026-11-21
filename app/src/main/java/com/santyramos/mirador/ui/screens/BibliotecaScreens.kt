@@ -120,7 +120,7 @@ fun HistorialScreen(onAtras: () -> Unit, onAbrirVideo: (String) -> Unit, onDesca
                 EstadoVacio(Icons.Outlined.History, "Aún no has visto nada", "Los videos que veas aparecerán aquí y podrás seguir justo donde te quedaste.")
             }
         } else LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-            items(lista, key = { it.url }) { v ->
+            items(lista.distinctBy { it.url }, key = { it.url }) { v ->
                 val prog = if (v.duracionSeg > 0) v.posicionMs / (v.duracionSeg * 1000f) else null
                 Box(Modifier.animateItem()) { FilaBiblioteca(v.aElemento(), prog, { onAbrirVideo(v.url) }, { onDescargar(v.url) }, "Quitar del historial") { Biblioteca.quitarDelHistorial(v.url) } }
             }
@@ -146,7 +146,7 @@ fun GuardadosScreen(onAtras: () -> Unit, onAbrirVideo: (String) -> Unit, onDesca
                 EstadoVacio(Icons.Outlined.BookmarkBorder, "Nada guardado todavía", "Toca el marcador de un video, o mantén pulsado cualquier video, para guardarlo aquí.")
             }
         } else LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-            items(lista, key = { it.url }) { g ->
+            items(lista.distinctBy { it.url }, key = { it.url }) { g ->
                 Box(Modifier.animateItem()) { FilaBiblioteca(g.aElemento(), null, { com.santyramos.mirador.player.VideoController.definirCola(lista.map { it.url }); onAbrirVideo(g.url) }, { onDescargar(g.url) }, "Quitar de la lista") { Biblioteca.quitarGuardado(g.url) } }
             }
         }

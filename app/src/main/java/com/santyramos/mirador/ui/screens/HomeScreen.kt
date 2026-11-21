@@ -217,7 +217,9 @@ fun HomeScreen(
             cargando = true
             try {
                 val p = Youtube.masBusqueda(q, filtro, s)
-                resultados.addAll(p.elementos); siguiente = p.siguiente
+                // YouTube a veces repite en la página siguiente un video que ya salió: se omite.
+                val ya = resultados.map { it.url }.toHashSet()
+                resultados.addAll(p.elementos.filter { ya.add(it.url) }); siguiente = p.siguiente
             } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { siguiente = null } finally { cargando = false }
         }
     }
@@ -380,7 +382,7 @@ fun HomeScreen(
                 buscado == null && !cargando -> Portada(lista, onAbrirNavegador, { pedirFoco.requestFocus() }, onAbrirVideo, onDescargar)
                 visibles.isEmpty() && !cargando -> Text("No encontré resultados.", Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 else -> LazyColumn(state = lista, contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp)) {
-                    items(visibles, key = { it.url }) { e ->
+                    items(visibles.distinctBy { it.url }, key = { it.url }) { e ->
                         when (e) {
                             is Elemento.Video -> TarjetaVideo(e, onClick = { onAbrirVideo(e.url) }, onDescargar = { onDescargar(e.url) })
                             is Elemento.Canal -> FilaCanal(e, onClick = { onAbrirCanal(e.url) })
@@ -567,13 +569,13 @@ private fun Portada(
                 exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
             ) {
                 LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(enVivo!!, key = { "v" + it.url }) { v -> TarjetaEnVivo(v) { onAbrirVideo(v.url) } }
+                    items(enVivo!!.distinctBy { it.url }, key = { "v" + it.url }) { v -> TarjetaEnVivo(v) { onAbrirVideo(v.url) } }
                 }
             }
         }
         if (!tendencias.isNullOrEmpty()) {
             item { Text("Tendencias en Colombia", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 6.dp)) }
-            items(tendencias!!, key = { "t" + it.url }) { v -> TarjetaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
+            items(tendencias!!.distinctBy { it.url }, key = { "t" + it.url }) { v -> TarjetaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) }) }
         }
         item {
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 28.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -602,7 +604,7 @@ private fun Portada(
                 )
             }
             else -> {
-                items(lista.toList(), key = { "r" + it.url }) { v ->
+                items(lista.toList().distinctBy { it.url }, key = { "r" + it.url }) { v ->
                     TarjetaVideo(
                         v,
                         onClick = { VideoController.definirCola(lista.map { it.url }); onAbrirVideo(v.url) },

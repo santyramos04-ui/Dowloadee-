@@ -83,7 +83,8 @@ fun ChannelScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> Un
             cargandoMas = true
             try {
                 val p = Youtube.masVideosCanal(d.info, s, pestana)
-                videos.addAll(p.elementos); siguiente = p.siguiente
+                val ya = videos.map { it.url }.toHashSet()
+                videos.addAll(p.elementos.filter { ya.add(it.url) }); siguiente = p.siguiente
             } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Throwable) { siguiente = null } finally { cargandoMas = false }
         }
     }
@@ -128,10 +129,10 @@ fun ChannelScreen(url: String, onAtras: () -> Unit, onAbrirVideo: (String) -> Un
                     }
                     // En vivo: primero lo que está transmitiendo ahora.
                     val mostrados = videos.filterIsInstance<Elemento.Video>().let { l -> if (enVivo) l.sortedByDescending { it.esDirecto } else l }
-                    if (!cambiando && pestana == org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.PLAYLISTS) items(videos.filterIsInstance<Elemento.Lista>(), key = { it.url }) { l ->
+                    if (!cambiando && pestana == org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.PLAYLISTS) items(videos.filterIsInstance<Elemento.Lista>().distinctBy { it.url }, key = { it.url }) { l ->
                         FilaLista(l, onClick = { onAbrirLista(l.url) })
                     }
-                    if (!cambiando && pestana != org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.PLAYLISTS) items(mostrados, key = { it.url }) { v ->
+                    if (!cambiando && pestana != org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.PLAYLISTS) items(mostrados.distinctBy { it.url }, key = { it.url }) { v ->
                         FilaVideo(v, onClick = { onAbrirVideo(v.url) }, onDescargar = { onDescargar(v.url) })
                     }
                     if (cargandoMas) item { Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
