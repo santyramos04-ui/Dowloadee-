@@ -1,0 +1,96 @@
+name: Volver a una versión anterior
+
+# Botón de emergencia: si una versión salió con fallas, esto vuelve a publicar el código de una versión
+# anterior como una versión NUEVA (número más alto). Así el celular la instala encima, como cualquier
+# actualización, sin desinstalar y sin perder descargas, suscripciones ni listas.
+# (Android no deja instalar un número de versión más bajo encima de uno más alto.)
+#
+# Cómo usarlo: GitHub → Actions → «Volver a una versión anterior» → Run workflow.
+# Dejar la casilla vacía vuelve a la versión anterior a la última; o escribir una (ej. v1.0.44).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión a la que volver (ej. v1.0.44). Vacío = la anterior a la última.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: volver-atras
+
+jobs:
+  volver:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 0 }
+
+      - name: Elegir la versión
+        id: elegir
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PEDIDA: ${{ inputs.version }}
+        run: |
+          V=$(echo "$PEDIDA" | tr -d ' ')
+          if [ -z "$V" ]; then
+            V=$(gh release list --exclude-pre-releases --exclude-drafts --limit 2 --json tagName --jq '.[1].tagName')
+          fi
+          case "$V" in v*) ;; *) V="v$V" ;; esac
+          if ! git rev-parse -q --verify "refs/tags/$V^{commit}" > /dev/null; then
+            echo "::error::No existe la versión $V. Mira la lista en Releases."
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Volviendo a $V"
+
+      - name: Revisar que no se pierdan datos
+        env:
+          V: ${{ steps.elegir.outputs.version }}
+        run: |
+          # Si la base de datos cambió de versión después de $V, la versión vieja no sabría leerla.
+          # En ese caso NO se vuelve atrás: hay que arreglar la falla con una versión nueva.
+          for f in app/src/main/java/com/santyramos/mirador/data/db/AppDatabase.kt \
+                   app/src/main/java/com/santyramos/mirador/data/lib/BibliotecaDb.kt; do
+            ahora=$(grep -oE 'version *= *[0-9]+' "$f" 2>/dev/null | head -1 | grep -oE '[0-9]+' || true)
+            antes=$(git show "$V:$f" 2>/dev/null | grep -oE 'version *= *[0-9]+' | head -1 | grep -oE '[0-9]+' || true)
+            if [ -n "$ahora" ] && [ -n "$antes" ] && [ "$antes" -lt "$ahora" ]; then
+              echo "::error::$V usa una base de datos más vieja ($(basename "$f"): $antes, ahora $ahora). Volver atrás borraría datos; hay que corregir la falla con una versión nueva."
+              exit 1
+            fi
+          done
+          echo "La base de datos es compatible: no se pierde nada."
+
+      - name: Poner el código de esa versión en main
+        env:
+          V: ${{ steps.elegir.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+          # Todo el código queda exactamente como en $V (también se quitan archivos nuevos)...
+          git read-tree -u --reset "$V"
+          # ...menos la automatización y las instrucciones, que siguen siendo las de ahora.
+          for p in .github .claude CLAUDE.md; do
+            if git cat-file -e "HEAD:$p" 2>/dev/null; then git checkout HEAD -- "$p"; fi
+          done
+          if git diff --cached --quiet HEAD; then
+            echo "::error::main ya tiene el mismo código que $V."
+            exit 1
+          fi
+          git commit -q -m "Volver al código de $V (botón «Volver a una versión anterior»)"
+          git push origin HEAD:main
+
+      - name: Publicar como versión nueva
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: ${{ steps.elegir.outputs.version }}
+        run: |
+          gh workflow run construir.yml --ref main
+          {
+            echo "### Volviendo al código de $V"
+            echo "Se está compilando y publicando como versión nueva (mira «Construir y publicar» en Actions)."
+            echo "En unos 15 minutos la app avisará que hay una actualización; se instala encima sin perder nada."
+          } >> "$GITHUB_STEP_SUMMARY"
