@@ -93,6 +93,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Cast
+import androidx.compose.material.icons.outlined.Lyrics
 import androidx.compose.material.icons.outlined.ClosedCaptionOff
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.outlined.Lock
@@ -761,6 +762,8 @@ private fun BarraAcciones(
     val aleatorio by VideoController.aleatorio.collectAsState()
     val temporizador by VideoController.temporizador.collectAsState()
     val masActivo = repetir != com.santyramos.mirador.player.Repetir.NO || aleatorio || temporizador != null
+    var verLetra by remember { mutableStateOf(false) }
+    if (verLetra) com.santyramos.mirador.ui.HojaMirador(onCerrar = { verLetra = false }) { com.santyramos.mirador.ui.LetraSheetContent() }
     androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (onDescargar != null) item {
             Surface(onClick = onDescargar, shape = RoundedCornerShape(14.dp), color = Paleta.Relleno, modifier = Modifier.height(40.dp)) {
@@ -773,6 +776,7 @@ private fun BarraAcciones(
         if (onGuardar != null) item { com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.BookmarkBorder, "Guardar", false, onGuardar) }
         if (onCompartir != null) item { com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Share, "Compartir", false, onCompartir) }
         if (!local) item { com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Headphones, "Solo audio", soloAudio, { VideoController.cambiarSoloAudio(!soloAudio) }) }
+        item { com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.Lyrics, "Letra", false, { verLetra = true }) }
         item { com.santyramos.mirador.ui.ChipOpcion(Icons.AutoMirrored.Outlined.QueueMusic, if (cola.isEmpty()) "Cola" else "Cola (${cola.size})", false, onCola) }
         item { com.santyramos.mirador.ui.ChipOpcion(Icons.Outlined.MoreHoriz, "Más", masActivo, onMas) }
     }
