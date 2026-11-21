@@ -128,6 +128,15 @@ class RecomendadorTest {
         assertTrue("Canal B" !in nombres)  // visto una sola vez
     }
 
+    @Test fun unCanalNoAcaparaLosPrimerosPuestos() {
+        val podcast = (1..5).map { v("p$it", "Podcast") }
+        val otros = listOf(v("m1", "Música"), v("n1", "Noticias"))
+        val r = com.santyramos.mirador.data.lib.Recomendador.ordenar(
+            listOf(podcast + otros), emptyList(), urlsVistas = emptySet(), autoresVistos = emptyMap(), autoresSeguidos = setOf("Podcast"),
+        )
+        assertEquals(setOf("Podcast", "Música", "Noticias"), r.take(3).map { it.autor }.toSet())
+    }
+
     @Test fun loYaMostradoBajaDePuesto() {
         val a = listOf(v("a", "X"), v("b", "Y"))
         val r = com.santyramos.mirador.data.lib.Recomendador.ordenar(

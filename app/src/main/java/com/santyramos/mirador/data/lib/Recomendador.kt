@@ -76,7 +76,7 @@ object Recomendador {
             relacionadosDe(semillas), emptyList(),
             urlsVistas = historial.map { it.url }.toSet() + yaEnFeed,
             autoresVistos = historial.mapNotNull { it.autor }.groupingBy { it }.eachCount(),
-            autoresSeguidos = dao.suscripciones().map { it.nombre }.toSet(),
+            autoresSeguidos = seguidosActivos(historial, dao.suscripciones().map { it.nombre }),
             limite = 20, azar = kotlin.random.Random.Default,
         )
         res.shuffled().take(4).forEach { semillasPendientes.addLast(it.url) }
@@ -113,12 +113,31 @@ object Recomendador {
         val ahora = System.currentTimeMillis()
         novedades.filter { it.url !in urlsVistas && ahora - it.publicadoMs < 4 * 86_400_000L }.forEach { n ->
             datos.putIfAbsent(n.url, Elemento.Video(n.titulo, n.url, n.miniatura, n.canalNombre, null, 0, n.vistas, null, false, false, n.publicadoMs))
-            puntos[n.url] = (puntos[n.url] ?: 0) + p.novedadSeguida
+            // Lo nuevo de un canal que sigues pesa solo si lo ves de verdad últimamente.
+            puntos[n.url] = (puntos[n.url] ?: 0) + if (n.canalNombre in autoresSeguidos) p.novedadSeguida else 1
         }
         // Lo ya mostrado baja un poco y una pizca de azar desempata, así cada vuelta trae algo distinto.
         mostradosAntes.forEach { u -> puntos[u]?.let { puntos[u] = it - 4 } }
         if (azar != null) puntos.keys.toList().forEach { u -> puntos[u] = puntos[u]!! + azar.nextInt(0, 3) }
-        return datos.values.sortedByDescending { puntos[it.url] ?: 0 }.take(limite)
+        return diversificar(datos.values.sortedByDescending { puntos[it.url] ?: 0 }).take(limite)
+    }
+
+    /**
+     * Variedad: se intercalan los canales (primero lo mejor de cada canal, luego el segundo de cada uno…),
+     * así un solo canal no ocupa los primeros puestos.
+     */
+    internal fun diversificar(ordenados: List<Elemento.Video>): List<Elemento.Video> {
+        val porCanal = LinkedHashMap<String, ArrayDeque<Elemento.Video>>()
+        ordenados.forEach { v -> porCanal.getOrPut(v.autor ?: v.url) { ArrayDeque() }.addLast(v) }
+        val salida = ArrayList<Elemento.Video>(ordenados.size)
+        while (porCanal.values.any { it.isNotEmpty() }) porCanal.values.forEach { q -> q.removeFirstOrNull()?.let(salida::add) }
+        return salida
+    }
+
+    /** Canales que sigues y además viste en tus últimos 100 videos (los «seguidos activos»). */
+    private fun seguidosActivos(historial: List<Visto>, suscripciones: List<String>): Set<String> {
+        val recientes = historial.take(100).mapNotNull { it.autor }.toSet()
+        return suscripciones.filter { it in recientes }.toSet()
     }
 
     /** @return null si todavía no hay con qué recomendar (sin historial ni suscripciones). */
@@ -144,7 +163,7 @@ object Recomendador {
             relacionados, novedades,
             urlsVistas = historial.map { it.url }.toSet(),
             autoresVistos = historial.mapNotNull { it.autor }.groupingBy { it }.eachCount(),
-            autoresSeguidos = suscripciones.map { it.nombre }.toSet(),
+            autoresSeguidos = seguidosActivos(historial, suscripciones.map { it.nombre }),
             mostradosAntes = yaMostrados.toSet(),
             azar = kotlin.random.Random.Default,
         )

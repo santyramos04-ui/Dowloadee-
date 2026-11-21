@@ -190,6 +190,11 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
             Seccion("Aplicación") {
                 Text("${com.santyramos.mirador.util.Marca.NOMBRE} ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.bodyMedium)
                 Text("Raccoon Audio Quest", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // El último informe de fallo (si la app se cerró alguna vez), para enviarlo cuando quieras.
+                val informe = remember { com.santyramos.mirador.util.Fallos.ultimo(contexto) }
+                if (informe != null) androidx.compose.material3.TextButton(onClick = { com.santyramos.mirador.util.Fallos.compartir(contexto, informe) }) {
+                    Text("Compartir el último informe de fallo", color = MaterialTheme.colorScheme.primary)
+                }
                 when (val e = estadoApp) {
                     AppUpdater.Estado.Nada -> {}
                     AppUpdater.Estado.Buscando -> LinearProgressIndicator(Modifier.fillMaxWidth())

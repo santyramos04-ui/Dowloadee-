@@ -108,26 +108,26 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
     val scopeApp = androidx.compose.runtime.rememberCoroutineScope()
     // La app se cerró por un error la última vez: se ofrece compartir el informe para poder arreglarlo.
     var informeFallo by remember { mutableStateOf(com.santyramos.mirador.util.Fallos.pendiente(contexto)) }
+    // Además se guarda como .txt en Descargas/RACQ/Informes, para que no se pierda.
+    var nombreInforme by remember { mutableStateOf<String?>(null) }
+    androidx.compose.runtime.LaunchedEffect(informeFallo) {
+        val t = informeFallo ?: return@LaunchedEffect
+        nombreInforme = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.santyramos.mirador.util.Fallos.guardarEnDescargas(contexto, t) }
+    }
     informeFallo?.let { texto ->
         val cerrar = { com.santyramos.mirador.util.Fallos.descartar(contexto); informeFallo = null }
         androidx.compose.material3.AlertDialog(
             onDismissRequest = cerrar,
             title = { Text("${com.santyramos.mirador.util.Marca.NOMBRE} se cerró de forma inesperada") },
-            text = { Text("Se guardó un informe con lo que pasó (sin datos personales). Compártelo para que se pueda arreglar.") },
+            text = {
+                Text(
+                    "Se guardó un informe con lo que pasó (sin datos personales)" +
+                        (nombreInforme?.let { " en Descargas/${com.santyramos.mirador.util.Marca.NOMBRE}/Informes como «$it»" } ?: "") +
+                        ". Compártelo para que se pueda arreglar; también queda en Ajustes → Aplicación.",
+                )
+            },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = {
-                    runCatching {
-                        contexto.startActivity(
-                            android.content.Intent.createChooser(
-                                android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
-                                    .putExtra(android.content.Intent.EXTRA_SUBJECT, "Informe de fallo de ${com.santyramos.mirador.util.Marca.NOMBRE}")
-                                    .putExtra(android.content.Intent.EXTRA_TEXT, texto),
-                                "Compartir informe",
-                            ),
-                        )
-                    }
-                    cerrar()
-                }) { Text("Compartir informe") }
+                androidx.compose.material3.TextButton(onClick = { com.santyramos.mirador.util.Fallos.compartir(contexto, texto); cerrar() }) { Text("Compartir informe") }
             },
             dismissButton = { androidx.compose.material3.TextButton(onClick = cerrar) { Text("Ahora no") } },
         )
