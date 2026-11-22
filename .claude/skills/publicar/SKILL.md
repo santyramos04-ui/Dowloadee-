@@ -19,7 +19,7 @@ Tiene efectos visibles (sale una versión para todos), por eso solo se ejecuta c
 3. **Crear el PR** a `main` con un resumen en español de lo que cambia y qué falta probar en el celular.
    Listo cuando: existe el PR y su run (`event=pull_request`) terminó en verde.
 4. **Fusionar** con squash.
-5. **Release.** Esperar el run de `main` del commit fusionado y confirmar en `releases/latest` el tag nuevo (`v1.0.N`) y el archivo `Mirador-1.0.N.apk`.
+5. **Release.** Esperar el run de `main` del commit fusionado y confirmar en `releases/latest` el tag nuevo (`v1.0.N`) y el archivo `RACQ-1.0.N.apk`.
    Listo cuando: el tag y el APK existen. Si el paso «Publicar en GitHub Releases» se saltó, revisar que los 4 secretos de firma existan.
 6. **Avisar al usuario**: versión, cómo instalarla (Ajustes → Aplicación → Buscar actualización) y qué probar primero.
 
@@ -27,3 +27,8 @@ Tiene efectos visibles (sale una versión para todos), por eso solo se ejecuta c
 - CI rojo por código: es nuestro; corregir antes de publicar.
 - YouTube bloquea la IP de GitHub en `pruebas-ver`: no concluyente, no bloquea la publicación (decirlo).
 - Nunca publicar con el CI rojo ni forzar el push a `main`.
+- Antes de fusionar, anotar la versión actual (`releases/latest`): es a la que se vuelve si la nueva falla.
+- Si la versión publicada falla en el celular: workflow `volver-atras.yml` (Actions → «Volver a una versión anterior»,
+  con la versión anotada). Pone en `main` el código de esa versión y lo publica con número más alto, así se instala
+  encima sin perder datos. Se niega si la base de datos cambió de versión desde entonces. Después, recrear la rama de
+  trabajo desde `origin/main` y reaplicar el arreglo encima.

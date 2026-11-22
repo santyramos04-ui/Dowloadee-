@@ -9,6 +9,7 @@ El dueño no programa: explicar todo en español sencillo y paso a paso.
 - Compilar y probar **solo en GitHub Actions** (`.github/workflows/construir.yml`): el entorno local no llega a JitPack ni a Google Maven. Decir "listo" únicamente con el CI en verde.
 - Publicar = PR de la rama de trabajo a `main` → esperar CI del PR → merge squash → esperar el run de `main` y confirmar la release (tag `v1.0.N` y APK). Ver la skill `/publicar`. No abrir PRs ni publicar sin que se pida.
 - Si la rama de trabajo ya se fusionó, recrearla desde `origin/main` antes de seguir.
+- Volver atrás si una versión falla: workflow `volver-atras.yml` (republica el código de una versión anterior con número más alto; nunca pedir desinstalar). No subir la versión de una base de datos sin migración, o ese botón queda bloqueado.
 - Nunca subir claves: la clave de firma vive en GitHub Secrets; `secrets/` está en `.gitignore`.
 
 ## En pausa

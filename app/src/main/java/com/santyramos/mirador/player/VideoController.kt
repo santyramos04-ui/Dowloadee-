@@ -24,10 +24,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.stream.StreamInfo
+
+/** Un idioma de subtítulos del video. [auto] = generados automáticamente por YouTube. */
+data class Subtitulo(val id: String, val nombre: String, val url: String, val mime: String, val idioma: String, val auto: Boolean)
+
+/** Capítulo del video (como en YouTube): título y desde qué momento empieza. */
+data class Capitulo(val titulo: String, val inicioMs: Long)
 
 /** Lo que la pantalla del reproductor necesita saber del video actual. */
 data class VideoActual(
@@ -56,6 +63,10 @@ data class VideoActual(
     val pista: String? = null,
     /** Transmisión en vivo en curso: no hay duración fija ni «retomar donde ibas». */
     val enVivo: Boolean = false,
+    /** Subtítulos disponibles y el elegido (null = según tu preferencia guardada; "" = desactivados). */
+    val subtitulos: List<Subtitulo> = emptyList(),
+    val subtitulo: String? = null,
+    val capitulos: List<Capitulo> = emptyList(),
 ) {
     /** Ya está listo para sonar (cargado y sin error). */
     val listo: Boolean get() = !cargando && error == null && (info != null || local)
@@ -78,6 +89,8 @@ data class EstadoReproduccion(
 object VideoController {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var app: Context
+    /** Ya se preparó el reproductor (la app se abrió al menos una vez en este proceso). */
+    val iniciado: Boolean get() = ::app.isInitialized
     private var trabajo: Job? = null
     private var sondeo: Job? = null
 
@@ -132,6 +145,13 @@ object VideoController {
             _soloAudio.value = ajustes.soloAudio.first()
         }
         PlayerHolder.conectarServicio(app)
+        Sonido.init(app, player.audioSessionId)
+        // El widget de la pantalla de inicio se redibuja cuando cambia lo que suena o la pausa.
+        scope.launch {
+            kotlinx.coroutines.flow.combine(_video, _estado) { v, e -> Triple(v?.titulo, v?.autor, e.reproduciendo) }
+                .distinctUntilChanged()
+                .collect { com.santyramos.mirador.ui.WidgetRacq.actualizar(app) }
+        }
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 publicar()
@@ -453,9 +473,17 @@ object VideoController {
         val audioSolo = if (_soloAudio.value) StreamSelector.elegirAudio(info.audioStreams, pista) else null
         val seleccion = if (audioSolo != null) null
         else StreamSelector.seleccionar(info.videoStreams, info.videoOnlyStreams, info.audioStreams, calidad, conWifi(), pista)
-        val fuente = withContext(Dispatchers.IO) {
+        // Subtítulos: el elegido en este video o, si no, el idioma que dejaste la última vez.
+        val subs = if (PlayerSources.esEnVivo(info) || audioSolo != null) emptyList() else Subtitulos.deVideo(info)
+        val subElegido = Subtitulos.elegir(subs, _video.value?.subtitulo, Settings(app).subtitulos.first())
+        val base = withContext(Dispatchers.IO) {
             if (audioSolo != null) PlayerSources.construirSoloAudio(info, audioSolo) else PlayerSources.construir(info, seleccion)
         }
+        val fuente = if (subElegido == null) base else androidx.media3.exoplayer.source.MergingMediaSource(base, Subtitulos.fuente(subElegido))
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, subElegido == null)
+            .setPreferredTextLanguage(subElegido?.idioma)
+            .build()
         val p = player
         val enVivo = PlayerSources.esEnVivo(info)
         // En vivo se entra en el momento actual de la transmisión, no en un punto guardado.
@@ -470,6 +498,8 @@ object VideoController {
             alturaReproduciendo = seleccion?.altura ?: 0,
             titulo = info.name.orEmpty(), autor = info.uploaderName, miniatura = info.thumbnails.bestUrl(), local = false, esAudio = audioSolo != null,
             pistas = StreamSelector.pistas(info.audioStreams), enVivo = enVivo,
+            subtitulos = subs, subtitulo = subElegido?.id ?: _video.value?.subtitulo?.takeIf { it.isEmpty() },
+            capitulos = info.streamSegments.orEmpty().map { Capitulo(it.title.orEmpty(), it.startTimeSeconds * 1000L) }.sortedBy { it.inicioMs },
         )
     }
 
@@ -503,6 +533,22 @@ object VideoController {
     }
 
     /** Cambia el idioma del audio sin perder el punto en el que vas. */
+    /** Elige subtítulos ([id] null = desactivarlos) sin perder el punto donde vas; se recuerda el idioma. */
+    fun cambiarSubtitulo(id: String?) {
+        val v = _video.value ?: return
+        val info = v.info ?: return
+        val pos = player.currentPosition
+        val elegido = v.subtitulos.firstOrNull { it.id == id }
+        _video.value = v.copy(subtitulo = elegido?.id ?: "")
+        scope.launch { Settings(app).setSubtitulos(elegido?.idioma ?: "") }
+        trabajo?.cancel()
+        trabajo = scope.launch {
+            try { reproducir(info, v.calidad, v.alturas, pos) }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Throwable) { _video.value = _video.value?.copy(error = ErrorMapper.mensajeVer(e)) }
+        }
+    }
+
     fun cambiarPista(id: String) {
         val v = _video.value ?: return
         val info = v.info ?: return

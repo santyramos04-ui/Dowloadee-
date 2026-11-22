@@ -187,3 +187,22 @@ class TokenXTest {
         assertFalse(t.contains("0"))
     }
 }
+
+class MetadatosMusicaTest {
+    private fun job(grupo: Long?, nombre: String?, prefijo: String?) = com.santyramos.mirador.data.db.DownloadEntity(
+        url = "u", titulo = "t", preset = "MP3", grupo = grupo, grupoNombre = nombre, prefijo = prefijo,
+    )
+
+    @Test fun deUnaListaVanAlbumYPista() {
+        val m = com.santyramos.mirador.download.YtDlpEngine.metadatosDeMusica(job(1L, "Salsa: clásicos 100%", "07 - "))
+        val valores = m.map { it.second }
+        org.junit.Assert.assertTrue(valores.any { it == "Salsa - clásicos 100%%:(?P<meta_album>.+)" })
+        org.junit.Assert.assertTrue(valores.any { it == "7:(?P<meta_track>.+)" })
+    }
+
+    @Test fun unaCancionSueltaNoLlevaAlbum() {
+        val m = com.santyramos.mirador.download.YtDlpEngine.metadatosDeMusica(job(null, null, null))
+        org.junit.Assert.assertTrue(m.none { it.second.contains("meta_album") || it.second.contains("meta_track") })
+        org.junit.Assert.assertEquals(2, m.size) // título limpio y artista
+    }
+}

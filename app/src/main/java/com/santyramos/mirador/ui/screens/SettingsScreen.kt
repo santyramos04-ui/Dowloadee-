@@ -133,6 +133,11 @@ fun SettingsScreen(onAtras: () -> Unit, onAbrirNavegador: (String) -> Unit = {})
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (1..4).forEach { n -> Filtro("$n", simultaneas == n) { scope.launch { ajustes.setSimultaneas(n) } } }
                 }
+                val soloWifi by ajustes.soloWifi.collectAsState(initial = false)
+                com.santyramos.mirador.ui.FilaInterruptor(
+                    "Descargar solo con Wi‑Fi", soloWifi, { v -> scope.launch { ajustes.setSoloWifi(v); com.santyramos.mirador.download.DownloadCenter.bombear() } },
+                    "Con datos móviles la cola espera y sigue sola cuando te conectas a Wi‑Fi.",
+                )
             }
             Seccion("Reproductor") {
                 Text("Calidad predeterminada", style = MaterialTheme.typography.bodyMedium)

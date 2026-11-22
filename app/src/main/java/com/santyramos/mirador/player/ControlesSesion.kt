@@ -1,6 +1,7 @@
 package com.santyramos.mirador.player
 
 import androidx.media3.common.ForwardingPlayer
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 
 /**
@@ -26,4 +27,13 @@ class ControlesSesion(player: Player) : ForwardingPlayer(player) {
     override fun seekToNextMediaItem() = VideoController.siguiente()
     override fun seekToPrevious() = VideoController.anterior()
     override fun seekToPreviousMediaItem() = VideoController.anterior()
+
+    // Lo que se elige desde Android Auto (u otra app) entra a la cola de la app, no directo al reproductor.
+    override fun setMediaItems(mediaItems: MutableList<MediaItem>) = BibliotecaAuto.reproducir(mediaItems, 0)
+    override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) = BibliotecaAuto.reproducir(mediaItems, 0)
+    override fun setMediaItems(mediaItems: MutableList<MediaItem>, startIndex: Int, startPositionMs: Long) =
+        BibliotecaAuto.reproducir(mediaItems, startIndex.coerceAtLeast(0))
+    override fun setMediaItem(mediaItem: MediaItem) = BibliotecaAuto.reproducir(listOf(mediaItem), 0)
+    override fun setMediaItem(mediaItem: MediaItem, resetPosition: Boolean) = BibliotecaAuto.reproducir(listOf(mediaItem), 0)
+    override fun setMediaItem(mediaItem: MediaItem, startPositionMs: Long) = BibliotecaAuto.reproducir(listOf(mediaItem), 0)
 }

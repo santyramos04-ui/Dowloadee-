@@ -166,6 +166,10 @@ jobs:
           else
             gh release create prueba "salida/${{ steps.version.outputs.nombre }}-prueba.apk" --title "${{ steps.version.outputs.nombre }} $VER (prueba)" --notes-file notas.md --prerelease --target "$GITHUB_SHA"
           fi
+          # El enlace viejo (de cuando la app se llamaba Mirador) también recibe la versión nueva,
+          # para que un favorito guardado no descargue una versión vieja que el celular rechaza.
+          cp "salida/${{ steps.version.outputs.nombre }}-prueba.apk" salida/Mirador-prueba.apk
+          gh release upload prueba salida/Mirador-prueba.apk --clobber
           echo "### Versión de prueba lista: https://github.com/${GITHUB_REPOSITORY}/releases/download/prueba/${{ steps.version.outputs.nombre }}-prueba.apk" >> "$GITHUB_STEP_SUMMARY"
 
   # Mirador para Windows: se arma en una máquina Windows con sus herramientas (yt-dlp, ffmpeg, mpv,

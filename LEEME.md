@@ -18,7 +18,7 @@ Todo queda en tu celular. No hay cuentas, ni servidores, ni publicidad. Es softw
 
 1. [Instalar la app en el Xiaomi](#1-instalar-la-app-en-el-xiaomi)
 2. [Crear la clave de firma (se hace UNA sola vez)](#2-crear-la-clave-de-firma-se-hace-una-sola-vez)
-3. [Cómo se publican las versiones](#3-cómo-se-publican-las-versiones)
+3. [Cómo se publican las versiones](#3-cómo-se-publican-las-versiones) (y [cómo volver a la anterior](#32-si-una-versión-sale-con-fallas-volver-a-la-anterior))
 4. [Verificación de desarrolladores de Google (para seguir instalando la app por años)](#4-verificación-de-desarrolladores-de-google)
 5. [Ajustes de batería en HyperOS](#5-ajustes-de-batería-en-hyperos)
 6. [Cómo se usa](#6-cómo-se-usa)
@@ -111,12 +111,27 @@ Guarda en tu administrador de contraseñas (o envíate un correo a ti mismo) est
 Cada cambio que todavía no se ha publicado genera una **versión de prueba** (se reemplaza sola con cada cambio nuevo):
 
 1. En el celular abre este enlace (guárdalo en favoritos, siempre es el mismo):
-   **https://github.com/santyramos04-ui/Dowloadee-/releases/download/prueba/Mirador-prueba.apk**
-2. Se descarga `Mirador-prueba.apk`. Ábrelo e instálalo **encima** de la que tienes: no pierdes nada.
+   **https://github.com/santyramos04-ui/Dowloadee-/releases/download/prueba/RACQ-prueba.apk**
+2. Se descarga `RACQ-prueba.apk`. Ábrelo e instálalo **encima** de la que tienes: no pierdes nada.
 3. En *Ajustes → Aplicación* verás la versión con «-prueba» al final (por ejemplo `1.0.30-prueba`).
 4. Si te gusta, di «publícala». Cuando salga la oficial, la app te avisará para pasarte a ella.
 
 La versión de prueba está marcada como «pre-release»: **tus amigos no la reciben**; la app solo les ofrece versiones oficiales.
+
+### 3.2 Si una versión sale con fallas: volver a la anterior
+
+Android **no deja instalar una versión vieja encima de una nueva** (habría que desinstalar y se perderían
+descargas, suscripciones y listas). Por eso «volver atrás» se hace publicando el código viejo **como versión nueva**:
+
+1. Entra a GitHub → pestaña **Actions** → a la izquierda **«Volver a una versión anterior»**.
+2. Toca **Run workflow**. Deja la casilla vacía para volver a la versión anterior a la última,
+   o escribe una (por ejemplo `v1.0.44`; la lista está en **Releases**). Toca el botón verde.
+3. En unos 15 minutos sale una versión nueva (con número más alto) que tiene el código viejo.
+   La app avisa que hay actualización; se instala **encima, sin perder nada**.
+
+Seguridad: si la base de datos de la app cambió después de esa versión, el botón **se niega** (volver
+borraría datos) y lo dice en el registro; en ese caso la falla se arregla con una versión nueva.
+Ojo: si ya usaste el botón una vez, escribe la versión exacta (la «anterior a la última» sería la que falló).
 
 ---
 
