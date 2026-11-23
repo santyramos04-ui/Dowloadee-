@@ -32,14 +32,14 @@ Todo queda en tu celular. No hay cuentas, ni servidores, ni publicidad. Es softw
 
 1. En el celular abre el navegador y entra a la página de versiones del proyecto:
    `https://github.com/santyramos04-ui/Dowloadee-/releases/latest`
-2. Baja hasta **Assets** y toca el archivo **`Mirador-X.Y.Z.apk`** (el más reciente). Se descarga.
+2. Baja hasta **Assets** y toca el archivo **`RACQ-X.Y.Z.apk`** (el más reciente). Se descarga.
 3. Ábrelo desde la notificación de descarga o desde la app **Archivos → Descargas**.
 4. Android te dirá algo como *«Por seguridad, tu teléfono no puede instalar apps desconocidas de esta fuente»*. Toca **Ajustes**, activa **Permitir desde esta fuente** (para el navegador o para Archivos) y vuelve atrás.
-5. **Aviso de Google Play Protect** («Aplicación bloqueada» / «Aplicación no verificada»): es normal, porque Mirador no está en Play Store. Toca **Más detalles → Instalar de todos modos**.
+5. **Aviso de Google Play Protect** («Aplicación bloqueada» / «Aplicación no verificada»): es normal, porque RACQ no está en Play Store. Toca **Más detalles → Instalar de todos modos**.
 6. Si aparece el **análisis de seguridad de Xiaomi** (un escudo con «Aplicación riesgosa» o «Analizando»), toca **Instalar** / **Continuar de todos modos**. Solo ocurre la primera vez.
-7. Al abrir Mirador por primera vez te pedirá permiso para **notificaciones**: acéptalo (así ves el progreso de las descargas y los controles de música). Los primeros segundos la app prepara el motor de descargas; es normal.
+7. Al abrir RACQ por primera vez te pedirá permiso para **notificaciones**: acéptalo (así ves el progreso de las descargas y los controles de música). Los primeros segundos la app prepara el motor de descargas; es normal.
 
-**Actualizar después:** Mirador te avisa dentro de la app («Hay una versión nueva…»). Tocas el aviso → **Descargar** → **Instalar**. Se instala encima y no pierdes nada, porque **todas las versiones se firman siempre con la misma clave**.
+**Actualizar después:** RACQ te avisa dentro de la app («Hay una versión nueva…»). Tocas el aviso → **Descargar** → **Instalar**. Se instala encima y no pierdes nada, porque **todas las versiones se firman siempre con la misma clave**.
 
 ---
 
@@ -149,7 +149,7 @@ Google exigirá que las apps instaladas en Android «certificado» (los celulare
 | 2027 en adelante | Se extiende a todo el mundo, y está previsto que alcance a más tiendas. |
 | **Colombia** | **No aparece en la lista inicial.** Estará dentro de la expansión global de 2027. Revisa la lista de «ubicaciones participantes» de Google de vez en cuando. |
 
-Hoy, instalar un APK «a mano» (como haces con Mirador) **no está afectado** por la fecha de septiembre de 2026, pero conviene registrar el paquete **antes** de que llegue a Colombia.
+Hoy, instalar un APK «a mano» (como haces con RACQ) **no está afectado** por la fecha de septiembre de 2026, pero conviene registrar el paquete **antes** de que llegue a Colombia.
 
 ### La cuenta gratuita para aficionados («distribución limitada»)
 
@@ -194,14 +194,14 @@ Fuentes: <https://developer.android.com/developer-verification> · <https://deve
 HyperOS cierra las apps en segundo plano para ahorrar batería, y eso puede **cortar la música o las descargas con la pantalla apagada**. Haz esto una vez:
 
 1. **Sin restricciones de batería**
-   *Ajustes → Aplicaciones → Administrar aplicaciones → Mirador → Ahorro de batería → **Sin restricciones*** (en algunas versiones se llama «Sin limitaciones»).
-   También puedes tocar, dentro de Mirador, **Biblioteca → Ajustes → Quitar restricción de batería**.
+   *Ajustes → Aplicaciones → Administrar aplicaciones → RACQ → Ahorro de batería → **Sin restricciones*** (en algunas versiones se llama «Sin limitaciones»).
+   También puedes tocar, dentro de RACQ, **Biblioteca → Ajustes → Quitar restricción de batería**.
 2. **Inicio automático**
-   *Ajustes → Aplicaciones → Permisos → Inicio automático → activa **Mirador***.
+   *Ajustes → Aplicaciones → Permisos → Inicio automático → activa **RACQ***.
 3. **Bloquear en recientes**
-   Abre la pantalla de apps recientes, mantén presionada la tarjeta de Mirador y toca el **candado**. Así el sistema no la cierra al «limpiar memoria».
+   Abre la pantalla de apps recientes, mantén presionada la tarjeta de RACQ y toca el **candado**. Así el sistema no la cierra al «limpiar memoria».
 4. **Notificaciones**
-   *Ajustes → Notificaciones → Mirador*: deja activadas las notificaciones y «Mostrar en pantalla de bloqueo» (para los controles de reproducción).
+   *Ajustes → Notificaciones → RACQ*: deja activadas las notificaciones y «Mostrar en pantalla de bloqueo» (para los controles de reproducción).
 5. Si usas un «Modo de ahorro de batería» fuerte (Ajustes → Batería), desactívalo mientras descargas archivos grandes.
 
 Si aun así algo se corta, avísame con el nombre exacto de la pantalla de tu HyperOS y lo ajusto.
@@ -210,7 +210,9 @@ Si aun así algo se corta, avísame con el nombre exacto de la pantalla de tu Hy
 
 ## 6. Cómo se usa
 
-Navegación inferior: **Inicio · Suscripciones · Descargas · Biblioteca**.
+Navegación inferior: **Inicio · Películas · Suscripciones · Descargas · Biblioteca**.
+En cualquier pantalla con buscador, la barra de arriba **se esconde al deslizar** hacia abajo y vuelve al subir.
+**Atrás** (gesto o botón) vuelve a la pantalla anterior; en la pantalla principal pide confirmar antes de salir.
 
 ### Ver YouTube
 
@@ -220,20 +222,53 @@ Navegación inferior: **Inicio · Suscripciones · Descargas · Biblioteca**.
 * Cada video tiene el botón **Descargar**. En el reproductor también hay **Guardar**, **Compartir** y **Ver comentarios**.
 * **Reproducción automática**: al terminar un video sigue con el siguiente (el de la lista que estés viendo, o un relacionado). Se apaga con el interruptor del reproductor; el botón ⏭ pasa al siguiente a mano.
 * **Tema**: *Ajustes → Apariencia* (Automático, Claro u Oscuro). «Automático» sigue el modo de tu celular.
-* **SponsorBlock**: Mirador salta solo los tramos de patrocinio, autopromoción y «dale like y suscríbete» (la base de datos es de la comunidad). Se activa y se elige qué saltar en *Ajustes → Reproductor*.
+* **SponsorBlock**: RACQ salta solo los tramos de patrocinio, autopromoción y «dale like y suscríbete» (la base de datos es de la comunidad). Se activa y se elige qué saltar en *Ajustes → Reproductor*.
 * **Guardar**: toca el marcador de un video (o mantén pulsado cualquier video) para ponerlo en **Ver más tarde** o en tus **listas**.
 * **Suscripciones** (sin cuenta de Google): en la página de un canal toca **Suscribirme**. Para traer las que ya tienes en YouTube: pestaña *Suscripciones → Importar mis suscripciones* y elige el ZIP de **Google Takeout** (la app te explica cómo obtenerlo). También sirve el respaldo de NewPipe.
 * **Historial**: la app recuerda por dónde ibas en cada video y lo retoma al abrirlo. Está en *Biblioteca → Historial*.
 * **Tendencias**: si YouTube las ofrece, aparecen en Inicio como «Tendencias en Colombia». (YouTube retiró esa página en 2025; la versión probada no la devolvió, así que probablemente no la veas.)
-* También puedes tocar un enlace de YouTube en cualquier app y elegir **Mirador** para verlo sin anuncios.
+* También puedes tocar un enlace de YouTube en cualquier app y elegir **RACQ** para verlo sin anuncios.
+
+### Inicio
+
+* **Lives**: transmisiones en vivo populares. Toca el título «Lives» (con la flecha ^ / v) para esconder o mostrar la fila; se recuerda.
+* **Shorts**: fila de videos verticales. Al tocar uno se abre **a pantalla completa**: desliza hacia arriba para el siguiente,
+  toca para pausar. Botones al lado: *Descargar*, *Compartir* y *Ver en el reproductor*. Cada Short se repite mientras lo miras.
+* **Para ti**: recomendaciones según lo que ves y los canales que sigues, mezclando canales para que no se repita uno solo.
+  Es infinito (al bajar carga más). **Jala hacia abajo** para renovarlo. Arriba hay temas como en YouTube (Todo, Música, En vivo, tus canales…).
+* Los títulos se piden **en español (Colombia)** cuando YouTube los tiene traducidos.
+
+### Reproductor
+
+* **Barra de tiempo**: al arrastrarla muestra el **segundo exacto** y una **miniatura** de ese punto.
+* **Capítulos**: si el video los tiene, se ven como marcas en la barra y el nombre del capítulo aparece junto al tiempo.
+* **Subtítulos (CC)**: botón arriba en el reproductor. Elige idioma o «Desactivados»; se recuerda el último idioma.
+* **Letra**: botón «Letra». Si está sincronizada se resalta la línea que suena y puedes tocar una línea para ir ahí.
+  Las letras vienen de LRCLIB (lrclib.net, gratis); no todas las canciones están.
+* **Sonido** (en las opciones del reproductor): **Volumen parejo** (Android 9 o más nuevo; que una canción no suene mucho más
+  baja que otra) y **Ecualizador** con estilos: Normal, Graves, Voz, Brillante, Fiesta.
+* **Cola**: «Reproducir después» / «Añadir a la cola» desde el menú ⋮ de cualquier video. Repetir una, repetir todo y aleatorio.
+* **TV**: enviar a un televisor (DLNA o Miracast). **Temporizador** para apagar.
+
+### Fuera de la app
+
+* **Widget**: mantén presionada la pantalla de inicio del celular → *Widgets* → **RACQ**. Muestra lo que suena con
+  anterior / reproducir-pausar / siguiente.
+* **Android Auto**: RACQ aparece como app de música en el carro con tres carpetas: *Música descargada*,
+  *Videos descargados* (suenan como audio) y *Cola*. Por seguridad, en el carro no se ve video.
+* **Notificación y pantalla de bloqueo**: controles de reproducción con el mapache a una tinta.
+
+### Películas
+
+* Cine de **dominio público** de Internet Archive y películas que sus dueños publican **gratis en YouTube**. Todo legal.
 
 ### Descargar de cualquier app o página
 
 Hay tres formas:
 
-0. **Accesos directos**: la pantalla de Inicio tiene un botón por plataforma (X, Instagram, TikTok, Facebook, Reddit, Twitch, Vimeo…) que abre el navegador de Mirador en ese sitio. «YouTube» te lleva al buscador.
-1. **Compartir**: en X, Instagram, TikTok, Facebook, el navegador… toca **Compartir → Mirador**. Se abre una hoja desde abajo (sin salir de la app de origen) con la vista previa y los formatos.
-2. **Pegar**: pestaña **Descargas** → pega el enlace → **Buscar**. Si abres Mirador con un enlace copiado, te pregunta **«¿Descargar este enlace?»**.
+0. **Accesos directos**: la pantalla de Inicio tiene un botón por plataforma (X, Instagram, TikTok, Facebook, Reddit, Twitch, Vimeo…) que abre el navegador de RACQ en ese sitio. «YouTube» te lleva al buscador.
+1. **Compartir**: en X, Instagram, TikTok, Facebook, el navegador… toca **Compartir → RACQ**. Se abre una hoja desde abajo (sin salir de la app de origen) con la vista previa y los formatos.
+2. **Pegar**: pestaña **Descargas** → pega el enlace → **Buscar**. Si abres RACQ con un enlace copiado, te pregunta **«¿Descargar este enlace?»**.
 3. **Navegador interno**: en Inicio toca el ícono del mundo, entra a X, Instagram, TikTok o Facebook, abre la publicación y toca el botón verde **Descargar**.
 
 Formatos:
@@ -249,9 +284,25 @@ Formatos:
 Si descargas una **lista de reproducción** (o una lista tuya), aparecen todos los videos con casilla: **Todos / Ninguno** o marca solo los que quieras.
 Antes de descargar ves **miniatura, título, duración y peso estimado** de cada opción.
 Las descargas van a una **cola** (2 a la vez; puedes cambiarlo en Ajustes) con progreso, velocidad, tiempo restante, **pausar, reanudar, cancelar y reintentar**. Siguen con la pantalla apagada.
-Los archivos se guardan en **Descargas/Mirador/** (subcarpetas *Videos*, *Audio* e *Imagenes*) y se ven en **Archivos** y en la **Galería**. La app no pide permisos de almacenamiento.
+Los archivos se guardan en **Descargas/RACQ/** (subcarpetas *Videos*, *Audio* e *Imagenes*) y se ven en **Archivos** y en la **Galería**. La app no pide permisos de almacenamiento.
+
+Más sobre descargas:
+
+* **Solo con Wi‑Fi**: *Ajustes → Descargas → Descargar solo con Wi‑Fi*. Con datos móviles la cola espera («Esperando Wi‑Fi») y sigue sola al volver el Wi‑Fi.
+* **Música con datos completos**: los MP3 llevan el título limpio (sin «Official Video»), el artista, el álbum (el nombre de la lista),
+  el número de pista y una **portada cuadrada**. En listas, los archivos **no** llevan números delante y la carpeta solo usa letras y números (sin emojis).
+* **Aviso de repetidas**: si pides de nuevo algo que ya descargaste o que está en la cola, la app te avisa antes.
+* **Si YouTube pide una pausa** (pasa al bajar muchas canciones seguidas): la cola se detiene sola 1, 2 o 4 minutos y sigue;
+  la notificación lo dice. Los errores pasajeros se reintentan solos hasta 3 veces, y en Descargas está «Reintentar las que fallaron».
+* **Compartir lo descargado**: en Descargas, el botón compartir manda el archivo **directo** a WhatsApp, Instagram, TikTok, etc.
 
 Cuando termina, la notificación **«✅ Lista»** abre el archivo. Si falla, **«❌ Error»** dice el motivo (sin internet, privado o +18, enlace no compatible, sin espacio, no disponible…).
+
+### Si la app se cierra sola
+
+Se guarda un **informe de fallo** (sin datos personales) como archivo de texto en **Descargas/RACQ/Informes**.
+Al volver a abrir la app te ofrece compartirlo; también está en *Ajustes → Aplicación → Compartir el último informe de fallo*.
+Mándalo en el chat para que se pueda arreglar.
 
 ---
 
@@ -264,7 +315,7 @@ Los sitios cambian a menudo. Prueba **en este orden**:
 3. **Quieres forzar la actualización ya** → en GitHub: **Actions → Actualización semanal → Run workflow**. En unos 15 minutos sale la versión nueva (y la app te avisa).
 4. **La actualización semanal falló** → verás un aviso (Issue) en GitHub. Significa que la librería nueva rompió algo; no se publicó nada y tu versión instalada sigue igual. Avísame y lo corrijo.
 5. **YouTube dice «comprueba que no eres un robot»**: espera unos minutos, cambia de Wi‑Fi a datos (o al revés) y reintenta.
-6. **Contenido privado o +18** (por ejemplo, Instagram privado o X con contenido sensible): *Ajustes → Sesiones en los sitios* → inicia sesión en el sitio dentro de Mirador y activa «Usar mi sesión al descargar». (YouTube/Google no permite iniciar sesión dentro de otras apps.)
+6. **Contenido privado o +18** (por ejemplo, Instagram privado o X con contenido sensible): *Ajustes → Sesiones en los sitios* → inicia sesión en el sitio dentro de RACQ y activa «Usar mi sesión al descargar». (YouTube/Google no permite iniciar sesión dentro de otras apps.)
 7. **Cambiar de celular o reinstalar**: *Ajustes → Respaldo → Guardar respaldo* crea un archivo con tus suscripciones, historial, listas y ajustes. En el celular nuevo, *Restaurar desde un archivo*.
 
 ---
@@ -279,7 +330,7 @@ Las pruebas automáticas corren en GitHub Actions en cada cambio (pestaña **Act
 * [ ] Doble toque a izquierda/derecha (±10 s); deslizar para brillo y volumen; pantalla completa.
 * [ ] Apagar la pantalla con un video sonando: debe seguir el audio y verse el control en la pantalla de bloqueo.
 * [ ] Salir de la app con un video en pantalla: debe entrar en imagen en imagen.
-* [ ] «Compartir → Mirador» desde X, Instagram, TikTok y Facebook: debe aparecer la hoja de descarga encima de esa app.
+* [ ] «Compartir → RACQ» desde X, Instagram, TikTok y Facebook: debe aparecer la hoja de descarga encima de esa app.
 * [ ] Descargar un video (Mejor), un audio MP3 y una publicación de X con fotos; abrirlos desde «✅ Lista» y verlos en Archivos y Galería.
 * [ ] Descargar con la pantalla apagada (que no se corte) y probar pausar/reanudar/cancelar.
 * [ ] Ajustes → Actualizar motor ahora, y Buscar actualización.
@@ -295,6 +346,16 @@ Las pruebas automáticas corren en GitHub Actions en cada cambio (pestaña **Act
 * [ ] SponsorBlock: abrir un video con patrocinio conocido y ver que salta con el aviso «Se saltó: Patrocinio».
 * [ ] Ajustes → Sesiones: iniciar sesión en Instagram y descargar algo que requiera cuenta.
 * [ ] Ajustes → Respaldo: guardar un respaldo y restaurarlo.
+* [ ] Shorts: abrir uno desde Inicio, deslizar varios hacia arriba, pausar tocando, salir con atrás.
+* [ ] Subtítulos: activar uno en un video que los tenga (CC) y cambiar de idioma.
+* [ ] Capítulos: abrir un video largo con capítulos y ver las marcas en la barra.
+* [ ] Letra: abrir una canción conocida y tocar «Letra»; tocar una línea para saltar.
+* [ ] Sonido: activar «Volumen parejo» y probar cada estilo del ecualizador.
+* [ ] Widget: ponerlo en la pantalla de inicio y usar sus tres botones con la app cerrada.
+* [ ] Android Auto: en el carro (o con la app Android Auto), abrir RACQ y reproducir una canción descargada.
+* [ ] Solo con Wi‑Fi: activarlo, poner descargas, apagar el Wi‑Fi (deben esperar) y prenderlo (deben seguir).
+* [ ] Descargar una lista como MP3 y revisar en una app de música: título, artista, álbum, número y portada cuadrada.
+* [ ] Compartir un video descargado directo a WhatsApp.
 * [ ] Tema claro: recorrer todas las pantallas y avisar si algo no se lee bien (texto, íconos, bordes).
 
 ---
