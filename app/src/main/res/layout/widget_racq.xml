@@ -1,69 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget de RACQ: lo que suena y los botones anterior / reproducir-pausar / siguiente. -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/w_raiz"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/widget_fondo"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:padding="10dp">
-
-    <ImageView
-        android:id="@+id/w_logo"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:contentDescription="@null"
-        android:src="@drawable/ic_mark" />
-
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/w_titulo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="#FFFEF1D5"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/w_autor"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="#FFA9C3D6"
-            android:textSize="13sp" />
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/w_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/wf_marina">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="8dp" android:paddingEnd="6dp">
+    <include layout="@layout/w_rac" android:layout_width="56dp" android:layout_height="56dp"  />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="8dp" android:orientation="vertical">
+      <TextView android:id="@+id/w_titulo" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFEF1D5" android:textSize="15sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" android:text="Nada sonando"  />
+      <TextView android:id="@+id/w_autor" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFA9C3D6" android:textSize="13sp"  android:maxLines="1" android:ellipsize="end" android:text="Toca para abrir RACQ"  />
     </LinearLayout>
-
-    <ImageButton
-        android:id="@+id/w_anterior"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:background="@android:color/transparent"
-        android:contentDescription="Anterior"
-        android:src="@drawable/ic_w_prev" />
-
-    <ImageButton
-        android:id="@+id/w_alternar"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="@android:color/transparent"
-        android:contentDescription="Reproducir o pausar"
-        android:src="@drawable/ic_w_play" />
-
-    <ImageButton
-        android:id="@+id/w_siguiente"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:background="@android:color/transparent"
-        android:contentDescription="Siguiente"
-        android:src="@drawable/ic_w_next" />
-</LinearLayout>
+    <ImageButton android:id="@+id/w_anterior" android:layout_width="40dp" android:layout_height="44dp" android:background="@android:color/transparent" android:padding="9dp" android:scaleType="fitCenter" android:src="@drawable/wi_anterior" android:tint="#FFFEF1D5" android:contentDescription="Anterior" />
+    <ImageButton android:id="@+id/w_alternar" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/wc_arena" android:padding="13dp" android:scaleType="fitCenter" android:src="@drawable/wi_play" android:tint="#FF0C324A" android:contentDescription="Reproducir o pausar" />
+    <ImageButton android:id="@+id/w_siguiente" android:layout_width="40dp" android:layout_height="44dp" android:background="@android:color/transparent" android:padding="9dp" android:scaleType="fitCenter" android:src="@drawable/wi_siguiente" android:tint="#FFFEF1D5" android:contentDescription="Siguiente" />
+  </LinearLayout>
+  <ProgressBar android:id="@+id/w_avance" style="@android:style/Widget.ProgressBar.Horizontal" android:layout_width="match_parent" android:layout_height="3dp" android:layout_gravity="bottom" android:max="1000" android:progress="0" android:progressDrawable="@drawable/wb_acento" />
+</FrameLayout>

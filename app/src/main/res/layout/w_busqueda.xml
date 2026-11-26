@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/w_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/wf_arena" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="8dp" android:paddingEnd="6dp">
+  <include layout="@layout/w_rac" android:layout_width="42dp" android:layout_height="42dp"  />
+  <TextView android:id="@+id/w_buscar" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:paddingStart="8dp" android:text="Buscar o pegar un enlace" android:textColor="#FF2F5670" android:textSize="16sp" android:maxLines="1" android:ellipsize="end" />
+  <ImageButton android:id="@+id/w_pegar" android:layout_width="44dp" android:layout_height="44dp" android:background="@drawable/wc_rojo" android:padding="11dp" android:scaleType="fitCenter" android:src="@drawable/wi_bajar" android:tint="#FFFFFFFF" android:contentDescription="Pegar enlace y descargar" />
+</LinearLayout>

@@ -106,10 +106,11 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
+        <!-- Widgets de la pantalla de inicio (ui/widgets) -->
         <receiver
             android:name=".ui.WidgetRacq"
             android:exported="false"
-            android:label="RACQ">
+            android:label="Reproductor Marina">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -117,6 +118,186 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_racq_info" />
         </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetCrema"
+            android:exported="false"
+            android:label="Reproductor Crema">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_crema_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetVinilo"
+            android:exported="false"
+            android:label="Vinilo">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_vinilo_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetKaraoke"
+            android:exported="false"
+            android:label="Karaoke">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_karaoke_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetSoloMapache"
+            android:exported="false"
+            android:label="Solo mapache">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_solo_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetMapache"
+            android:exported="false"
+            android:label="Mapache">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_mapache_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetBusqueda"
+            android:exported="false"
+            android:label="Búsqueda rápida">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_busqueda_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetCola"
+            android:exported="false"
+            android:label="Lo que sigue">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_cola_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetParaTi"
+            android:exported="false"
+            android:label="Para ti">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_parati_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetDescargas"
+            android:exported="false"
+            android:label="Descargas">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_descargas_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetDescargasCuadro"
+            android:exported="false"
+            android:label="Descargas (cuadro)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_descargas_cuadro_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetPegar"
+            android:exported="false"
+            android:label="Pegar enlace">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_pegar_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetNuevo"
+            android:exported="false"
+            android:label="Nuevo de tus canales">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_nuevo_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetShorts"
+            android:exported="false"
+            android:label="Shorts">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_atajo_shorts_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetSorpresa"
+            android:exported="false"
+            android:label="Sorpréndeme">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_atajo_sorpresa_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetAtajoDescargas"
+            android:exported="false"
+            android:label="Mis descargas">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_atajo_descargas_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widgets.WidgetDormir"
+            android:exported="false"
+            android:label="Dormir">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/w_atajo_dormir_info" />
+        </receiver>
+        <!-- Botones de los widgets -->
+        <receiver
+            android:name=".ui.widgets.AccionWidget"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/w_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/wf_marina" android:orientation="vertical" android:padding="14dp">
+  <LinearLayout android:id="@+id/w_cabeza" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+    <include layout="@layout/w_rac" android:layout_width="56dp" android:layout_height="56dp"  />
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:orientation="vertical">
+      <TextView android:id="@+id/w_etiqueta" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FF8DB8D3" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" android:text="SONANDO"  />
+      <TextView android:id="@+id/w_titulo" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFEF1D5" android:textSize="15sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" android:text="Nada sonando"  />
+      <TextView android:id="@+id/w_autor" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFA9C3D6" android:textSize="12sp"  android:maxLines="1" android:ellipsize="end" android:text="Toca para abrir RACQ"  />
+    </LinearLayout>
+    <ImageButton android:id="@+id/w_alternar" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/wc_rojo" android:padding="13dp" android:scaleType="fitCenter" android:src="@drawable/wi_play" android:tint="#FFFFFFFF" android:contentDescription="Reproducir o pausar" />
+  </LinearLayout>
+  <ProgressBar android:id="@+id/w_avance" style="@android:style/Widget.ProgressBar.Horizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="10dp" android:max="1000" android:progress="0" android:progressDrawable="@drawable/wb_marina" />
+  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="DESPUÉS" android:textColor="#FF8DB8D3" android:textSize="11sp" android:textStyle="bold" />
+  <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical">
+    <LinearLayout android:id="@+id/w_fila0" android:layout_width="match_parent" android:layout_height="52dp" android:gravity="center_vertical" android:orientation="horizontal" android:visibility="gone">
+      <ImageView android:id="@+id/w_fila0_img" android:layout_width="44dp" android:layout_height="44dp" android:scaleType="centerCrop" android:background="@drawable/wf_miniatura" android:importantForAccessibility="no" />
+      <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:orientation="vertical">
+        <TextView android:id="@+id/w_fila0_titulo" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFEF1D5" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end"   />
+        <TextView android:id="@+id/w_fila0_autor" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFA9C3D6" android:textSize="12sp"  android:maxLines="1" android:ellipsize="end"   />
+      </LinearLayout>
+      <ImageView android:id="@+id/w_fila0_bajada" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/wi_bajar" android:tint="#FF8DB8D3" android:contentDescription="Descargada" android:visibility="gone" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/w_fila1" android:layout_width="match_parent" android:layout_height="52dp" android:gravity="center_vertical" android:orientation="horizontal" android:visibility="gone">
+      <ImageView android:id="@+id/w_fila1_img" android:layout_width="44dp" android:layout_height="44dp" android:scaleType="centerCrop" android:background="@drawable/wf_miniatura" android:importantForAccessibility="no" />
+      <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:orientation="vertical">
+        <TextView android:id="@+id/w_fila1_titulo" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFEF1D5" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end"   />
+        <TextView android:id="@+id/w_fila1_autor" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFA9C3D6" android:textSize="12sp"  android:maxLines="1" android:ellipsize="end"   />
+      </LinearLayout>
+      <ImageView android:id="@+id/w_fila1_bajada" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/wi_bajar" android:tint="#FF8DB8D3" android:contentDescription="Descargada" android:visibility="gone" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/w_fila2" android:layout_width="match_parent" android:layout_height="52dp" android:gravity="center_vertical" android:orientation="horizontal" android:visibility="gone">
+      <ImageView android:id="@+id/w_fila2_img" android:layout_width="44dp" android:layout_height="44dp" android:scaleType="centerCrop" android:background="@drawable/wf_miniatura" android:importantForAccessibility="no" />
+      <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="10dp" android:orientation="vertical">
+        <TextView android:id="@+id/w_fila2_titulo" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFFEF1D5" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end"   />
+        <TextView android:id="@+id/w_fila2_autor" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFA9C3D6" android:textSize="12sp"  android:maxLines="1" android:ellipsize="end"   />
+      </LinearLayout>
+      <ImageView android:id="@+id/w_fila2_bajada" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/wi_bajar" android:tint="#FF8DB8D3" android:contentDescription="Descargada" android:visibility="gone" />
+    </LinearLayout>
+    <TextView android:id="@+id/w_vacia" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:text="La cola está vacía. Después suena lo relacionado." android:textColor="#FFA9C3D6" android:textSize="13sp" />
+  </LinearLayout>
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+    <ImageButton android:id="@+id/w_mezclar" android:layout_width="44dp" android:layout_height="44dp" android:background="@android:color/transparent" android:padding="11dp" android:scaleType="fitCenter" android:src="@drawable/wi_mezclar" android:tint="#FFA9C3D6" android:contentDescription="Mezclar" />
+    <FrameLayout android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+    <ImageButton android:id="@+id/w_anterior" android:layout_width="44dp" android:layout_height="44dp" android:background="@android:color/transparent" android:padding="11dp" android:scaleType="fitCenter" android:src="@drawable/wi_anterior" android:tint="#FFFEF1D5" android:contentDescription="Anterior" />
+    <FrameLayout android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+    <ImageButton android:id="@+id/w_siguiente" android:layout_width="44dp" android:layout_height="44dp" android:background="@android:color/transparent" android:padding="11dp" android:scaleType="fitCenter" android:src="@drawable/wi_siguiente" android:tint="#FFFEF1D5" android:contentDescription="Siguiente" />
+    <FrameLayout android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+    <ImageButton android:id="@+id/w_repetir" android:layout_width="44dp" android:layout_height="44dp" android:background="@android:color/transparent" android:padding="11dp" android:scaleType="fitCenter" android:src="@drawable/wi_repetir" android:tint="#FFA9C3D6" android:contentDescription="Repetir" />
+  </LinearLayout>
+</LinearLayout>

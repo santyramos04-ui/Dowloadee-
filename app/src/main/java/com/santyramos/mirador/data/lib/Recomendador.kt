@@ -169,6 +169,7 @@ object Recomendador {
         )
         if (resultado.isNotEmpty()) {
             guardado = resultado; calculadoEn = System.currentTimeMillis(); ultimoVisto = historial.firstOrNull()?.url
+            com.santyramos.mirador.ui.widgets.Widgets.guardarParaTi(resultado)
             resultado.take(12).forEach { yaMostrados.addLast(it.url) }
             while (yaMostrados.size > 60) yaMostrados.removeFirst()
             // Para el feed infinito: más historial (al azar) y algunos de los recomendados.

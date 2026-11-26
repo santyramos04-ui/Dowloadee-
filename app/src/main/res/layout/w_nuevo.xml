@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/w_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/wf_crema" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="10dp" android:paddingEnd="14dp">
+  <ImageView android:id="@+id/w_img" android:layout_width="96dp" android:layout_height="56dp" android:scaleType="centerCrop" android:background="@drawable/wf_miniatura" android:importantForAccessibility="no" />
+  <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical">
+    <TextView android:id="@+id/w_cuando" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFC11720" android:textSize="11sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" android:text="NUEVO"  />
+    <TextView android:id="@+id/w_titulo" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FF0C324A" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" android:text="Lo nuevo de tus canales"  />
+    <TextView android:id="@+id/w_canal" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FF2F5670" android:textSize="12sp"  android:maxLines="1" android:ellipsize="end" android:text="Sigue canales en RACQ para verlo aquí"  />
+  </LinearLayout>
+</LinearLayout>

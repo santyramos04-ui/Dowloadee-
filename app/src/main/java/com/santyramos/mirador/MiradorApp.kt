@@ -22,6 +22,7 @@ class MiradorApp : Application() {
         Youtube.iniciar()
         DownloadCenter.init(this)
         Biblioteca.init(this)
+        com.santyramos.mirador.ui.widgets.Widgets.iniciar(this)
         YtdlpUpdater.programar(this)
         scope.launch(Dispatchers.IO) {
             // Descomprime Python, ffmpeg y QuickJS la primera vez (tarda unos segundos).

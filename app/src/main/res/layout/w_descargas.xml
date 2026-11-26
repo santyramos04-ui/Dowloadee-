@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/w_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/wf_marina" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="16dp" android:paddingEnd="10dp">
+  <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+      <TextView android:id="@+id/w_titulo" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:textColor="#FFFEF1D5" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" android:text="Sin descargas pendientes" />
+      <TextView android:id="@+id/w_porcentaje" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:textColor="#FFA9C3D6" android:textSize="13sp" />
+    </LinearLayout>
+    <ProgressBar android:id="@+id/w_barra" style="@android:style/Widget.ProgressBar.Horizontal" android:layout_width="match_parent" android:layout_height="6dp" android:layout_marginTop="6dp" android:layout_marginBottom="6dp" android:max="1000" android:progress="0" android:progressDrawable="@drawable/wb_azul" />
+    <TextView android:id="@+id/w_detalle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FFA9C3D6" android:textSize="12sp"  android:maxLines="1" android:ellipsize="end" android:text="Toca para ver tus descargas"  />
+  </LinearLayout>
+  <ImageButton android:id="@+id/w_pausar" android:layout_width="48dp" android:layout_height="48dp" android:background="@drawable/wc_azul" android:padding="13dp" android:scaleType="fitCenter" android:src="@drawable/wi_pausa" android:tint="#FFFEF1D5" android:contentDescription="Pausar o seguir las descargas" />
+</LinearLayout>

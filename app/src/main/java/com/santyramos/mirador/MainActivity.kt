@@ -82,6 +82,7 @@ class MainActivity : ComponentActivity() {
     private fun manejarIntent(i: Intent?) {
         if (i == null) return
         i.getStringExtra(EXTRA_DESTINO)?.let { if (it == "descargas") Entrada.pestana = 2 }
+        i.getStringExtra(com.santyramos.mirador.ui.widgets.Widgets.EXTRA_WIDGET)?.let { desdeWidget(it) }
         val url = i.dataString ?: return
         if (i.action != Intent.ACTION_VIEW) return
         val path = runCatching { java.net.URI(url).path.orEmpty() }.getOrDefault("")
@@ -91,6 +92,30 @@ class MainActivity : ComponentActivity() {
             else -> Entrada.abrirVideo = url
         }
     }
+
+    /** Lo que pide un widget o atajo de la pantalla de inicio al abrir la app. */
+    private fun desdeWidget(que: String) {
+        val acciones = com.santyramos.mirador.ui.widgets.AccionesWidget
+        when (que) {
+            "buscar" -> { Entrada.pestana = 0; Entrada.enfocarBusqueda = true }
+            "pegar" -> { forzarPortapapeles = true; Entrada.pestana = 2 }
+            "shorts" -> Entrada.abrirShorts = true
+            "reproductor" -> Entrada.abrirReproductor = true
+            "guardar" -> Entrada.guardarActual = true
+            "sorprendeme", "dormir" -> lifecycleScope.launch {
+                val ok = if (que == "dormir") acciones.dormir() else acciones.sorprendeme()
+                if (ok) {
+                    if (que == "dormir") android.widget.Toast.makeText(this@MainActivity, "Se pausa sola en 30 minutos", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    android.widget.Toast.makeText(this@MainActivity, "Aún no tienes descargas: baja algo primero", android.widget.Toast.LENGTH_LONG).show()
+                    Entrada.pestana = 2
+                }
+            }
+        }
+    }
+
+    /** Un widget pidió «pegar enlace»: se ofrece aunque ese enlace ya se hubiera visto antes. */
+    private var forzarPortapapeles = false
 
     fun entrarPip() {
         if (!packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)) return
@@ -116,9 +141,14 @@ class MainActivity : ComponentActivity() {
             val cb = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             val texto = runCatching { cb.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this@MainActivity)?.toString() }.getOrNull()
             val enlaces = UrlTools.todosEnlaces(texto)
-            if (enlaces.isEmpty()) return@launch
+            val forzar = forzarPortapapeles
+            forzarPortapapeles = false
+            if (enlaces.isEmpty()) {
+                if (forzar) android.widget.Toast.makeText(this@MainActivity, "No hay ningún enlace copiado", android.widget.Toast.LENGTH_SHORT).show()
+                return@launch
+            }
             val enlace = enlaces.joinToString("\n")
-            if (enlace != Settings(this@MainActivity).portapapelesVisto() && Entrada.enlacePortapapeles == null) Entrada.enlacePortapapeles = enlace
+            if ((forzar || enlace != Settings(this@MainActivity).portapapelesVisto()) && Entrada.enlacePortapapeles == null) Entrada.enlacePortapapeles = enlace
         }
     }
 

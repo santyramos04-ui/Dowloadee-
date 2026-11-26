@@ -5,6 +5,10 @@ import android.content.Context
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -22,7 +26,17 @@ object PlayerHolder {
     fun player(context: Context): ExoPlayer {
         player?.let { return it }
         val ctx = context.applicationContext
-        val p = ExoPlayer.Builder(ctx)
+        // El sonido pasa también por el «oído» del mapache (Ritmo) para medir el tempo.
+        val fabrica = object : DefaultRenderersFactory(ctx) {
+            override fun buildAudioSink(context: Context, enableFloatOutput: Boolean, enableAudioOutputPlaybackParams: Boolean): AudioSink =
+                DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams)
+                    .setAudioProcessors(arrayOf(TeeAudioProcessor(Ritmo)))
+                    .build()
+        }
+        Ritmo.iniciar()
+        val p = ExoPlayer.Builder(ctx, fabrica)
             .setLoadControl(
                 DefaultLoadControl.Builder()
                     .setBufferDurationsMs(30_000, 90_000, 1_500, 3_000)

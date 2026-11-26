@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/w_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/wf_pildora" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="6dp" android:paddingEnd="10dp">
+  <include layout="@layout/w_rac" android:layout_width="72dp" android:layout_height="72dp"  />
+  <FrameLayout android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+  <ImageButton android:id="@+id/w_alternar" android:layout_width="52dp" android:layout_height="52dp" android:background="@drawable/wc_rojo" android:padding="15dp" android:scaleType="fitCenter" android:src="@drawable/wi_play" android:tint="#FFFFFFFF" android:contentDescription="Reproducir o pausar" />
+</LinearLayout>

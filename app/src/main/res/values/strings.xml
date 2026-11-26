@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_descripcion">Lo que suena en RACQ, con anterior, pausa y siguiente</string>
+    <string name="w_desc_marina">Lo que suena con el mapache bailando, avance y botones</string>
+    <string name="w_desc_crema">Reproductor claro, para fondos de pantalla claros</string>
+    <string name="w_desc_vinilo">Disco que gira mientras suena, guardar en lista y temporizador</string>
+    <string name="w_desc_karaoke">La línea de la letra que va sonando</string>
+    <string name="w_desc_solo">Solo el mapache y un botón para pausar</string>
+    <string name="w_desc_mapache">El mapache grande: baila cuando suena y se duerme en pausa</string>
+    <string name="w_desc_busqueda">Buscar en RACQ o pegar un enlace para descargar</string>
+    <string name="w_desc_cola">Lo que suena y las próximas canciones de la cola</string>
+    <string name="w_desc_parati">Cuatro recomendaciones de Para ti</string>
+    <string name="w_desc_descargas">Cómo van tus descargas, con pausa</string>
+    <string name="w_desc_descargas_cuadro">Cuántas descargas hay en cola y si ya terminaron</string>
+    <string name="w_desc_pegar">Pega el enlace copiado y lo descarga</string>
+    <string name="w_desc_nuevo">Lo último que subieron tus canales</string>
+    <string name="w_desc_shorts">Abre los Shorts</string>
+    <string name="w_desc_sorpresa">Tus descargas al azar, sin internet</string>
+    <string name="w_desc_atajo_descargas">Abre tus descargas</string>
+    <string name="w_desc_dormir">Música de tus descargas que se apaga en 30 minutos</string>
 </resources>

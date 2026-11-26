@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/w_raiz" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/wf_arena" android:orientation="vertical" android:padding="16dp">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+    <TextView android:id="@+id/w_numero" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FF0C324A" android:textSize="34sp" android:textStyle="bold" android:text="0" />
+    <ImageView android:id="@+id/w_icono" android:layout_width="34dp" android:layout_height="34dp" android:padding="6dp" android:background="@drawable/wc_rojo" android:src="@drawable/wi_listo" android:tint="#FFFFFFFF" android:visibility="gone" android:importantForAccessibility="no" />
+    <FrameLayout android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+    <TextView android:id="@+id/w_wifi" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/wf_chip_arena" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="3dp" android:paddingBottom="3dp" android:text="Solo Wi‑Fi" android:textColor="#FF2F5670" android:textSize="11sp" android:textStyle="bold" android:visibility="gone" />
+  </LinearLayout>
+  <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+  <TextView android:id="@+id/w_mensaje" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FF0C324A" android:textSize="14sp" android:textStyle="bold" android:maxLines="3" android:ellipsize="end" android:text="Sin descargas pendientes"  />
+  <TextView android:id="@+id/w_detalle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="#FF2F5670" android:textSize="12sp"  android:maxLines="1" android:ellipsize="end"  android:layout_marginTop="4dp" />
+  <ProgressBar android:id="@+id/w_barra" style="@android:style/Widget.ProgressBar.Horizontal" android:layout_width="match_parent" android:layout_height="6dp" android:layout_marginTop="6dp" android:max="1000" android:progress="0" android:progressDrawable="@drawable/wb_arena" android:visibility="gone" />
+</LinearLayout>

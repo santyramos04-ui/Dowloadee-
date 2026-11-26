@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -146,12 +145,8 @@ object VideoController {
         }
         PlayerHolder.conectarServicio(app)
         Sonido.init(app, player.audioSessionId)
-        // El widget de la pantalla de inicio se redibuja cuando cambia lo que suena o la pausa.
-        scope.launch {
-            kotlinx.coroutines.flow.combine(_video, _estado) { v, e -> Triple(v?.titulo, v?.autor, e.reproduciendo) }
-                .distinctUntilChanged()
-                .collect { com.santyramos.mirador.ui.WidgetRacq.actualizar(app) }
-        }
+        // Los widgets de la pantalla de inicio siguen lo que suena (título, pausa, cola, letra, el mapache).
+        com.santyramos.mirador.ui.widgets.Widgets.vigilarReproduccion(app)
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 publicar()

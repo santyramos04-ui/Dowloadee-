@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_00" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_01" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_02" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_03" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_04" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_05" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_06" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_07" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_08" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_09" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_10" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_11" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_12" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_13" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_14" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_15" android:importantForAccessibility="no" />
+</merge>
