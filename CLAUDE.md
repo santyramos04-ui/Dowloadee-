@@ -30,7 +30,8 @@ El dueño no programa: explicar todo en español sencillo y paso a paso.
 - `player/VideoController.kt`: único dueño del reproductor (cola, repetir, subtítulos, capítulos). `PlayerHolder` crea el ExoPlayer con sesión de audio fija.
 - `player/PlaybackService.kt` (MediaLibraryService) + `BibliotecaAuto.kt` + `ControlesSesion.kt`: notificación, pantalla de bloqueo y Android Auto. Lo que pide el carro entra por `setMediaItems` → cola de la app.
 - `player/Subtitulos.kt`, `player/Sonido.kt` (ecualizador y DynamicsProcessing), `extractor/Letras.kt` + `ui/LetraSheet.kt` (LRCLIB).
-- `ui/ShortsScreen.kt` (objeto `Shorts`; capa encima de todo en `ui/App.kt`), `ui/WidgetRacq.kt` (widget), `ui/CabeceraPlegable.kt`.
+- `ui/ShortsScreen.kt` (objeto `Shorts`; capa encima de todo en `ui/App.kt`), `ui/CabeceraPlegable.kt`.
+- Widgets (17): `ui/widgets/` (`Widgets.kt` dibuja y actualiza, `Proveedores.kt` uno por widget, `AccionWidget.kt` botones y atajos); `ui/WidgetRacq.kt` es «Marina» (no renombrar: lo usan widgets ya puestos). El mapache baila con `ViewFlipper` de `res/drawable-nodpi/rac_baile_*.png` a 3 tempos; `player/Ritmo.kt` mide el tempo (TeeAudioProcessor en `PlayerHolder`). En la app: `ui/MapacheBailarin.kt`. Los cuadros salen de `diseno/icono_mapache.svg` (no redibujar a mano).
 - `download/YtDlpEngine.kt` (opciones de yt-dlp, metadatos de música con `--parse-metadata`, portada cuadrada), `DownloadCenter.kt` (cola, solo Wi‑Fi, pausas por freno de YouTube, reintentos), `ErrorMapper.kt`.
 - `util/Fallos.kt`: informe de cierre inesperado → Descargas/RACQ/Informes.
 - Navegación: pila `Destino` en `ui/App.kt`; el reproductor y Shorts son capas aparte.
@@ -45,6 +46,7 @@ El dueño no programa: explicar todo en español sencillo y paso a paso.
 
 ## Pendiente / ideas sin hacer
 - Sin respuesta del dueño: ¿las listas con canciones ajenas eran «Mix» de YouTube (`list=RD…`)? Si sí, avisar antes de descargarlas.
+- Los widgets nuevos y el mapache que baila (rama de trabajo, versión de prueba 1.0.48) no se han probado en el celular.
 - Nada de lo de la 1.0.45 (Shorts, Auto, widget, letras, sonido, subtítulos, solo Wi‑Fi, MP3) se ha probado aún en el celular: ver LEEME §8.
 - Rechazado por legalidad: buscadores de anime/películas piratas (p. ej. Seekee) y extraer Pluto TV (solo abrir su enlace).
 - Historial de versiones para el dueño: `docs/CAMBIOS.md` (agregar una línea por versión publicada).
