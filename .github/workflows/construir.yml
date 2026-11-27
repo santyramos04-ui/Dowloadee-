@@ -170,7 +170,14 @@ jobs:
           # para que un favorito guardado no descargue una versión vieja que el celular rechaza.
           cp "salida/${{ steps.version.outputs.nombre }}-prueba.apk" salida/Mirador-prueba.apk
           gh release upload prueba salida/Mirador-prueba.apk --clobber
-          echo "### Versión de prueba lista: https://github.com/${GITHUB_REPOSITORY}/releases/download/prueba/${{ steps.version.outputs.nombre }}-prueba.apk" >> "$GITHUB_STEP_SUMMARY"
+          # Además, una copia con el número de versión en el nombre (RACQ-1.0.48-prueba.apk): es un enlace
+          # nuevo en cada versión, así el celular nunca abre por error un archivo viejo con el mismo nombre.
+          # Las copias numeradas de versiones anteriores se borran.
+          ACTUAL="${{ steps.version.outputs.nombre }}-$VER.apk"
+          gh release upload prueba "salida/$ACTUAL" --clobber
+          gh release view prueba --json assets --jq '.assets[].name' | grep -E '^.+-[0-9]+\.[0-9]+\.[0-9]+-prueba\.apk$' | grep -vxF "$ACTUAL" \
+            | while read -r viejo; do gh release delete-asset prueba "$viejo" -y || true; done
+          echo "### Versión de prueba lista: https://github.com/${GITHUB_REPOSITORY}/releases/download/prueba/$ACTUAL" >> "$GITHUB_STEP_SUMMARY"
 
   # Mirador para Windows: se arma en una máquina Windows con sus herramientas (yt-dlp, ffmpeg, mpv,
   # QuickJS) y se publica como instalador .exe junto al APK (en la versión oficial o en la de prueba).
