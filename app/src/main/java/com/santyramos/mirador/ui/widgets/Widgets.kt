@@ -68,17 +68,12 @@ object Widgets {
         TipoWidget.KARAOKE -> WidgetKaraoke::class.java
         TipoWidget.SOLO -> WidgetSoloMapache::class.java
         TipoWidget.MAPACHE -> WidgetMapache::class.java
-        TipoWidget.BUSQUEDA -> WidgetBusqueda::class.java
         TipoWidget.COLA -> WidgetCola::class.java
         TipoWidget.PARA_TI -> WidgetParaTi::class.java
         TipoWidget.DESCARGAS -> WidgetDescargas::class.java
         TipoWidget.DESCARGAS_CUADRO -> WidgetDescargasCuadro::class.java
         TipoWidget.PEGAR -> WidgetPegar::class.java
         TipoWidget.NUEVO -> WidgetNuevo::class.java
-        TipoWidget.SHORTS -> WidgetShorts::class.java
-        TipoWidget.SORPRESA -> WidgetSorpresa::class.java
-        TipoWidget.ATAJO_DESCARGAS -> WidgetAtajoDescargas::class.java
-        TipoWidget.DORMIR -> WidgetDormir::class.java
     }
 
     private fun ids(c: Context, t: TipoWidget): IntArray =
@@ -255,21 +250,11 @@ object Widgets {
                 rv.setTextViewText(R.id.w_titulo, if (a.v == null) "Nada sonando" else if (a.sonando) a.v.titulo else "En pausa")
                 rv.setViewVisibility(R.id.w_zz, if (a.sonando) View.GONE else View.VISIBLE)
             }
-            TipoWidget.BUSQUEDA -> {
-                mapache(rv, a.sonando)
-                rv.setOnClickPendingIntent(R.id.w_raiz, abrir(c, "buscar"))
-                rv.setOnClickPendingIntent(R.id.w_buscar, abrir(c, "buscar"))
-                rv.setOnClickPendingIntent(R.id.w_pegar, abrir(c, "pegar"))
-            }
             TipoWidget.COLA -> cola(c, rv, a, px(44))
             TipoWidget.PARA_TI -> paraTi(c, rv, a, px(80), px(72))
             TipoWidget.DESCARGAS, TipoWidget.DESCARGAS_CUADRO -> descargas(c, rv, t)
             TipoWidget.PEGAR -> rv.setOnClickPendingIntent(R.id.w_raiz, abrir(c, "pegar"))
             TipoWidget.NUEVO -> nuevo(c, rv, px(96), px(56))
-            TipoWidget.SHORTS -> rv.setOnClickPendingIntent(R.id.w_raiz, abrir(c, "shorts"))
-            TipoWidget.SORPRESA -> rv.setOnClickPendingIntent(R.id.w_raiz, abrir(c, "sorprendeme"))
-            TipoWidget.ATAJO_DESCARGAS -> rv.setOnClickPendingIntent(R.id.w_raiz, abrirDescargas(c))
-            TipoWidget.DORMIR -> rv.setOnClickPendingIntent(R.id.w_raiz, abrir(c, "dormir"))
         }
         return rv
     }

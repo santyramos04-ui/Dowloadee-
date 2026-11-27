@@ -198,13 +198,6 @@ fun HomeScreen(
         trabajo?.cancel(); consulta = ""; buscado = null; error = null; resultados.clear(); siguiente = null; cargando = false
     }
 
-    // El widget «Búsqueda rápida» abre la app con el teclado listo para escribir.
-    if (Entrada.enfocarBusqueda) LaunchedEffect(Unit) {
-        Entrada.enfocarBusqueda = false
-        kotlinx.coroutines.delay(300)
-        runCatching { pedirFoco.requestFocus() }
-    }
-
     // Búsquedas pedidas desde fuera (canción de Spotify → YouTube).
     val pedida = Entrada.buscar
     LaunchedEffect(pedida) {

@@ -8,13 +8,11 @@ import com.santyramos.mirador.MainActivity
 import com.santyramos.mirador.data.db.DownloadStatus
 import com.santyramos.mirador.download.DownloadCenter
 import com.santyramos.mirador.player.VideoController
-import com.santyramos.mirador.player.aCola
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /** Recibe los toques de los botones de los widgets que no necesitan abrir la app. */
 class AccionWidget : BroadcastReceiver() {
@@ -74,27 +72,5 @@ object AccionesWidget {
     private suspend fun seguirDescargas() {
         val todas = DownloadCenter.observarTodas().first()
         todas.filter { it.status == DownloadStatus.PAUSED }.forEach { DownloadCenter.reanudar(it.id) }
-    }
-
-    /**
-     * «Sorpréndeme»: tus descargas al azar (primero la música; si no hay, los videos). Sin internet.
-     * @return false si todavía no hay nada descargado.
-     */
-    suspend fun sorprendeme(): Boolean {
-        val todas = withContext(Dispatchers.IO) { DownloadCenter.observarReproducibles().first() }
-        if (todas.isEmpty()) return false
-        val musica = todas.filter { it.archivoMime?.startsWith("audio/") == true }
-        val lista = (musica.ifEmpty { todas }).shuffled().map { it.aCola() }
-        VideoController.reproducirLista(lista)
-        return true
-    }
-
-    /** «Dormir»: si no suena nada pone tus descargas al azar; se pausa sola en 30 minutos. */
-    suspend fun dormir(): Boolean {
-        val hayAlgo = VideoController.video.value != null
-        if (!hayAlgo && !sorprendeme()) return false
-        if (hayAlgo && !VideoController.estado.value.reproduciendo) VideoController.alternar()
-        VideoController.programarTemporizador(30)
-        return true
     }
 }

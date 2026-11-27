@@ -95,22 +95,10 @@ class MainActivity : ComponentActivity() {
 
     /** Lo que pide un widget o atajo de la pantalla de inicio al abrir la app. */
     private fun desdeWidget(que: String) {
-        val acciones = com.santyramos.mirador.ui.widgets.AccionesWidget
         when (que) {
-            "buscar" -> { Entrada.pestana = 0; Entrada.enfocarBusqueda = true }
             "pegar" -> { forzarPortapapeles = true; Entrada.pestana = 2 }
-            "shorts" -> Entrada.abrirShorts = true
             "reproductor" -> Entrada.abrirReproductor = true
             "guardar" -> Entrada.guardarActual = true
-            "sorprendeme", "dormir" -> lifecycleScope.launch {
-                val ok = if (que == "dormir") acciones.dormir() else acciones.sorprendeme()
-                if (ok) {
-                    if (que == "dormir") android.widget.Toast.makeText(this@MainActivity, "Se pausa sola en 30 minutos", android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    android.widget.Toast.makeText(this@MainActivity, "Aún no tienes descargas: baja algo primero", android.widget.Toast.LENGTH_LONG).show()
-                    Entrada.pestana = 2
-                }
-            }
         }
     }
 

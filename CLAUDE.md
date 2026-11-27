@@ -31,7 +31,7 @@ El dueño no programa: explicar todo en español sencillo y paso a paso.
 - `player/PlaybackService.kt` (MediaLibraryService) + `BibliotecaAuto.kt` + `ControlesSesion.kt`: notificación, pantalla de bloqueo y Android Auto. Lo que pide el carro entra por `setMediaItems` → cola de la app.
 - `player/Subtitulos.kt`, `player/Sonido.kt` (ecualizador y DynamicsProcessing), `extractor/Letras.kt` + `ui/LetraSheet.kt` (LRCLIB).
 - `ui/ShortsScreen.kt` (objeto `Shorts`; capa encima de todo en `ui/App.kt`), `ui/CabeceraPlegable.kt`.
-- Widgets (17): `ui/widgets/` (`Widgets.kt` dibuja y actualiza, `Proveedores.kt` uno por widget, `AccionWidget.kt` botones y atajos); `ui/WidgetRacq.kt` es «Marina» (no renombrar: lo usan widgets ya puestos). El mapache baila con `ViewFlipper` de `res/drawable-nodpi/rac_baile_*.png` a 3 tempos; `player/Ritmo.kt` mide el tempo (TeeAudioProcessor en `PlayerHolder`). En la app: `ui/MapacheBailarin.kt`. Los cuadros salen de `diseno/icono_mapache.svg` (no redibujar a mano).
+- Widgets (12): `ui/widgets/` (`Widgets.kt` dibuja y actualiza, `Proveedores.kt` uno por widget, `AccionWidget.kt` botones y atajos); `ui/WidgetRacq.kt` es «Marina» (no renombrar: lo usan widgets ya puestos). El mapache baila con `ViewFlipper` de `res/drawable-nodpi/rac_baile_*.png` a 3 tempos; `player/Ritmo.kt` mide el tempo (TeeAudioProcessor en `PlayerHolder`). En la app: `ui/MapacheBailarin.kt`. Los cuadros salen de `diseno/icono_mapache.svg` (no redibujar a mano).
 - `download/YtDlpEngine.kt` (opciones de yt-dlp, metadatos de música con `--parse-metadata`, portada cuadrada), `DownloadCenter.kt` (cola, solo Wi‑Fi, pausas por freno de YouTube, reintentos), `ErrorMapper.kt`.
 - `util/Fallos.kt`: informe de cierre inesperado → Descargas/RACQ/Informes.
 - Navegación: pila `Destino` en `ui/App.kt`; el reproductor y Shorts son capas aparte.
@@ -42,6 +42,7 @@ El dueño no programa: explicar todo en español sencillo y paso a paso.
 - Un push nuevo a la rama cancela el CI anterior de esa rama: esperar el resultado antes de empujar otra cosa.
 - Android no instala una versión más baja encima de una más alta («paquete no válido»): por eso el enlace viejo `Mirador-prueba.apk` también se actualiza en cada prueba.
 - Listas en Compose: usar `distinctBy { it.url }` antes de `items(key=…)` (ya causó un cierre por clave repetida).
+- Con 16 widgets nuevos el Redmi Note 14 4G (HyperOS) rechazó la actualización («paquete no válido»); con estos 11 + Marina sí instala. Se quitaron Búsqueda rápida y los atajos 1×1 (Shorts, Sorpréndeme, Mis descargas, Dormir). Al agregar widgets, probar la instalación en ese celular.
 - Leer el `AndroidManifest.xml` binario de un APK: script propio en Python (no hay aapt local).
 
 ## Pendiente / ideas sin hacer

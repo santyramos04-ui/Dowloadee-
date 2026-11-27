@@ -85,8 +85,6 @@ object Entrada {
     var buscar by mutableStateOf<String?>(null)
     var enlacePortapapeles by mutableStateOf<String?>(null)
     // Pedidos desde los widgets de la pantalla de inicio.
-    var enfocarBusqueda by mutableStateOf(false)
-    var abrirShorts by mutableStateOf(false)
     var abrirReproductor by mutableStateOf(false)
     var guardarActual by mutableStateOf(false)
 }
@@ -194,14 +192,6 @@ fun AppRaiz(onEntrarPip: () -> Unit, onPortapapelesVisto: (String) -> Unit) {
                 v.titulo, v.urlOriginal, v.miniatura, v.autor, null, VideoController.estado.value.duracionMs / 1000, 0, null, false, false,
             )
         }
-    }
-    if (Entrada.abrirShorts) LaunchedEffect(Unit) {
-        Entrada.abrirShorts = false
-        reproductorAbierto = false
-        val r = runCatching { com.santyramos.mirador.extractor.Youtube.buscar("#shorts", com.santyramos.mirador.extractor.FiltroBusqueda.VIDEOS) }.getOrNull()
-        val l = r?.let { Shorts.soloCortos(it.elementos) }
-        if (!l.isNullOrEmpty()) Shorts.abrir(l, 0, "#shorts", r?.siguiente)
-        else android.widget.Toast.makeText(contexto, "No se pudieron cargar los Shorts. Revisa tu conexión.", android.widget.Toast.LENGTH_SHORT).show()
     }
 
     // Cada toque en «Inicio» estando ya en Inicio: primero sube al principio y luego vuelve a la portada.
