@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- El mapache de los widgets: dormido en pausa; bailando a uno de tres tempos (80, 105 o 135 golpes/min) -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/rac" android:layout_width="56dp" android:layout_height="56dp" android:importantForAccessibility="noHideDescendants">
     <ImageView android:id="@+id/rac_dormido" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_dormido" />
     <ViewFlipper android:id="@+id/rac_lento" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:autoStart="true" android:flipInterval="188" android:animateFirstView="false"
-        android:inAnimation="@anim/w_entra_lento" android:outAnimation="@anim/w_sale_lento" android:visibility="gone">
+        android:autoStart="true" android:flipInterval="94" android:visibility="gone">
         <include layout="@layout/w_rac_cuadros" />
     </ViewFlipper>
     <ViewFlipper android:id="@+id/rac_medio" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:autoStart="true" android:flipInterval="143" android:animateFirstView="false"
-        android:inAnimation="@anim/w_entra_medio" android:outAnimation="@anim/w_sale_medio" android:visibility="gone">
+        android:autoStart="true" android:flipInterval="71" android:visibility="gone">
         <include layout="@layout/w_rac_cuadros" />
     </ViewFlipper>
     <ViewFlipper android:id="@+id/rac_rapido" android:layout_width="match_parent" android:layout_height="match_parent"
-        android:autoStart="true" android:flipInterval="111" android:animateFirstView="false"
-        android:inAnimation="@anim/w_entra_rapido" android:outAnimation="@anim/w_sale_rapido" android:visibility="gone">
+        android:autoStart="true" android:flipInterval="56" android:visibility="gone">
         <include layout="@layout/w_rac_cuadros" />
     </ViewFlipper>
 </FrameLayout>

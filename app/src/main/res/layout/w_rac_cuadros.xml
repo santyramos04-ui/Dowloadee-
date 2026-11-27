@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 32 cuadros = 4 golpes del baile. Sin fundido: con fondo transparente, el fundido dejaba imágenes residuales. -->
 <merge xmlns:android="http://schemas.android.com/apk/res/android">
 <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_00" android:importantForAccessibility="no" />
 <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_01" android:importantForAccessibility="no" />
@@ -16,4 +17,20 @@
 <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_13" android:importantForAccessibility="no" />
 <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_14" android:importantForAccessibility="no" />
 <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_15" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_16" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_17" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_18" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_19" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_20" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_21" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_22" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_23" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_24" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_25" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_26" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_27" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_28" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_29" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_30" android:importantForAccessibility="no" />
+<ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/rac_baile_31" android:importantForAccessibility="no" />
 </merge>
